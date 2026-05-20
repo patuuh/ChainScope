@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "chainscope": {
+      "command": "/opt/ChainScope/run_mcp.sh",
+      "args": []
+    }
+  }
+}

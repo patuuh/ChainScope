@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Identify cross-contract/cross-module calls in a ChainScope knowledge graph."""
+import json
+import typer
+import mcp_server
+
+app = typer.Typer()
+
+
+@app.command()
+def cross(
+    db: str = typer.Option("graph.db", help="Database path"),
+    external_calls: bool = typer.Option(False, "--external-calls", help="List all cross-contract calls"),
+    from_func: str = typer.Option(None, "--from", help="Trace from a specific function"),
+    max_depth: int = typer.Option(10, help="Max depth for tracing"),
+    exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    if not external_calls and not from_func:
+        typer.echo("Specify --external-calls or --from <function>", err=True)
+        raise typer.Exit(1)
+
+    result = json.loads(mcp_server.cs_cross(
+        db=db,
+        from_func=from_func or "",
+        exclude_research=exclude_research,
+    ))
+
+    if isinstance(result, dict) and "error" in result:
+        typer.echo(result["error"], err=True)
+        raise typer.Exit(1)
+
+    if json_output:
+        typer.echo(json.dumps(result, indent=2, default=str))
+        return
+
+    if external_calls:
+        cross_calls = result
+        if not cross_calls:
+            typer.echo("No cross-contract calls found")
+            return
+        typer.echo(f"Cross-contract calls ({len(cross_calls)}):")
+        for call in cross_calls:
+            attrs = json.loads(call.get("attributes", "{}"))
+            interface = attrs.get("interface", "unknown")
+            ctx = call.get("source_context", "production")
+            typer.echo(
+                f"  {call.get('source_label', '?')} → {call.get('target_label', '?')} "
+                f"(interface: {interface}, context: {ctx})"
+            )
+        return
+
+    cross_boundary = result
+    typer.echo(f"Cross-contract calls reachable from '{from_func}':")
+    for cb in cross_boundary:
+        typer.echo(
+            f"  {cb['source']['label']} → {cb['target']['label']} "
+            f"({cb['source'].get('source_context', 'production')})"
+        )
+
+
+if __name__ == "__main__":
+    app()

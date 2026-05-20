@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Find paths between functions in a ChainScope knowledge graph."""
+import json
+import typer
+import mcp_server
+
+app = typer.Typer()
+
+
+@app.command()
+def paths(
+    db: str = typer.Option("graph.db", help="Database path"),
+    from_label: str = typer.Option(..., "--from", help="Source function label"),
+    to_label: str = typer.Option(..., "--to", help="Target function label"),
+    max_depth: int = typer.Option(15, help="Maximum path depth"),
+    max_paths: int = typer.Option(10, help="Maximum paths to find"),
+    show_guards: bool = typer.Option(False, "--show-guards", help="Show guards along path"),
+    show_state: bool = typer.Option(False, "--show-state", help="Show state reads/writes"),
+    exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    result = json.loads(mcp_server.cs_paths(
+        from_label=from_label,
+        to_label=to_label,
+        db=db,
+        max_depth=max_depth,
+        show_guards=show_guards,
+        show_state=show_state,
+        exclude_research=exclude_research,
+    ))
+
+    if "error" in result:
+        typer.echo(result["error"], err=True)
+        raise typer.Exit(1)
+
+    if json_output:
+        if max_paths and len(result.get("paths", [])) > max_paths:
+            result["paths"] = result["paths"][:max_paths]
+        typer.echo(json.dumps(result, indent=2))
+        return
+
+    all_paths = result.get("paths", [])[:max_paths]
+    if not all_paths:
+        typer.echo(f"No path found from '{from_label}' to '{to_label}' (max_depth={max_depth})")
+        return
+
+    typer.echo(
+        f"Paths from '{from_label}' to '{to_label}' ({len(all_paths)} found, scope={result.get('query_scope', 'all_sources')}):"
+    )
+    for i, path in enumerate(all_paths, 1):
+        typer.echo(f"  [{i}] {' → '.join(path)}")
+        if show_guards:
+            for label in path:
+                guards = result.get("guards", {}).get(label)
+                if guards:
+                    typer.echo(f"       {label} guarded by: {', '.join(guards)}")
+        if show_state:
+            for label in path:
+                state_access = result.get("state_access", {}).get(label)
+                if state_access:
+                    parts = []
+                    if state_access.get("reads"):
+                        parts.append(f"reads: {', '.join(state_access['reads'])}")
+                    if state_access.get("writes"):
+                        parts.append(f"writes: {', '.join(state_access['writes'])}")
+                    typer.echo(f"       {label} state: {'; '.join(parts)}")
+
+
+if __name__ == "__main__":
+    app()

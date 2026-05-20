@@ -1,0 +1,430 @@
+import pytest
+import json
+from core.indexer import Indexer
+from core.schema import GraphDB
+
+
+class TestChainDetection:
+    def test_detects_solidity(self, sol_repo):
+        indexer = Indexer(sol_repo)
+        assert indexer.detected_chain == "solidity"
+
+    def test_detects_anchor(self, anchor_repo):
+        indexer = Indexer(anchor_repo)
+        assert indexer.detected_chain == "anchor"
+
+    def test_detects_substrate(self, substrate_repo):
+        indexer = Indexer(substrate_repo)
+        assert indexer.detected_chain == "substrate"
+
+
+class TestIndexing:
+    def test_index_solidity_repo(self, sol_repo, tmp_db):
+        indexer = Indexer(sol_repo)
+        stats = indexer.index(tmp_db)
+        assert stats["files_indexed"] == 2
+        assert stats["nodes"] > 0
+        assert stats["edges"] > 0
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        node_count = conn.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
+        conn.close()
+        assert node_count > 0
+
+    def test_index_populates_all_tables(self, sol_repo, tmp_db):
+        indexer = Indexer(sol_repo)
+        indexer.index(tmp_db)
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        nodes = conn.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
+        edges = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+        transitions = conn.execute("SELECT COUNT(*) FROM state_transitions").fetchone()[0]
+        conn.close()
+        assert nodes > 0
+        assert edges > 0
+        assert transitions > 0  # simple_vault.sol has state machine
+
+    def test_index_persists_build_info_metadata(self, sol_repo, tmp_db):
+        indexer = Indexer(sol_repo, include_research=True)
+        stats = indexer.index(tmp_db)
+        db = GraphDB(tmp_db)
+        build_info = db.get_metadata("build_info")
+        assert build_info is not None
+        assert build_info["repo_path"] == sol_repo
+        assert build_info["include_research"] is True
+        assert build_info["files_indexed"] == stats["files_indexed"]
+        assert build_info["confidence"]["score"] == stats["confidence"]["score"]
+
+    def test_audit_surfaces_persisted_build_info(self, sol_repo, tmp_db):
+        import mcp_server
+
+        indexer = Indexer(sol_repo, include_research=True)
+        indexer.index(tmp_db)
+        report = json.loads(mcp_server.cs_audit(db=tmp_db, top=5))
+        assert "build_info" in report
+        assert report["build_info"]["include_research"] is True
+
+    def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
+        import mcp_server
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        scripts = repo / "scripts"
+        scripts.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0; contract Vault { uint256 public total; function set(uint256 x) external { total = x; } }"
+        )
+        (scripts / "Deploy.s.sol").write_text(
+            "pragma solidity ^0.8.0; contract DeployScript { uint256 public total; function run(uint256 x) external { total = x; } }"
+        )
+
+        indexer = Indexer(str(repo), include_research=True)
+        indexer.index(tmp_db)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10))
+        assert audit["source_context_summary"]["production"] >= 1
+        assert audit["source_context_summary"]["script"] >= 1
+
+        hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=20))
+        contexts = {item["function"]: item["source_context"] for item in hotspots["hotspots"]}
+        assert contexts["set"] == "production"
+        assert contexts["run"] == "script"
+
+        prod_audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10, exclude_research=True))
+        assert prod_audit["query_scope"] == "production_only"
+        assert "script" not in prod_audit["source_context_summary"]
+
+        prod_hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=20, exclude_research=True))
+        prod_contexts = {item["function"]: item["source_context"] for item in prod_hotspots["hotspots"]}
+        assert "run" not in prod_contexts
+        assert prod_contexts["set"] == "production"
+        assert prod_hotspots["_summary"]["query_scope"] == "production_only"
+
+    def test_scanners_filter_research_findings_at_query_time(self, tmp_path, tmp_db):
+        import mcp_server
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        scripts = repo / "scripts"
+        scripts.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract Vault {\n"
+            "    function live(uint256 deadline) external view returns (bool) {\n"
+            "        return block.timestamp < deadline;\n"
+            "    }\n"
+            "}\n"
+        )
+        (scripts / "Deploy.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract DeployScript {\n"
+            "    function scripted(uint256 deadline) external view returns (bool) {\n"
+            "        return block.timestamp < deadline;\n"
+            "    }\n"
+            "}\n"
+        )
+        (repo / "ops.py").write_text(
+            "import subprocess\n\n"
+            "def run_live(cmd):\n"
+            "    return subprocess.run(cmd, shell=True)\n"
+        )
+        (scripts / "helper.py").write_text(
+            "import subprocess\n\n"
+            "def run_script(cmd):\n"
+            "    return subprocess.run(cmd, shell=True)\n"
+        )
+
+        indexer = Indexer(str(repo), include_research=True)
+        indexer.index(tmp_db)
+
+        defi = json.loads(mcp_server.cs_defi(db=tmp_db, category="timestamp"))
+        defi_contexts = {item["function"]: item["source_context"] for item in defi["timestamp_dependence"]}
+        assert defi_contexts["live"] == "production"
+        assert defi_contexts["scripted"] == "script"
+        assert defi["_summary"]["query_scope"] == "all_sources"
+
+        prod_defi = json.loads(mcp_server.cs_defi(db=tmp_db, category="timestamp", exclude_research=True))
+        prod_defi_contexts = {item["function"]: item["source_context"] for item in prod_defi["timestamp_dependence"]}
+        assert prod_defi_contexts == {"live": "production"}
+        assert prod_defi["_summary"]["query_scope"] == "production_only"
+
+        unsafe = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="command"))
+        unsafe_contexts = {item["function"]: item["source_context"] for item in unsafe["command_execution"]}
+        assert unsafe_contexts["run_live"] == "production"
+        assert unsafe_contexts["run_script"] == "script"
+        assert unsafe["_summary"]["query_scope"] == "all_sources"
+
+        prod_unsafe = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="command", exclude_research=True))
+        prod_unsafe_contexts = {item["function"]: item["source_context"] for item in prod_unsafe["command_execution"]}
+        assert prod_unsafe_contexts == {"run_live": "production"}
+        assert prod_unsafe["_summary"]["query_scope"] == "production_only"
+
+    def test_lookup_and_cross_filter_research_nodes(self, tmp_path, tmp_db):
+        import mcp_server
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        scripts = repo / "scripts"
+        scripts.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract Vault {\n"
+            "    function ping(address target) external {\n"
+            "        target.call(\"\");\n"
+            "    }\n"
+            "}\n"
+        )
+        (scripts / "Deploy.s.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract DeployScript {\n"
+            "    function ping(address target) external {\n"
+            "        target.call(\"\");\n"
+            "    }\n"
+            "}\n"
+        )
+
+        indexer = Indexer(str(repo), include_research=True)
+        indexer.index(tmp_db)
+
+        lookup = json.loads(mcp_server.cs_lookup(name="ping", db=tmp_db))
+        assert lookup["matches"] == 2
+        contexts = {item["file"]: item["metadata"].get("source_context", "production") for item in lookup["functions"]}
+        assert contexts["Vault.sol"] == "production"
+        assert contexts["scripts/Deploy.s.sol"] == "script"
+        assert lookup["query_scope"] == "all_sources"
+
+        prod_lookup = json.loads(mcp_server.cs_lookup(name="ping", db=tmp_db, exclude_research=True))
+        assert prod_lookup["matches"] == 1
+        assert prod_lookup["functions"][0]["file"] == "Vault.sol"
+        assert prod_lookup["query_scope"] == "production_only"
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db))
+        cross_sources = {(item["source_file"], item["source_context"]) for item in cross if item["source_label"] == "ping"}
+        assert ("Vault.sol", "production") in cross_sources
+        assert ("scripts/Deploy.s.sol", "script") in cross_sources
+
+        prod_cross = json.loads(mcp_server.cs_cross(db=tmp_db, exclude_research=True))
+        prod_cross_sources = {(item["source_file"], item["source_context"]) for item in prod_cross if item["source_label"] == "ping"}
+        assert prod_cross_sources == {("Vault.sol", "production")}
+
+    def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
+        import mcp_server
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        scripts = repo / "scripts"
+        scripts.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract Vault {\n"
+            "    uint256 public total;\n"
+            "    function set(uint256 x) external {\n"
+            "        total = x;\n"
+            "    }\n"
+            "}\n"
+        )
+        (scripts / "Deploy.s.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract DeployScript {\n"
+            "    uint256 public total;\n"
+            "    function run(uint256 x) external {\n"
+            "        total = x;\n"
+            "    }\n"
+            "}\n"
+        )
+
+        indexer = Indexer(str(repo), include_research=True)
+        indexer.index(tmp_db)
+
+        trace = json.loads(mcp_server.cs_trace(var="total", db=tmp_db))
+        writer_contexts = {item["label"]: item["source_context"] for item in trace["writers"]}
+        variable_contexts = {item["file"]: item["source_context"] for item in trace["variables"]}
+        assert trace["variable_matches"] == 2
+        assert trace["query_scope"] == "all_sources"
+        assert writer_contexts["set"] == "production"
+        assert writer_contexts["run"] == "script"
+        assert variable_contexts["Vault.sol"] == "production"
+        assert variable_contexts["scripts/Deploy.s.sol"] == "script"
+
+        prod_trace = json.loads(mcp_server.cs_trace(var="total", db=tmp_db, exclude_research=True))
+        prod_writer_contexts = {item["label"]: item["source_context"] for item in prod_trace["writers"]}
+        assert prod_trace["variable_matches"] == 1
+        assert prod_trace["query_scope"] == "production_only"
+        assert prod_writer_contexts == {"set": "production"}
+
+    def test_paths_filter_research_paths(self, tmp_path, tmp_db):
+        import mcp_server
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        scripts = repo / "scripts"
+        scripts.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract Vault {\n"
+            "    function finish() internal {}\n"
+            "    function start() external {\n"
+            "        finish();\n"
+            "    }\n"
+            "}\n"
+        )
+        (scripts / "Deploy.s.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract DeployScript {\n"
+            "    function finish() internal {}\n"
+            "    function start() external {\n"
+            "        finish();\n"
+            "    }\n"
+            "}\n"
+        )
+
+        indexer = Indexer(str(repo), include_research=True)
+        indexer.index(tmp_db)
+
+        paths = json.loads(mcp_server.cs_paths(from_label="start", to_label="finish", db=tmp_db))
+        assert paths["query_scope"] == "all_sources"
+        assert ["Vault.start", "Vault.finish"] in paths["paths"]
+        assert ["DeployScript.start", "DeployScript.finish"] in paths["paths"]
+
+        prod_paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            exclude_research=True,
+        ))
+        assert prod_paths["query_scope"] == "production_only"
+        assert prod_paths["paths"] == [["Vault.start", "Vault.finish"]]
+
+    def test_state_filters_research_transitions(self, tmp_path, tmp_db):
+        import mcp_server
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        scripts = repo / "scripts"
+        scripts.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract Vault {\n"
+            "    enum VaultState { Inactive, Closed }\n"
+            "    VaultState public state;\n"
+            "    function close() external {\n"
+            "        state = VaultState.Closed;\n"
+            "    }\n"
+            "}\n"
+        )
+        (scripts / "Deploy.s.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract DeployScript {\n"
+            "    enum VaultState { Inactive, Closed }\n"
+            "    VaultState public state;\n"
+            "    function close() external {\n"
+            "        state = VaultState.Closed;\n"
+            "    }\n"
+            "}\n"
+        )
+
+        indexer = Indexer(str(repo), include_research=True)
+        indexer.index(tmp_db)
+
+        state = json.loads(mcp_server.cs_state(db=tmp_db))
+        assert state["query_scope"] == "all_sources"
+        assert "VaultState" in state["entities"]
+        contexts = {item["function_file"]: item["source_context"] for item in state["entities"]["VaultState"]}
+        assert contexts["Vault.sol"] == "production"
+        assert contexts["scripts/Deploy.s.sol"] == "script"
+        assert any("UNGUARDED: close() transitions VaultState to Closed" in warning for warning in state["warnings"])
+
+        prod_state = json.loads(mcp_server.cs_state(db=tmp_db, exclude_research=True))
+        assert prod_state["query_scope"] == "production_only"
+        prod_contexts = {item["function_file"]: item["source_context"] for item in prod_state["entities"]["VaultState"]}
+        assert prod_contexts == {"Vault.sol": "production"}
+        assert prod_state["warnings"] == ["UNGUARDED: close() transitions VaultState to Closed without checking current state", "TERMINAL: VaultState::Closed has no outgoing transitions"]
+
+
+class TestFileFiltering:
+    def test_ignores_test_files(self, tmp_path, tmp_db):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "contract.sol").write_text("pragma solidity ^0.8.0;\ncontract A { function foo() public {} }")
+        (repo / "Vault.t.sol").write_text("pragma solidity ^0.8.0;\ncontract VaultTest {}")
+        (repo / "Deploy.s.sol").write_text("pragma solidity ^0.8.0;\ncontract DeployScript {}")
+        (repo / "test_oracle.py").write_text("def test_oracle(): pass")
+        (repo / "client.test.tsx").write_text("export function test() { return 1 }")
+        (repo / "keeper_test.go").write_text("package keeper")
+        (repo / "service.pb.go").write_text("package pb")
+        (repo / "GeneratedProto.java").write_text("class GeneratedProto {}")
+        test_dir = repo / "test"
+        test_dir.mkdir()
+        (test_dir / "test_contract.sol").write_text("pragma solidity ^0.8.0;\ncontract TestA {}")
+        indexer = Indexer(str(repo))
+        stats = indexer.index(tmp_db)
+        assert stats["files_indexed"] == 1
+
+    def test_ignores_node_modules(self, tmp_path, tmp_db):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "contract.sol").write_text("pragma solidity ^0.8.0;\ncontract A { function foo() public {} }")
+        nm = repo / "node_modules" / "lib"
+        nm.mkdir(parents=True)
+        (nm / "dep.sol").write_text("pragma solidity ^0.8.0;\ncontract Dep {}")
+        indexer = Indexer(str(repo))
+        stats = indexer.index(tmp_db)
+        assert stats["files_indexed"] == 1
+
+    def test_reports_extractor_failures(self, tmp_path, tmp_db, monkeypatch):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "contract.sol").write_text("pragma solidity ^0.8.0;\ncontract A { function foo() public {} }")
+
+        class BrokenExtractor:
+            def extract_from_source(self, source, file_path):
+                raise RuntimeError("boom")
+
+        indexer = Indexer(str(repo))
+        monkeypatch.setattr(indexer, "_get_extractor", lambda chain: BrokenExtractor())
+        stats = indexer.index(tmp_db)
+        assert stats["files_considered"] == 1
+        assert stats["files_indexed"] == 0
+        assert stats["extractor_runs"] == 1
+        assert stats["extractor_failures"] == 1
+        assert stats["failed_files"] == 1
+        assert stats["failure_examples"][0]["file"] == "contract.sol"
+        assert stats["confidence"]["tier"] in {"very_low", "low"}
+
+    def test_include_research_indexes_script_and_poc_dirs(self, tmp_path, tmp_db):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        scripts = repo / "scripts"
+        poc = repo / "poc"
+        scripts.mkdir()
+        poc.mkdir()
+        (scripts / "Deploy.s.sol").write_text("pragma solidity ^0.8.0;\ncontract DeployScript { function run() external {} }")
+        (poc / "Exploit.sol").write_text("pragma solidity ^0.8.0;\ncontract Exploit { function poke() external {} }")
+
+        strict = Indexer(str(repo))
+        strict_stats = strict.index(tmp_db)
+        assert strict_stats["files_indexed"] == 0
+
+        research_db = str(tmp_path / "research.db")
+        research = Indexer(str(repo), include_research=True)
+        research_stats = research.index(research_db)
+        assert research_stats["files_indexed"] == 2
+        db = GraphDB(research_db)
+        conn = db.get_connection()
+        try:
+            rows = conn.execute("SELECT label, metadata FROM nodes WHERE type='function'").fetchall()
+        finally:
+            conn.close()
+        meta_by_label = {row["label"]: json.loads(row["metadata"] or "{}") for row in rows}
+        assert meta_by_label["run"]["source_context"] == "script"
+        assert meta_by_label["run"]["source_kind"] == "research"
+        assert meta_by_label["poke"]["source_context"] == "poc"
+
+
+class TestLangOverride:
+    def test_lang_flag_sets_default(self, tmp_path, tmp_db):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "lib.rs").write_text("pub fn foo() {}")
+        indexer = Indexer(str(repo), lang_override="substrate")
+        assert indexer.default_chain == "substrate"
