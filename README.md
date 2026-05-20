@@ -1,32 +1,72 @@
 # ChainScope
 
+[![License](https://img.shields.io/badge/license-MIT-2ea44f)](./LICENSE)
+[![Focus](https://img.shields.io/badge/focus-blockchain%20security-0969da)](#best-fit)
+[![Interface](https://img.shields.io/badge/interfaces-MCP%20%2B%20CLI-8250df)](#query-surface)
+[![Scope](https://img.shields.io/badge/scope-local--first-f0883e)](#limitations)
+
 ChainScope is a local-first code graph for blockchain and protocol security research.
 
-It turns source repositories into queryable SQLite knowledge graphs so you can trace:
-- who can call what
-- what writes critical state
-- where trust boundaries exist
-- which functions combine multiple risk signals
-- how production code differs from scripts, PoCs, and fuzz harnesses
+It indexes repositories into SQLite knowledge graphs and gives humans and AI agents fast structural queries over:
+- call paths
+- state readers and writers
+- trust boundaries
+- state transitions
+- sink reachability
+- ranked hotspots
+- research-vs-production provenance
 
 ## Why use it
 
-Most high-severity protocol bugs are not visible from one file at a time. They show up across:
-- entry points
+High-severity protocol bugs rarely live in one function. They emerge across:
+- public entry points
 - internal call chains
-- state transitions
 - external calls
 - admin and upgrade surfaces
-- helper scripts and hidden research artifacts
+- state mutations
+- helper scripts, PoCs, and fuzz harnesses
 
-ChainScope gives you a structural view of the repo before you start deep manual reading.
+ChainScope gives you that structural map before you start deep manual reading.
 
-Use it when you want to:
-- triage a large target workspace quickly
-- rank likely bug-hunting surfaces
-- trace attack paths through contracts and supporting services
-- separate production findings from research scaffolding
-- keep graph queries local and deterministic instead of relying on hosted analysis
+It is also built for agentic research. Instead of forcing an agent to read a large repository linearly, ChainScope lets it ask high-signal questions first:
+- What are the riskiest functions?
+- Who writes `balances`?
+- Is there a path from `deposit` to `delegatecall`?
+- Which functions cross trust boundaries?
+- Which findings come from production code vs research scaffolding?
+
+That means more context goes to exploitability and impact, and less to rebuilding repository structure from scratch.
+
+## Who it is for
+
+| Audience | What ChainScope helps with |
+| --- | --- |
+| Protocol security researchers | Fast graph-backed triage and path tracing |
+| Bug bounty hunters | Exploit-surface-first target selection |
+| Auditors | Structural navigation through large contract repos |
+| AI-agent workflows | High-signal code relations without linear reading |
+| Protocol/backend engineers | Trust-boundary and state-flow investigation |
+
+## Field notes
+
+| Signal | Note |
+| --- | --- |
+| Role | Map, not researcher |
+| Best use | Graph-backed targeting, not verdicts |
+| Speed | Finds risky intersections fast |
+| Output quality | Good for hypothesis generation |
+| Limitation | Manual exploitability still required |
+
+## At a glance
+
+| Area | What ChainScope gives you |
+| --- | --- |
+| Triage | Workspace profiling and exploit-surface-first target selection |
+| Graphing | Functions, state vars, calls, reads/writes, transitions, sinks |
+| Discovery | Hotspots, DeFi patterns, unsafe backend patterns |
+| Tracing | Paths, state access, cross-boundary calls, state machines |
+| Provenance | Research-mode indexing plus production-only query scope |
+| Interfaces | MCP server for agents and CLI wrappers for local workflows |
 
 ## Best fit
 
@@ -35,58 +75,7 @@ ChainScope is strongest on:
 - multi-repo blockchain workspaces
 - protocol backends, keepers, relayers, indexers, and node code
 - mixed Solidity/Rust/Go/Java/Python/TypeScript blockchain systems
-
-It already supports graphing and scanning beyond pure contracts, but the highest-signal heuristics are still blockchain-first.
-
-## Not a general web-app scanner
-
-ChainScope is not yet a strong web application security platform.
-
-It does **not** currently model:
-- HTTP routes and middleware stacks
-- sessions, cookies, CSRF, auth flows
-- template rendering and XSS sinks
-- file upload flows
-- framework-specific ORM semantics
-- cloud/IAM/runtime policy boundaries
-
-You can still use it on backend code, and it already catches useful cross-language issues like command execution, deserialization, weak crypto, SQL injection, unsafe blocks, and race-like patterns. But the product should be understood as **protocol and blockchain security tooling first**.
-
-## What it does
-
-### Graph build
-
-ChainScope indexes repositories into SQLite graphs containing:
-- functions
-- contracts/modules/types
-- state variables
-- call edges
-- state read/write edges
-- state transitions
-- sink metadata
-- source provenance metadata
-
-### Query surface
-
-It exposes:
-- MCP tools for agent workflows
-- small CLI wrappers for local use and scripting
-
-Core tasks:
-- workspace profiling: `cs_profile`
-- graph build: `cs_build`
-- top-level graph stats: `cs_summary`
-- attack-surface ranking: `cs_hotspots`
-- full audit rollup: `cs_audit`
-- DeFi-specific scanners: `cs_defi`
-- unsafe/backend scanners: `cs_unsafe`
-- path tracing: `cs_paths`
-- state tracing: `cs_trace`
-- cross-boundary discovery: `cs_cross`
-- state-machine analysis: `cs_state`
-- deep function lookup: `cs_lookup`
-
-## Supported code families
+- cross-chain messaging and bridge-style repos
 
 Current language and ecosystem coverage includes:
 - Solidity
@@ -105,18 +94,60 @@ Current language and ecosystem coverage includes:
 - protobuf
 - Stellar XDR
 
-In practice, this makes ChainScope useful for:
-- EVM protocols
-- Solana/Anchor projects
-- Substrate/Cosmos-style systems
-- blockchain nodes and protocol services
-- cross-chain messaging stacks
+## Installation
 
-## Quick start
+### Python environment
 
-### 1. Profile a repo or workspace
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-Use the profiler first on anything large:
+### MCP setup
+
+The exported MCP server name is `chainscope`:
+
+```json
+{
+  "mcpServers": {
+    "chainscope": {
+      "command": "/opt/ChainScope/run_mcp.sh",
+      "args": []
+    }
+  }
+}
+```
+
+### Sandbox image
+
+```bash
+docker build -f Dockerfile.sandbox -t chainscope-sandbox .
+```
+
+The Dockerfile copies the project to `/opt/ChainScope/`.
+
+## Workflow
+
+```text
+cs_profile
+   ->
+pick target repo or package
+   ->
+cs_build
+   ->
+cs_hotspots / cs_audit
+   ->
+cs_paths / cs_trace / cs_cross / cs_state
+   ->
+manual source review
+   ->
+PoC or report
+```
+
+### Quick start
+
+Profile a repo or workspace first:
 
 ```bash
 python cs_profile.py /path/to/workspace --strategy bounty --json
@@ -124,16 +155,16 @@ python cs_profile.py /path/to/workspace --strategy bounty --json
 
 Why:
 - `--strategy bounty` prioritizes exploit surface over raw repository size
-- build plans come back with per-target database paths
-- you avoid building one giant graph before you know where to look
+- build plans come back with per-target graph DB paths
+- you avoid indexing a giant workspace blindly
 
-### 2. Build a graph
+Build a graph:
 
 ```bash
 python cs_build.py /path/to/repo --db graph.db
 ```
 
-### 3. Query it
+Query it:
 
 ```bash
 python cs_summary.py --db graph.db
@@ -142,6 +173,41 @@ python cs_trace.py --db graph.db --var balances
 python cs_cross.py --db graph.db --external-calls
 python cs_state.py --db graph.db --all
 ```
+
+For agents, the usual loop is:
+1. `cs_profile` to choose the right subrepo
+2. `cs_build` to create the graph
+3. `cs_hotspots` or `cs_audit` via MCP to identify promising surfaces
+4. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate structure
+5. direct source reading only where the graph indicates it matters
+
+## Query surface
+
+### MCP tools
+
+- `cs_profile`
+- `cs_build`
+- `cs_summary`
+- `cs_hotspots`
+- `cs_audit`
+- `cs_defi`
+- `cs_unsafe`
+- `cs_paths`
+- `cs_trace`
+- `cs_cross`
+- `cs_state`
+- `cs_lookup`
+
+### CLI wrappers
+
+- `python cs_profile.py ...`
+- `python cs_build.py ...`
+- `python cs_summary.py ...`
+- `python cs_paths.py ...`
+- `python cs_trace.py ...`
+- `python cs_cross.py ...`
+- `python cs_state.py ...`
+- `python cs_sinks.py ...`
 
 ## Research mode
 
@@ -182,37 +248,106 @@ python cs_sinks.py --db graph.db --type self_destruct --exclude-research
 
 The MCP server exposes the same scope control through `exclude_research=true`.
 
-## MCP server
+## Limitations
 
-The exported MCP server name is `chainscope`:
+ChainScope is high-signal, but it is not a verdict engine.
+
+Keep these limits in mind:
+- exploitability still requires manual verification
+- live state, balances, roles, and deployment wiring are outside pure static structure
+- business-logic intent is not inferred reliably from graph shape alone
+- some findings are intentionally noisy because they are meant to prioritize investigation, not replace it
+- it is not yet a strong general web application security platform
+
+ChainScope does not currently model:
+- HTTP routes and middleware stacks
+- session and cookie flows
+- CSRF and browser-side auth semantics
+- template rendering and XSS sinks
+- file upload pipelines
+- framework-specific ORM behavior
+- cloud/IAM/runtime policy boundaries
+
+You can still use it on backend code, and it already catches useful cross-language patterns such as command execution, deserialization, weak crypto, SQL injection, unsafe blocks, and race-like behavior. But the highest-signal heuristics are still blockchain-first.
+
+## Sample output
+
+### `cs_profile`
 
 ```json
 {
-  "mcpServers": {
-    "chainscope": {
-      "command": "/opt/ChainScope/run_mcp.sh",
-      "args": []
+  "workspace_mode": true,
+  "strategy": "bounty",
+  "recommended_clusters": [
+    {
+      "name": "bridges-and-messaging",
+      "reason": "high trust-boundary density and externally reachable execution"
     }
-  }
+  ],
+  "build_plan": [
+    {
+      "label": "gmx-synthetics",
+      "tool_call": {
+        "tool": "cs_build",
+        "repo_path": "/path/to/repo",
+        "db": "graphs/gmx-synthetics.db"
+      }
+    }
+  ]
 }
 ```
 
-## Sandbox image
+### `cs_trace`
 
-Build the sandbox image with:
-
-```bash
-docker build -f Dockerfile.sandbox -t chainscope-sandbox .
+```json
+{
+  "query_scope": "production_only",
+  "variable_matches": 1,
+  "variables": [
+    {
+      "variable": "balances",
+      "writers": [
+        "Vault.deposit",
+        "Vault.withdraw"
+      ],
+      "readers": [
+        "Vault.previewWithdraw",
+        "Vault.totalAssets"
+      ]
+    }
+  ]
+}
 ```
 
-The Dockerfile copies the project to `/opt/ChainScope/`.
+These outputs are intentionally structural. They tell you where to look next, not whether something is exploitable.
+
+## Contributing
+
+Contributions are welcome, especially in:
+- parser quality for blockchain ecosystems
+- protocol semantics and higher-signal heuristics
+- CLI and MCP parity
+- test fixtures for real protocol patterns
+
+Start with [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Roadmap
+
+Near-term expansion areas:
+- richer protocol semantics for roles, upgrades, assets, and config surfaces
+- broader parser-grade support for additional blockchain ecosystems
+- stronger runtime and fork-aware workflows for validating live exploit paths
+- better backend/web framework understanding beyond protocol-heavy repos
+- more publish-ready CLI parity for every MCP query surface
 
 ## Verification
 
-The exported copy was verified at export time with:
+The current exported copy was verified with:
 
 ```bash
 pytest -q
 ```
 
-Current result: `393 passed`
+Result at the time of this README update:
+
+`393 passed`
