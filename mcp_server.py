@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import logging
+import time
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -22,7 +23,13 @@ logger = logging.getLogger("chainscope")
 mcp = FastMCP("chainscope")
 
 # Default DB path — can be overridden per-call
-DEFAULT_DB = os.environ.get("SC_DB", "graph.db")
+DEFAULT_DB = os.environ.get("CHAINSCOPE_DB", os.environ.get("CHAINSCOPE_DB", "graph.db"))
+DEFAULT_MCP_BUILD_TIMEOUT_SECONDS = int(
+    os.environ.get(
+        "CHAINSCOPE_BUILD_TIMEOUT_SECONDS",
+        os.environ.get("CHAINSCOPE_BUILD_TIMEOUT_SECONDS", "105"),
+    )
+)
 
 
 def _resolve_db(db: str | None) -> str:
@@ -128,7 +135,13 @@ def cs_profile(
 
 
 @mcp.tool()
-def cs_build(repo_path: str, db: str = "", lang: str = "", include_research: bool = False) -> str:
+def cs_build(
+    repo_path: str,
+    db: str = "",
+    lang: str = "",
+    include_research: bool = False,
+    timeout_seconds: int = DEFAULT_MCP_BUILD_TIMEOUT_SECONDS,
+) -> str:
     """Build a knowledge graph from a source repository.
 
     Parses source files using tree-sitter and stores the call graph, state flows,
@@ -152,6 +165,7 @@ def cs_build(repo_path: str, db: str = "", lang: str = "", include_research: boo
         db: Output database path (default: graph.db in current directory)
         lang: Override chain detection — one of: solidity, vyper, move, clarity, cairo, sway, ton, proto, xdr, anchor, substrate, soroban, cpp, rust, go, java, typescript, python
         include_research: Include scripts/poc/fuzz/invariant/certora-style research artifacts
+        timeout_seconds: MCP-side build budget. Default returns before client 120s timeout; set <=0 to disable.
     """
     from core.indexer import Indexer
 
@@ -163,13 +177,19 @@ def cs_build(repo_path: str, db: str = "", lang: str = "", include_research: boo
     lang_override = lang or None
 
     indexer = Indexer(str(repo), lang_override=lang_override, include_research=include_research)
-    stats = indexer.index(db_path)
+    deadline = None
+    if timeout_seconds and timeout_seconds > 0:
+        deadline = time.monotonic() + timeout_seconds
+    stats = indexer.index(db_path, deadline=deadline)
+    status = "partial_timeout" if stats.get("timed_out") else "success"
 
     return json.dumps({
-        "status": "success",
+        "status": status,
         "chain": indexer.detected_chain,
         "all_chains": sorted(indexer.all_chains),
         "include_research": include_research,
+        "timeout_seconds": timeout_seconds,
+        "timed_out": stats.get("timed_out", False),
         "database": db_path,
         "files_considered": stats["files_considered"],
         "files_indexed": stats["files_indexed"],

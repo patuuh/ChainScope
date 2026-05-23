@@ -6,13 +6,13 @@ import pytest
 from pathlib import Path
 from core.indexer import Indexer
 
-SC_DIR = Path(__file__).parent.parent
+CS_DIR = Path(__file__).parent.parent
 
 
 def run_tool(script: str, args: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, str(SC_DIR / script)] + args,
-        capture_output=True, text=True, cwd=str(SC_DIR)
+        [sys.executable, str(CS_DIR / script)] + args,
+        capture_output=True, text=True, cwd=str(CS_DIR)
     )
 
 

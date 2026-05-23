@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from core.schema import GraphDB
@@ -495,7 +496,7 @@ class Indexer:
             "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse",
         }
 
-    def index(self, db_path: str) -> dict:
+    def index(self, db_path: str, deadline: float | None = None, max_files: int | None = None) -> dict:
         """Index the repository into a SQLite knowledge graph.
 
         Returns stats dict with keys: files_indexed, nodes, edges, transitions.
@@ -522,8 +523,16 @@ class Indexer:
         extractor_failures = 0
         failed_files: set[str] = set()
         failure_examples: list[dict] = []
+        timed_out = False
+        indexed_file_count = 0
 
         for fpath in files:
+            if deadline is not None and time.monotonic() >= deadline:
+                timed_out = True
+                break
+            if max_files is not None and indexed_file_count >= max_files:
+                break
+
             chains = self._chains_for_file(fpath)
             if not chains:
                 continue
@@ -580,6 +589,7 @@ class Indexer:
 
             if file_extracted:
                 files_indexed += 1
+            indexed_file_count += 1
 
         # Post-indexing pass 1: resolve phantom targets (param-type mismatch)
         self._resolve_phantom_targets(db)
@@ -617,6 +627,8 @@ class Indexer:
             "extractor_failures": extractor_failures,
             "failed_files": len(failed_files),
             "failure_examples": failure_examples,
+            "timed_out": timed_out,
+            "max_files": max_files,
             "nodes": total_nodes,
             "edges": total_edges,
             "transitions": total_transitions,
@@ -631,6 +643,8 @@ class Indexer:
             "extractor_failures": extractor_failures,
             "failed_files": len(failed_files),
             "failure_examples": failure_examples,
+            "timed_out": timed_out,
+            "max_files": max_files,
             "nodes": total_nodes,
             "edges": total_edges,
             "transitions": total_transitions,

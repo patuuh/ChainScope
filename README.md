@@ -127,6 +127,40 @@ docker build -f Dockerfile.sandbox -t chainscope-sandbox .
 
 The Dockerfile copies the project to `/opt/ChainScope/`.
 
+## Working with agents
+
+When Codex or Claude starts in a blockchain repo with the ChainScope MCP config loaded, the tools are available natively. Useful prompts include:
+- `Profile this blockchain folder and recommend which subrepos to build first`
+- `Build the knowledge graph for this repo, then show me the attack surface`
+- `Trace who writes to balances`
+- `Path from deposit to the delegatecall`
+- `Tell me everything about deposit()`
+- `Run all ChainScope tools and output a summarized report`
+
+Typical tool flow:
+1. `cs_profile` to choose the right target
+2. `cs_build` to create the graph
+3. `cs_audit` or `cs_hotspots` to rank the attack surface
+4. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate the structure
+
+`graph.db` is written to the current working directory unless you pass `--db`. After `.mcp.json` changes, start a fresh Codex session so the tool list reloads. In Claude Code, `/mcp` is the quickest way to confirm that the server is connected.
+
+### Sandbox workflow
+
+1. Copy `.mcp.json` into the target project folder.
+2. From that project folder, run `docker sandbox run --template chainscope-sandbox claude`.
+
+The custom image includes:
+- Python plus the runtime dependencies from `Dockerfile.sandbox`
+- tree-sitter parsers for the supported languages
+- the ChainScope source tree at `/opt/ChainScope/`
+
+Rebuild the image after local ChainScope changes:
+
+```bash
+docker build -f Dockerfile.sandbox -t chainscope-sandbox .
+```
+
 ## Workflow
 
 ```text
