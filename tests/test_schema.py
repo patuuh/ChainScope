@@ -29,6 +29,17 @@ class TestSchemaCreation:
         conn.close()
         assert mode == "wal"
 
+    def test_creates_target_relation_index(self, tmp_db):
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        indexes = {
+            r[0] for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='index'"
+            ).fetchall()
+        }
+        conn.close()
+        assert "idx_edges_target_relation" in indexes
+
 
 class TestNodeCRUD:
     def test_insert_node(self, tmp_db):

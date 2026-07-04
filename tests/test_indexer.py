@@ -268,6 +268,38 @@ class TestIndexing:
         prod_cross_sources = {(item["source_file"], item["source_context"]) for item in prod_cross if item["source_label"] == "ping"}
         assert prod_cross_sources == {("Vault.sol", "production")}
 
+    def test_lookup_query_connection_falls_back_to_immutable(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(id="Vault.sol::Vault.ping()", label="ping", type="function", file="Vault.sol")
+
+        real_connect = mcp_server.sqlite3.connect
+        attempts = []
+
+        class UnreadableReadOnlyConnection:
+            row_factory = None
+
+            def execute(self, *args, **kwargs):
+                raise mcp_server.sqlite3.OperationalError("unable to open database file")
+
+            def close(self):
+                pass
+
+        def fake_connect(database_uri, *args, **kwargs):
+            attempts.append(database_uri)
+            if "immutable=1" not in database_uri:
+                return UnreadableReadOnlyConnection()
+            return real_connect(database_uri, *args, **kwargs)
+
+        monkeypatch.setattr(mcp_server.sqlite3, "connect", fake_connect)
+
+        result = json.loads(mcp_server.cs_lookup(name="ping", db=tmp_db))
+
+        assert result["matches"] == 1
+        assert any("mode=ro" in uri and "immutable=1" not in uri for uri in attempts)
+        assert any("mode=ro&immutable=1" in uri for uri in attempts)
+
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
 

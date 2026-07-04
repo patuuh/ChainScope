@@ -11,8 +11,10 @@ import json
 import os
 import sys
 import logging
+import sqlite3
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 from mcp.server.fastmcp import FastMCP
 
@@ -30,10 +32,53 @@ DEFAULT_MCP_BUILD_TIMEOUT_SECONDS = int(
         os.environ.get("CHAINSCOPE_BUILD_TIMEOUT_SECONDS", "105"),
     )
 )
+DEFAULT_MCP_QUERY_TIMEOUT_SECONDS = int(os.environ.get("CHAINSCOPE_QUERY_TIMEOUT_SECONDS", "30"))
 
 
 def _resolve_db(db: str | None) -> str:
     return db or DEFAULT_DB
+
+
+def _sqlite_uri(db_path: str, params: str) -> str:
+    path = os.path.abspath(os.path.expanduser(db_path))
+    return f"file:{quote(path, safe='/:')}?{params}"
+
+
+def _open_query_connection(db_path: str, timeout_seconds: int | None = DEFAULT_MCP_QUERY_TIMEOUT_SECONDS):
+    """Open an existing graph for read-only query tools without schema writes.
+
+    SQLite can need lock sidecar access even for mode=ro reads. In sandboxed
+    audit workspaces that may fail despite the DB file itself being readable, so
+    fall back to immutable snapshots for read-only graph inspection.
+    """
+    attempts = (
+        ("read_only", "mode=ro"),
+        ("immutable", "mode=ro&immutable=1"),
+    )
+    last_error: Exception | None = None
+    for mode, params in attempts:
+        conn = None
+        try:
+            conn = sqlite3.connect(_sqlite_uri(db_path, params), uri=True, timeout=1.0)
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute("SELECT name FROM sqlite_master LIMIT 1").fetchone()
+            if timeout_seconds and timeout_seconds > 0:
+                deadline = time.monotonic() + timeout_seconds
+
+                def _abort_on_deadline():
+                    return 1 if time.monotonic() >= deadline else 0
+
+                conn.set_progress_handler(_abort_on_deadline, 10_000)
+            return conn
+        except sqlite3.Error as exc:
+            last_error = exc
+            if conn is not None:
+                conn.close()
+            logger.debug("SQLite %s query open failed for %s: %s", mode, db_path, exc)
+    if last_error is not None:
+        raise last_error
+    raise sqlite3.OperationalError(f"unable to open database file: {db_path}")
 
 
 def _find_nodes(conn, label: str) -> list:
@@ -1997,7 +2042,7 @@ def cs_trace(var: str, db: str = "", show_callers: bool = False, exclude_researc
         def _callers(node_id: str) -> list[dict]:
             rows = conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility, n.metadata
-                FROM edges e JOIN nodes n ON e.source = n.id
+                FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
             """, (node_id,)).fetchall()
             callers = []
@@ -2293,7 +2338,13 @@ def cs_state(db: str = "", entity: str = "", exclude_research: bool = False) -> 
 
 
 @mcp.tool()
-def cs_lookup(name: str, db: str = "", depth: int = 1, exclude_research: bool = False) -> str:
+def cs_lookup(
+    name: str,
+    db: str = "",
+    depth: int = 1,
+    exclude_research: bool = False,
+    timeout_seconds: int = DEFAULT_MCP_QUERY_TIMEOUT_SECONDS,
+) -> str:
     """Look up a function by name and return its complete profile.
 
     Returns every occurrence of the function in the graph with:
@@ -2312,14 +2363,17 @@ def cs_lookup(name: str, db: str = "", depth: int = 1, exclude_research: bool = 
         db: Database path (default: graph.db)
         depth: How many levels of callers/callees to include (1 or 2)
         exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: SQLite query budget before returning an error
     """
-    from core.schema import GraphDB
-    from core.graph import Graph
-
     db_path = _resolve_db(db)
-    graph = Graph(db_path)
-    graph_db = GraphDB(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return json.dumps({
+            "error": f"Unable to open graph database '{db_path}': {exc}",
+            "query": name,
+        }, indent=2)
+
     try:
         nodes = _find_nodes(conn, name)
         if not nodes:
@@ -2346,7 +2400,7 @@ def cs_lookup(name: str, db: str = "", depth: int = 1, exclude_research: bool = 
             callers = conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start,
                        n.line_end, n.signature, n.metadata, e.attributes
-                FROM edges e JOIN nodes n ON e.source = n.id
+                FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
             """, (node_id,)).fetchall()
             filtered_callers = []
@@ -2364,7 +2418,7 @@ def cs_lookup(name: str, db: str = "", depth: int = 1, exclude_research: bool = 
                 for caller in info["callers"]:
                     c2 = conn.execute("""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
-                        FROM edges e JOIN nodes n ON e.source = n.id
+                        FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                         WHERE e.target = ? AND e.relation = 'calls'
                     """, (caller["id"],)).fetchall()
                     caller["callers"] = []
@@ -2441,12 +2495,15 @@ def cs_lookup(name: str, db: str = "", depth: int = 1, exclude_research: bool = 
                 info["state_writes"].append(state)
 
             # Guards/modifiers
+            guard_rows = conn.execute("""
+                SELECT n.id, n.label, n.file, n.type, n.metadata
+                FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
+                WHERE e.target = ? AND e.relation = 'guards'
+            """, (node_id,)).fetchall()
             guards = []
-            for guard in graph.get_guards_for(node_id):
-                guard_meta = _load_metadata(conn.execute(
-                    "SELECT metadata FROM nodes WHERE id = ?",
-                    (guard["id"],)
-                ).fetchone()["metadata"])
+            for row in guard_rows:
+                guard = dict(row)
+                guard_meta = _load_metadata(guard.pop("metadata", None))
                 if not _include_metadata(guard_meta, exclude_research):
                     continue
                 guard["source_context"] = guard_meta.get("source_context", "production")
@@ -2472,7 +2529,7 @@ def cs_lookup(name: str, db: str = "", depth: int = 1, exclude_research: bool = 
 
             other_in = conn.execute("""
                 SELECT e.relation, n.id, n.label, n.file, n.metadata, e.attributes
-                FROM edges e JOIN nodes n ON e.source = n.id
+                FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')
             """, (node_id,)).fetchall()
             if other_in:
@@ -2492,6 +2549,18 @@ def cs_lookup(name: str, db: str = "", depth: int = 1, exclude_research: bool = 
             "matches": len(results),
             "query_scope": "production_only" if exclude_research else "all_sources",
             "functions": results,
+        }, indent=2)
+    except sqlite3.OperationalError as exc:
+        if "interrupted" in str(exc).lower():
+            return json.dumps({
+                "error": f"cs_lookup timed out after {timeout_seconds}s",
+                "query": name,
+                "query_scope": "production_only" if exclude_research else "all_sources",
+            }, indent=2)
+        return json.dumps({
+            "error": f"SQLite error while running cs_lookup: {exc}",
+            "query": name,
+            "query_scope": "production_only" if exclude_research else "all_sources",
         }, indent=2)
     finally:
         conn.close()

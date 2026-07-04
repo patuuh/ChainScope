@@ -46,6 +46,7 @@ CREATE INDEX IF NOT EXISTS idx_edges_source ON edges(source);
 CREATE INDEX IF NOT EXISTS idx_edges_target ON edges(target);
 CREATE INDEX IF NOT EXISTS idx_edges_relation ON edges(relation);
 CREATE INDEX IF NOT EXISTS idx_edges_source_relation ON edges(source, relation);
+CREATE INDEX IF NOT EXISTS idx_edges_target_relation ON edges(target, relation);
 CREATE INDEX IF NOT EXISTS idx_transitions_entity ON state_transitions(entity);
 """
 
