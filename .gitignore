@@ -7,3 +7,6 @@
 Dockerfile.sandbox
 build_all_graphs.py
 AGENTS.md
+/.venv
+tests/.DS_Store
+.DS_Store

@@ -1,6 +1,7 @@
-import pytest
 import json
+import pytest
 from core.indexer import Indexer
+from core.indexer import classify_source_context
 from core.schema import GraphDB
 
 
@@ -19,6 +20,40 @@ class TestChainDetection:
 
 
 class TestIndexing:
+    def test_source_context_classifies_deploy_dirs_as_script(self):
+        assert classify_source_context("contracts/deploy/Foo.s.sol") == "script"
+        assert classify_source_context("contracts/deployments/mainnet/Foo.sol") == "script"
+        assert classify_source_context("broadcast/Deploy.s.sol/1/run-latest.json") == "script"
+
+    def test_index_skips_deploy_dirs_unless_research_enabled(self, tmp_path, tmp_db):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        deploy = repo / "deploy"
+        deploy.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0; contract Vault { uint256 public total; function set(uint256 x) external { total = x; } }"
+        )
+        (deploy / "Verifier.sol").write_text(
+            "pragma solidity ^0.8.0; contract Verifier { uint256 public total; function execute(uint256 x) external { total = x; } }"
+        )
+
+        Indexer(str(repo), include_research=False).index(tmp_db)
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        labels = {row["label"] for row in conn.execute("SELECT label FROM nodes WHERE type='function'").fetchall()}
+        conn.close()
+        assert "set" in labels
+        assert "execute" not in labels
+
+        Indexer(str(repo), include_research=True).index(tmp_db)
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        rows = conn.execute("SELECT label, metadata FROM nodes WHERE type='function'").fetchall()
+        conn.close()
+        contexts = {row["label"]: json.loads(row["metadata"] or "{}").get("source_context", "production") for row in rows}
+        assert contexts["set"] == "production"
+        assert contexts["execute"] == "script"
+
     def test_index_solidity_repo(self, sol_repo, tmp_db):
         indexer = Indexer(sol_repo)
         stats = indexer.index(tmp_db)
@@ -99,6 +134,32 @@ class TestIndexing:
         assert "run" not in prod_contexts
         assert prod_contexts["set"] == "production"
         assert prod_hotspots["_summary"]["query_scope"] == "production_only"
+
+    def test_hotspots_do_not_mark_inline_role_guard_as_no_access_control(self, tmp_path, tmp_db):
+        import mcp_server
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract Vault {\n"
+            "    address public owner;\n"
+            "    uint256 public total;\n"
+            "    constructor() { owner = msg.sender; }\n"
+            "    function set(uint256 x) external {\n"
+            "        require(msg.sender == owner, \"owner\");\n"
+            "        total = x;\n"
+            "    }\n"
+            "}\n"
+        )
+
+        indexer = Indexer(str(repo))
+        indexer.index(tmp_db)
+
+        hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=20))
+        set_rows = [item for item in hotspots["hotspots"] if item["function"] == "set"]
+        assert set_rows
+        assert "no_access_control" not in set_rows[0]["reasons"]
 
     def test_scanners_filter_research_findings_at_query_time(self, tmp_path, tmp_db):
         import mcp_server

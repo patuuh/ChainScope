@@ -58,6 +58,7 @@ TEST_NAME_SUBSTRINGS = {
 
 RESEARCH_DIR_NAMES = {
     "script", "scripts",
+    "deploy", "deploys", "deployment", "deployments", "broadcast",
     "poc", "pocs",
     "fuzz", "fuzzing", "fuzzer",
     "invariant", "invariants",
@@ -67,6 +68,11 @@ RESEARCH_DIR_NAMES = {
 RESEARCH_CONTEXT_ALIASES = {
     "scripts": "script",
     "script": "script",
+    "deploy": "script",
+    "deploys": "script",
+    "deployment": "script",
+    "deployments": "script",
+    "broadcast": "script",
     "pocs": "poc",
     "poc": "poc",
     "fuzzing": "fuzz",
@@ -149,8 +155,8 @@ EXT_TO_CHAIN = {
 def should_skip_dir_name(dirname: str, include_research: bool = False) -> bool:
     """Return true when a directory is low-signal for security indexing."""
     lower = dirname.lower()
-    if include_research and lower in RESEARCH_DIR_NAMES:
-        return False
+    if lower in RESEARCH_DIR_NAMES:
+        return not include_research
     if lower in IGNORE_DIRS or lower.endswith(".egg-info"):
         return True
     tokens = lower.replace("-", "_").replace(".", "_").split("_")

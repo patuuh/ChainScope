@@ -96,7 +96,7 @@ def _load_metadata(raw: str | None) -> dict:
 
 def _include_metadata(meta: dict, exclude_research: bool) -> bool:
     """Return whether a node should be included under the current query scope."""
-    return not (exclude_research and meta.get("source_kind") == "research")
+    return not (exclude_research and _is_research_meta(meta))
 
 
 TRAVERSAL_RELATIONS = ("calls", "flows_to", "inherits")
@@ -249,6 +249,16 @@ def _is_c_file(filepath: str) -> bool:
     return ext in _C_EXTENSIONS
 
 
+def _is_research_meta(meta: dict) -> bool:
+    """Return true for non-production source contexts indexed from research files."""
+    return meta.get("source_kind") == "research" or meta.get("source_context") not in (None, "", "production")
+
+
+def _has_access_control(meta: dict, guard_count: int) -> bool:
+    """Treat modifiers, graph guard edges, and inferred inline role checks as access control."""
+    return bool(guard_count or meta.get("modifiers") or meta.get("role_guards") or meta.get("access_controls"))
+
+
 def _score_function(row, meta, writes, ext_calls, guard_count):
     """Score a function for security risk. Returns (score, reasons).
 
@@ -301,7 +311,7 @@ def _score_function(row, meta, writes, ext_calls, guard_count):
             score += 2
             reasons.append(f"uninit_use({len(meta['uninitialized_use'])})")
         # Access control for C (no view/pure exclusion — C lacks these modifiers)
-        if is_entry and writes > 0 and guard_count == 0:
+        if is_entry and writes > 0 and not _has_access_control(meta, guard_count):
             score += 2
             reasons.append("no_access_control")
         return (score, reasons)
@@ -427,7 +437,7 @@ def _score_function(row, meta, writes, ext_calls, guard_count):
         score += 4
         reasons.append("cpi_reentrancy")
     # Access control (no guards)
-    if is_entry and writes > 0 and guard_count == 0 and not meta.get("view") and not meta.get("pure"):
+    if is_entry and writes > 0 and not _has_access_control(meta, guard_count) and not meta.get("view") and not meta.get("pure"):
         score += 2
         reasons.append("no_access_control")
 
@@ -534,7 +544,7 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
         func_by_id: dict[str, dict] = {}
         for row in all_funcs:
             meta = json.loads(row["metadata"] or "{}")
-            if exclude_research and meta.get("source_kind") == "research":
+            if exclude_research and _is_research_meta(meta):
                 continue
             func_meta_cache[row["id"]] = meta
             func_by_id[row["id"]] = row
@@ -955,7 +965,7 @@ def cs_hotspots(db: str = "", top: int = 30, exclude_research: bool = False) -> 
             if r["label"] in ("constructor", "fallback", "receive"):
                 continue
             meta = json.loads(r["metadata"] or "{}")
-            if exclude_research and meta.get("source_kind") == "research":
+            if exclude_research and _is_research_meta(meta):
                 continue
 
             writes = conn.execute(
@@ -1053,7 +1063,7 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
         results: dict = {}
 
         def _include(meta: dict) -> bool:
-            return not (exclude_research and meta.get("source_kind") == "research")
+            return not (exclude_research and _is_research_meta(meta))
 
         def _ctx(meta: dict) -> str:
             return meta.get("source_context", "production")
@@ -1383,7 +1393,7 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
         results: dict = {}
 
         def _include(meta: dict) -> bool:
-            return not (exclude_research and meta.get("source_kind") == "research")
+            return not (exclude_research and _is_research_meta(meta))
 
         def _ctx(meta: dict) -> str:
             return meta.get("source_context", "production")
