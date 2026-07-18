@@ -51,6 +51,7 @@ class TestIndexing:
 
         assert {
             "idx_nodes_type_label",
+            "idx_nodes_type_label_file",
             "idx_nodes_type_visibility",
             "idx_nodes_type_file_line",
             "idx_transitions_function",
@@ -3016,6 +3017,57 @@ class TestIndexing:
         assert uncapped["max_candidates"] == 50
         assert len(uncapped["writers"]) == 5
         assert "candidates" not in uncapped
+
+    def test_trace_state_var_matching_uses_type_scoped_query(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.total",
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.set(uint256)",
+            label="set",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_edge(
+            "Vault.sol::Vault.set(uint256)",
+            "Vault.sol::Vault.total",
+            "writes_state",
+        )
+
+        real_open = mcp_server._open_query_connection
+        match_queries = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                if "FROM nodes" in normalized and "state_var" in normalized:
+                    match_queries.append(normalized)
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        trace = json.loads(mcp_server.cs_trace(var="total", db=tmp_db))
+
+        assert trace["variable_matches_total"] == 1
+        assert any("WHERE type = 'state_var' AND label = ?" in sql for sql in match_queries)
+        assert not any("WHERE label = ? AND type = 'state_var'" in sql for sql in match_queries)
 
     def test_trace_formats_only_capped_variable_candidates(self, tmp_db, monkeypatch):
         import mcp_server

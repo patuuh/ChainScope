@@ -195,12 +195,12 @@ def _find_state_vars_bounded(
     queries = (
         (
             f"SELECT {columns} FROM nodes "
-            "WHERE label = ? AND type = 'state_var' ORDER BY file, id",
+            "WHERE type = 'state_var' AND label = ? ORDER BY file, id",
             (var,),
         ),
         (
             f"SELECT {columns} FROM nodes "
-            "WHERE label LIKE ? AND type = 'state_var' ORDER BY file, id",
+            "WHERE type = 'state_var' AND label LIKE ? ORDER BY file, id",
             (f"%{var}%",),
         ),
     )

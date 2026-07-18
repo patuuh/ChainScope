@@ -43,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_nodes_file ON nodes(file);
 CREATE INDEX IF NOT EXISTS idx_nodes_type ON nodes(type);
 CREATE INDEX IF NOT EXISTS idx_nodes_label ON nodes(label);
 CREATE INDEX IF NOT EXISTS idx_nodes_type_label ON nodes(type, label);
+CREATE INDEX IF NOT EXISTS idx_nodes_type_label_file ON nodes(type, label, file, id);
 CREATE INDEX IF NOT EXISTS idx_nodes_type_visibility ON nodes(type, visibility);
 CREATE INDEX IF NOT EXISTS idx_nodes_type_file_line ON nodes(type, file, line_start, id);
 CREATE INDEX IF NOT EXISTS idx_edges_source ON edges(source);
