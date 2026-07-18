@@ -1200,6 +1200,50 @@ class TestIndexing:
         assert cross["calls"][0]["source"]["source_context"] == "production"
         assert len(parsed) == 2
 
+    def test_cross_from_func_retains_only_capped_boundary_calls(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.ping(address)"
+        db.insert_node(
+            id=start_id,
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        for i in range(40):
+            db.insert_edge(
+                source=start_id,
+                target=f"External{i:02d}.doThing()",
+                relation="calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+
+        real_append = mcp_server._append_capped
+        call_buffer_sizes = []
+
+        def tracking_append(items, item, total, limit):
+            updated = real_append(items, item, total, limit)
+            if isinstance(item, dict) and "source" in item and "target" in item:
+                call_buffer_sizes.append(len(items))
+            return updated
+
+        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+
+        cross = json.loads(mcp_server.cs_cross(
+            db=tmp_db,
+            from_func="ping",
+            max_results=3,
+        ))
+
+        assert cross["total"] == 40
+        assert cross["shown"] == 3
+        assert cross["truncated"] is True
+        assert len(cross["calls"]) == 3
+        assert max(call_buffer_sizes) == 3
+
     def test_cross_from_func_ignores_non_function_candidates(self, tmp_db):
         import mcp_server
 

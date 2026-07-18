@@ -3467,42 +3467,35 @@ def cs_cross(
                         reachable.add(neighbor)
                         queue.append(neighbor)
 
-            call_edges_by_source: dict[str, list[dict]] = {}
+            shown_calls = []
+            total = 0
             for row in conn.execute(
                 "SELECT source, target, attributes FROM edges WHERE relation = 'calls'"
-            ).fetchall():
-                if row["source"] in reachable:
-                    call_edges_by_source.setdefault(row["source"], []).append(dict(row))
-
-            cross_boundary = []
-            for node_id in reachable:
-                source_row = node_by_id.get(node_id)
-                edges = call_edges_by_source.get(node_id, [])
-                for edge in edges:
-                    attrs = _load_metadata(edge["attributes"])
-                    if _is_trust_boundary_call(attrs):
-                        target = node_by_id.get(edge["target"])
-                        if target and edge["target"] not in allowed_ids:
-                            continue
-                        source_meta = _metadata_for_node(node_id)
-                        target_meta = _metadata_for_node(edge["target"]) if target else {}
-                        cross_boundary.append({
-                            "source": {
-                                "label": source_row["label"],
-                                "file": source_row["file"],
-                                "source_context": source_meta.get("source_context", "production"),
-                            } if source_row else {"label": node_id},
-                            "target": {
-                                "label": target["label"],
-                                "file": target["file"],
-                                "source_context": target_meta.get("source_context", "production"),
-                            } if target else {"label": edge["target"]},
-                            "attributes": attrs,
-                        })
-
-            calls = cross_boundary
-            total = len(calls)
-            shown_calls = calls[:max_results] if max_results > 0 else calls
+            ):
+                if row["source"] not in reachable:
+                    continue
+                attrs = _load_metadata(row["attributes"])
+                if not _is_trust_boundary_call(attrs):
+                    continue
+                target = node_by_id.get(row["target"])
+                if target and row["target"] not in allowed_ids:
+                    continue
+                source_row = node_by_id.get(row["source"])
+                source_meta = _metadata_for_node(row["source"])
+                target_meta = _metadata_for_node(row["target"]) if target else {}
+                total = _append_capped(shown_calls, {
+                    "source": {
+                        "label": source_row["label"],
+                        "file": source_row["file"],
+                        "source_context": source_meta.get("source_context", "production"),
+                    } if source_row else {"label": row["source"]},
+                    "target": {
+                        "label": target["label"],
+                        "file": target["file"],
+                        "source_context": target_meta.get("source_context", "production"),
+                    } if target else {"label": row["target"]},
+                    "attributes": attrs,
+                }, total, max_results)
             truncated = len(shown_calls) < total
         else:
             shown_calls, call_summary = _collect_cross_entries(
