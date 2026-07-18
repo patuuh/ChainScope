@@ -3880,24 +3880,36 @@ def cs_state(
                             f"but no incoming — may be unreachable after initialization"
                         )
 
+                directed_edges: dict[tuple[str, str], dict[str, bool]] = {}
+                directed_order: list[tuple[str, str]] = []
+                for t in trans:
+                    if t["from_state"] == "*" or t["to_state"] == "*":
+                        continue
+                    edge = (t["from_state"], t["to_state"])
+                    if edge not in directed_edges:
+                        directed_edges[edge] = {"has_unguarded": False}
+                        directed_order.append(edge)
+                    if not json.loads(t.get("conditions", "[]")):
+                        directed_edges[edge]["has_unguarded"] = True
+
                 seen_pairs = set()
-                for t1 in trans:
-                    for t2 in trans:
-                        if (t1["from_state"] == t2["to_state"]
-                                and t1["to_state"] == t2["from_state"]
-                                and t1["from_state"] != "*"
-                                and t2["from_state"] != "*"):
-                            pair = tuple(sorted([t1["from_state"], t1["to_state"]]))
-                            if pair not in seen_pairs:
-                                seen_pairs.add(pair)
-                                c1 = json.loads(t1.get("conditions", "[]"))
-                                c2 = json.loads(t2.get("conditions", "[]"))
-                                if not c1 or not c2:
-                                    _add_warning(
-                                        f"TOGGLE: {ent} can toggle between "
-                                        f"{pair[0]} <-> {pair[1]} — verify "
-                                        f"this is intentional (potential griefing)"
-                                    )
+                for from_state, to_state in directed_order:
+                    reverse = (to_state, from_state)
+                    if reverse not in directed_edges:
+                        continue
+                    pair = tuple(sorted([from_state, to_state]))
+                    if pair in seen_pairs:
+                        continue
+                    seen_pairs.add(pair)
+                    if (
+                        directed_edges[(from_state, to_state)]["has_unguarded"]
+                        or directed_edges[reverse]["has_unguarded"]
+                    ):
+                        _add_warning(
+                            f"TOGGLE: {ent} can toggle between "
+                            f"{pair[0]} <-> {pair[1]} — verify "
+                            f"this is intentional (potential griefing)"
+                        )
 
         def _retain_entity(ent: str, trans: list[dict]):
             nonlocal transitions_total

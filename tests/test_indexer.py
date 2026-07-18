@@ -3681,6 +3681,43 @@ class TestIndexing:
         assert uncapped["_summary"]["warnings_total"] == uncapped["_summary"]["warnings_shown"]
         assert uncapped["_summary"]["truncated"] is False
 
+    def test_state_detects_toggle_warnings_from_indexed_edges(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for name in ("activate", "pause"):
+            db.insert_node(
+                id=f"Vault.sol::Vault.{name}()",
+                label=name,
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+
+        db.insert_transition(
+            "VaultState",
+            "Active",
+            "Paused",
+            "Vault.sol::Vault.pause()",
+            conditions="[]",
+        )
+        db.insert_transition(
+            "VaultState",
+            "Paused",
+            "Active",
+            "Vault.sol::Vault.activate()",
+            conditions='["onlyOwner"]',
+        )
+
+        state = json.loads(mcp_server.cs_state(db=tmp_db, entity="VaultState"))
+
+        toggle_warnings = [
+            warning for warning in state["warnings"]
+            if warning.startswith("TOGGLE: VaultState can toggle between Active <-> Paused")
+        ]
+        assert len(toggle_warnings) == 1
+
     def test_state_streams_transition_rows_for_broad_output(self, monkeypatch):
         import mcp_server
 
