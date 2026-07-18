@@ -4420,6 +4420,66 @@ class TestIndexing:
         assert callers == {"prodCaller": "production", "run": "script"}
         assert parsed == [target_metadata]
 
+    def test_lookup_exclude_research_filters_relations_without_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        target_metadata = json.dumps({"source_context": "production"})
+        prod_caller_metadata = json.dumps({"source_context": "production", "large": ["x"] * 20})
+        script_caller_metadata = json.dumps({"source_context": "script", "large": ["x"] * 20})
+        db.insert_node(
+            id="Vault.sol::Vault.ping()",
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=target_metadata,
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.prodCaller()",
+            label="prodCaller",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=prod_caller_metadata,
+        )
+        db.insert_node(
+            id="scripts/Deploy.sol::Deploy.run()",
+            label="run",
+            type="function",
+            visibility="external",
+            file="scripts/Deploy.sol",
+            metadata=script_caller_metadata,
+        )
+        db.insert_edge("Vault.sol::Vault.prodCaller()", "Vault.sol::Vault.ping()", "calls")
+        db.insert_edge("scripts/Deploy.sol::Deploy.run()", "Vault.sol::Vault.ping()", "calls")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        lookup = json.loads(mcp_server.cs_lookup(
+            name="ping",
+            db=tmp_db,
+            exclude_research=True,
+            max_relation_items=10,
+        ))
+
+        callers = lookup["functions"][0]["callers"]
+        assert [caller["label"] for caller in callers] == ["prodCaller"]
+        assert callers[0]["source_context"] == "production"
+        assert lookup["functions"][0]["_relation_summary"]["callers"] == {
+            "total": 1,
+            "shown": 1,
+            "truncated": False,
+        }
+        assert parsed == [target_metadata]
+
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
 

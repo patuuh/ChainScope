@@ -4976,12 +4976,9 @@ def cs_lookup(
                 item = dict(row)
                 raw_meta = item.pop("metadata", None)
                 if exclude_research:
-                    meta = _load_metadata(raw_meta)
-                    if not _include_metadata(meta, exclude_research):
+                    if _is_research_metadata_raw(raw_meta):
                         return None
-                    item["source_context"] = meta.get("source_context", "production")
-                else:
-                    item["source_context"] = _metadata_source_context(raw_meta)
+                item["source_context"] = _metadata_source_context(raw_meta)
                 return item
 
             def _collect_relation(sql: str, params: tuple, count_sql: str) -> tuple[list, dict]:
