@@ -1741,6 +1741,50 @@ class TestIndexing:
         assert "Ambiguous from_func" in summary["error"]
         assert summary["start_candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
 
+    def test_cross_summary_from_func_streams_without_raw_cross(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.ping(address)"
+        db.insert_node(
+            id=start_id,
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        for i in range(40):
+            db.insert_edge(
+                source=start_id,
+                target=f"External{i:02d}.doThing()",
+                relation="calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+
+        def fail_raw_cross(*args, **kwargs):
+            raise AssertionError("cs_cross_summary(from_func) should not call raw cs_cross")
+
+        monkeypatch.setattr(mcp_server, "cs_cross", fail_raw_cross)
+
+        summary = json.loads(mcp_server.cs_cross_summary(
+            db=tmp_db,
+            from_func="ping",
+            top=3,
+            max_counter_items=2,
+        ))
+
+        assert summary["tool"] == "cs_cross_summary"
+        assert summary["total"] == 40
+        assert summary["shown"] == 3
+        assert summary["truncated"] is True
+        assert len(summary["calls"]) == 3
+        assert summary["counter_summary"]["top_targets"] == {
+            "total": 40,
+            "shown": 2,
+            "truncated": True,
+        }
+
     def test_cross_from_func_ambiguous_returns_before_full_graph_load(self, tmp_db, monkeypatch):
         import mcp_server
 

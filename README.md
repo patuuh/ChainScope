@@ -277,6 +277,8 @@ For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
 choose where to inspect without dumping every trust-boundary edge. Sample calls
 are capped by `top`; source/target counters are capped by `max_counter_items`.
+`cs_cross_summary(from_func=...)` also streams the reachable boundary calls
+directly instead of expanding an exhaustive raw `cs_cross` result first.
 Raw `cs_cross` output is capped by `max_results`; ambiguous `from_func`
 candidates are capped by `max_start_candidates` and require a more qualified
 name instead of silently picking the first match. Set `max_results=0` only when
@@ -477,4 +479,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`504 passed`
+`505 passed`

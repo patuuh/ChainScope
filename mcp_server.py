@@ -497,6 +497,69 @@ def _iter_trust_boundary_call_edges_from_source(conn, source_id: str):
     )
 
 
+def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool):
+    node_by_id: dict[str, dict | None] = {
+        start_row["id"]: start_row,
+    }
+    node_meta: dict[str, dict] = {}
+    parsed_start_meta = start_row.get("_metadata_parsed")
+    if parsed_start_meta is not None:
+        node_meta[start_row["id"]] = parsed_start_meta
+
+    def _metadata_for_node(node_id: str) -> dict:
+        meta = node_meta.get(node_id)
+        if meta is None:
+            row = _node_for_id(conn, node_id, node_by_id)
+            meta = _load_metadata(row.get("metadata") if row else None)
+            node_meta[node_id] = meta
+        return meta
+
+    start_id = start_row["id"]
+
+    reachable = {start_id}
+    queue = [start_id]
+    pos = 0
+    while pos < len(queue):
+        current = queue[pos]
+        pos += 1
+        for row in _iter_reachable_traversal_targets(conn, current):
+            target_id = row["target"]
+            if target_id in reachable:
+                continue
+            target_node = _node_for_id(conn, target_id, node_by_id)
+            if not target_node:
+                continue
+            if exclude_research and not _include_metadata(_metadata_for_node(target_id), exclude_research):
+                continue
+            reachable.add(target_id)
+            queue.append(target_id)
+
+    for source_id in sorted(reachable):
+        for row in _iter_trust_boundary_call_edges_from_source(conn, source_id):
+            attrs = _load_metadata(row["attributes"])
+            if not _is_trust_boundary_call(attrs):
+                continue
+            target = _node_for_id(conn, row["target"], node_by_id)
+            if target and exclude_research and not _include_metadata(_metadata_for_node(row["target"]), exclude_research):
+                continue
+            source_row = _node_for_id(conn, row["source"], node_by_id)
+            source_meta = _metadata_for_node(row["source"])
+            target_meta = _metadata_for_node(row["target"]) if target else {}
+            yield {
+                "source": {
+                    "label": source_row["label"],
+                    "file": source_row["file"],
+                    "source_context": source_meta.get("source_context", "production"),
+                } if source_row else {"label": row["source"]},
+                "target": {
+                    "label": target["label"],
+                    "file": target["file"],
+                    "source_context": target_meta.get("source_context", "production"),
+                } if target else {"label": row["target"]},
+                "attributes": attrs,
+            }
+
+
 def _iter_callers_for_target(conn, target_id: str):
     return conn.execute(
         """
@@ -801,9 +864,7 @@ def _collect_cross_entries(entries, max_results: int) -> tuple[list[dict], dict]
     calls = []
 
     for entry in entries:
-        total += 1
-        if max_results == 0 or len(calls) < max_results:
-            calls.append(entry)
+        total = _append_capped(calls, entry, total, max_results)
 
     return calls, {
         "total": total,
@@ -3956,69 +4017,12 @@ def cs_cross(
                     )
                 return json.dumps(response, indent=2)
 
-            node_by_id: dict[str, dict | None] = {
-                matching_starts[0]["id"]: matching_starts[0],
-            }
-            node_meta: dict[str, dict] = {}
-            parsed_start_meta = matching_starts[0].get("_metadata_parsed")
-            if parsed_start_meta is not None:
-                node_meta[matching_starts[0]["id"]] = parsed_start_meta
-
-            def _metadata_for_node(node_id: str) -> dict:
-                meta = node_meta.get(node_id)
-                if meta is None:
-                    row = _node_for_id(conn, node_id, node_by_id)
-                    meta = _load_metadata(row.get("metadata") if row else None)
-                    node_meta[node_id] = meta
-                return meta
-
-            start_id = matching_starts[0]["id"]
-
-            reachable = {start_id}
-            queue = [start_id]
-            pos = 0
-            while pos < len(queue):
-                current = queue[pos]
-                pos += 1
-                for row in _iter_reachable_traversal_targets(conn, current):
-                    target_id = row["target"]
-                    if target_id in reachable:
-                        continue
-                    target_node = _node_for_id(conn, target_id, node_by_id)
-                    if not target_node:
-                        continue
-                    if exclude_research and not _include_metadata(_metadata_for_node(target_id), exclude_research):
-                        continue
-                    reachable.add(target_id)
-                    queue.append(target_id)
-
-            shown_calls = []
-            total = 0
-            for source_id in sorted(reachable):
-                for row in _iter_trust_boundary_call_edges_from_source(conn, source_id):
-                    attrs = _load_metadata(row["attributes"])
-                    if not _is_trust_boundary_call(attrs):
-                        continue
-                    target = _node_for_id(conn, row["target"], node_by_id)
-                    if target and exclude_research and not _include_metadata(_metadata_for_node(row["target"]), exclude_research):
-                        continue
-                    source_row = _node_for_id(conn, row["source"], node_by_id)
-                    source_meta = _metadata_for_node(row["source"])
-                    target_meta = _metadata_for_node(row["target"]) if target else {}
-                    total = _append_capped(shown_calls, {
-                        "source": {
-                            "label": source_row["label"],
-                            "file": source_row["file"],
-                            "source_context": source_meta.get("source_context", "production"),
-                        } if source_row else {"label": row["source"]},
-                        "target": {
-                            "label": target["label"],
-                            "file": target["file"],
-                            "source_context": target_meta.get("source_context", "production"),
-                        } if target else {"label": row["target"]},
-                        "attributes": attrs,
-                    }, total, max_results)
-            truncated = len(shown_calls) < total
+            shown_calls, call_summary = _collect_cross_entries(
+                _iter_reachable_cross_entries(conn, matching_starts[0], exclude_research),
+                max_results,
+            )
+            total = call_summary["total"]
+            truncated = call_summary["truncated"]
         else:
             shown_calls, call_summary = _collect_cross_entries(
                 _iter_cross_call_rows(conn, exclude_research),
@@ -4088,30 +4092,71 @@ def cs_cross_summary(
 
     db_path = _resolve_db(db)
     try:
-        if from_func:
-            cross_result = json.loads(cs_cross(
-                db=db_path,
-                from_func=from_func,
-                max_results=0,
-                max_start_candidates=max_start_candidates,
-                exclude_research=exclude_research,
-                timeout_seconds=timeout_seconds,
-            ))
-            if isinstance(cross_result, dict) and "error" in cross_result:
-                cross_result["tool"] = "cs_cross_summary"
-                return json.dumps(cross_result, indent=2)
-            entries = cross_result.get("calls", []) if isinstance(cross_result, dict) else cross_result
-            summary = _summarize_cross_entries(entries, top, max_counter_items)
-        else:
-            conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
-            try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+        try:
+            if from_func:
+                matching_starts, matching_starts_total, matched_before_scope = _find_function_rows_capped(
+                    conn,
+                    from_func,
+                    exclude_research,
+                    max_start_candidates,
+                )
+                if not matched_before_scope:
+                    return json.dumps({
+                        "error": f"No function found matching '{from_func}'",
+                        "tool": "cs_cross_summary",
+                    })
+
+                if not matching_starts:
+                    return json.dumps({
+                        "error": f"No production function found matching '{from_func}'",
+                        "tool": "cs_cross_summary",
+                    })
+                if matching_starts_total > 1:
+                    candidates = []
+                    for node in matching_starts:
+                        meta = node.pop("_metadata_parsed", None)
+                        if meta is None:
+                            meta = _load_metadata(node.get("metadata"))
+                        candidates.append({
+                            "id": node["id"],
+                            "label": node["label"],
+                            "file": node["file"],
+                            "source_context": meta.get("source_context", "production"),
+                        })
+                    candidate_summary = _section_summary(matching_starts_total, len(candidates))
+                    response = {
+                        "error": (
+                            f"Ambiguous from_func '{from_func}' matched {matching_starts_total} functions. "
+                            "Use a more qualified function name."
+                        ),
+                        "tool": "cs_cross_summary",
+                        "from_func": from_func,
+                        "query_scope": "production_only" if exclude_research else "all_sources",
+                        "max_start_candidates": max_start_candidates,
+                        "start_candidates": candidates,
+                        "start_candidate_summary": candidate_summary,
+                    }
+                    if candidate_summary["truncated"]:
+                        response["_warning"] = (
+                            "cs_cross_summary start candidate list was capped. Increase max_start_candidates "
+                            "or set max_start_candidates=0 for all candidates."
+                        )
+                    return json.dumps(response, indent=2)
+
+                summary = _summarize_cross_entries(
+                    _iter_reachable_cross_entries(conn, matching_starts[0], exclude_research),
+                    top,
+                    max_counter_items,
+                )
+            else:
                 summary = _summarize_cross_entries(
                     _iter_cross_call_rows(conn, exclude_research),
                     top,
                     max_counter_items,
                 )
-            finally:
-                conn.close()
+        finally:
+            conn.close()
 
         summary.update({
             "tool": "cs_cross_summary",
