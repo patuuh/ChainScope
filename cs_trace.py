@@ -19,6 +19,11 @@ def trace(
         "--max-callers-per-accessor",
         help="Max callers per reader/writer with --show-callers (0 = all)",
     ),
+    max_accessors_per_relation: int = typer.Option(
+        100,
+        "--max-accessors-per-relation",
+        help="Max writers and readers to return independently (0 = all)",
+    ),
     include_metadata: bool = typer.Option(False, "--include-metadata", help="Include full parsed variable metadata in JSON results"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
@@ -31,6 +36,7 @@ def trace(
         max_matches=max_matches,
         max_candidates=max_candidates,
         max_callers_per_accessor=max_callers_per_accessor,
+        max_accessors_per_relation=max_accessors_per_relation,
         include_metadata=include_metadata,
     ))
 
@@ -57,6 +63,9 @@ def trace(
     typer.echo(f"  Type: {var_node.get('signature', 'unknown')}")
 
     typer.echo(f"\n  Writers ({len(writers)}):")
+    if data.get("writers_summary", {}).get("truncated"):
+        summary = data["writers_summary"]
+        typer.echo(f"    showing {summary['shown']}/{summary['total']} writers")
     for w in writers:
         typer.echo(
             f"    {w['label']} ({w['file']}) [{w.get('visibility', '')}] <{w.get('source_context', 'production')}>"
@@ -71,6 +80,9 @@ def trace(
                 )
 
     typer.echo(f"\n  Readers ({len(readers)}):")
+    if data.get("readers_summary", {}).get("truncated"):
+        summary = data["readers_summary"]
+        typer.echo(f"    showing {summary['shown']}/{summary['total']} readers")
     for r in readers:
         typer.echo(
             f"    {r['label']} ({r['file']}) [{r.get('visibility', '')}] <{r.get('source_context', 'production')}>"

@@ -3729,6 +3729,62 @@ class TestIndexing:
         assert uncapped_writer["callers_summary"] == {"total": 5, "shown": 5, "truncated": False}
         assert "caller_truncated" not in uncapped
 
+    def test_trace_caps_accessor_lists_for_llm_context(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        state_id = "Vault.sol::Vault.total"
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        for i in range(8):
+            writer_id = f"Writer{i:02d}.sol::Writer{i:02d}.set(uint256)"
+            db.insert_node(
+                id=writer_id,
+                label=f"set{i:02d}",
+                type="function",
+                visibility="external",
+                file=f"Writer{i:02d}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+            db.insert_edge(writer_id, state_id, "writes_state")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        capped = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            max_accessors_per_relation=3,
+        ))
+        uncapped = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            max_accessors_per_relation=0,
+        ))
+
+        assert capped["writers_summary"] == {"total": 8, "shown": 3, "truncated": True}
+        assert capped["readers_summary"] == {"total": 0, "shown": 0, "truncated": False}
+        assert capped["accessor_truncated"] is True
+        assert "max_accessors_per_relation=0" in capped["_warnings"][0]
+        assert capped["max_accessors_per_relation"] == 3
+        assert [writer["label"] for writer in capped["writers"]] == ["set00", "set01", "set02"]
+        assert len(uncapped["writers"]) == 8
+        assert uncapped["writers_summary"] == {"total": 8, "shown": 8, "truncated": False}
+        assert "accessor_truncated" not in uncapped
+        assert len(parsed) == 13
+
     def test_trace_streams_accessor_and_caller_rows(self, tmp_db, monkeypatch):
         import mcp_server
 

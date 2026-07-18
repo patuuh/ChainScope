@@ -1195,7 +1195,7 @@ def cs_help() -> str:
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
-            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
+            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink; full sink metadata is opt-in with include_metadata.",
@@ -3620,6 +3620,7 @@ def cs_trace(
     max_matches: int = 20,
     max_candidates: int = 50,
     max_callers_per_accessor: int = 20,
+    max_accessors_per_relation: int = 100,
     include_metadata: bool = False,
 ) -> str:
     """Trace all functions that read or write a state variable.
@@ -3636,6 +3637,7 @@ def cs_trace(
         max_matches: Maximum matching state variables to trace fully (0 disables)
         max_candidates: Maximum ambiguous variable candidates to return (0 disables)
         max_callers_per_accessor: Maximum callers attached to each reader/writer when show_callers is true (0 disables)
+        max_accessors_per_relation: Maximum writers and readers returned independently (0 disables)
         include_metadata: Include full parsed state-variable metadata
     """
     if max_matches < 0:
@@ -3644,6 +3646,8 @@ def cs_trace(
         max_candidates = 0
     if max_callers_per_accessor < 0:
         max_callers_per_accessor = 0
+    if max_accessors_per_relation < 0:
+        max_accessors_per_relation = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3706,22 +3710,60 @@ def cs_trace(
                 "source_context": item["source_context"],
             }
 
-        def _accessors(var_id: str, relation: str) -> list[dict]:
-            accessors = conn.execute("""
+        def _accessor_rows(var_id: str, relation: str):
+            return conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start, n.line_end, n.metadata
                 FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = ?
                 ORDER BY n.file, n.line_start, n.id
             """, (var_id, relation))
-            results = []
-            for row in accessors:
-                item = dict(row)
+
+        def _accessor_item(row) -> dict | None:
+            item = dict(row)
+            if exclude_research:
                 meta = _load_metadata(item.pop("metadata", None))
                 if not _include_metadata(meta, exclude_research):
-                    continue
+                    return None
                 item["source_context"] = meta.get("source_context", "production")
-                results.append(item)
-            return results
+            else:
+                item["_metadata_raw"] = item.pop("metadata", None)
+            return item
+
+        def _finalize_accessor_items(items: list[dict]) -> list[dict]:
+            for item in items:
+                if "source_context" not in item:
+                    meta = _load_metadata(item.pop("_metadata_raw", None))
+                    item["source_context"] = meta.get("source_context", "production")
+                else:
+                    item.pop("_metadata_raw", None)
+            return items
+
+        def _collect_accessors(relation: str) -> tuple[list[dict], dict]:
+            retained = []
+            seen: set[str] = set()
+            total = 0
+            for variable in variables:
+                for row in _accessor_rows(variable["id"], relation):
+                    accessor_id = row["id"]
+                    if accessor_id in seen:
+                        continue
+                    item = _accessor_item(row)
+                    if item is None:
+                        continue
+                    seen.add(accessor_id)
+                    total += 1
+                    sort_key = (item["file"] or "", item.get("line_start") or 0, item["id"])
+                    if max_accessors_per_relation == 0:
+                        retained.append((sort_key, item))
+                    else:
+                        _keep_sorted_result(
+                            retained,
+                            item,
+                            sort_key,
+                            max_accessors_per_relation,
+                        )
+            shown = _sorted_results(retained)
+            return _finalize_accessor_items(shown), _section_summary(total, len(shown))
 
         def _callers(node_id: str) -> tuple[list[dict], dict]:
             rows = conn.execute("""
@@ -3763,16 +3805,8 @@ def cs_trace(
                     caller.pop("_metadata_raw", None)
             return shown, summary
 
-        writers_by_id: dict[str, dict] = {}
-        readers_by_id: dict[str, dict] = {}
-        for variable in variables:
-            for item in _accessors(variable["id"], "writes_state"):
-                writers_by_id[item["id"]] = item
-            for item in _accessors(variable["id"], "reads_state"):
-                readers_by_id[item["id"]] = item
-
-        writers = list(writers_by_id.values())
-        readers = list(readers_by_id.values())
+        writers, writers_summary = _collect_accessors("writes_state")
+        readers, readers_summary = _collect_accessors("reads_state")
 
         if show_callers:
             for acc in writers + readers:
@@ -3790,11 +3824,20 @@ def cs_trace(
             "max_matches": max_matches,
             "max_candidates": max_candidates,
             "max_callers_per_accessor": max_callers_per_accessor,
+            "max_accessors_per_relation": max_accessors_per_relation,
             "include_metadata": include_metadata,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "writers": writers,
             "readers": readers,
+            "writers_summary": writers_summary,
+            "readers_summary": readers_summary,
         }
+        accessor_truncated = writers_summary["truncated"] or readers_summary["truncated"]
+        if accessor_truncated:
+            response["accessor_truncated"] = True
+            response.setdefault("_warnings", []).append(
+                "Some cs_trace accessor lists were capped. Set max_accessors_per_relation=0 for exhaustive reader/writer output."
+            )
         caller_truncated = any(
             accessor.get("callers_summary", {}).get("truncated")
             for accessor in writers + readers

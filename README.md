@@ -249,9 +249,11 @@ The same rule applies to broad `cs_trace` variable queries. Names like
 `total`, `owner`, or `balance` are capped by default and return compact
 candidates when ambiguous. `max_matches` caps fully traced variables and
 `max_candidates` caps the candidate list; set either value to `0` only for
-exhaustive trace output. When using `show_callers`, caller lists are capped by
-`max_callers_per_accessor`. Full parsed variable metadata is omitted by default;
-set `include_metadata=true` only when that raw metadata is needed.
+exhaustive trace output. Writer and reader lists are capped independently by
+`max_accessors_per_relation`; set it to `0` only when exhaustive accessor output
+is intentional. When using `show_callers`, caller lists are capped by
+`max_callers_per_accessor`. Full parsed variable metadata is omitted by
+default; set `include_metadata=true` only when that raw metadata is needed.
 
 `cs_summary --attack-surface` is also a bounded overview. Its `_summary`
 reports the total entry points, how many were shown, and whether the list was
@@ -319,6 +321,7 @@ when the raw sink metadata is needed. Set `max_results=0` or
 - `python cs_trace.py ...`
 - `python cs_trace.py --max-matches 0 ...`
 - `python cs_trace.py --max-candidates 0 ...`
+- `python cs_trace.py --max-accessors-per-relation 0 ...`
 - `python cs_trace.py --show-callers --max-callers-per-accessor 0 ...`
 - `python cs_trace.py --include-metadata --json ...`
 - `python cs_cross.py --summary ...`
@@ -474,4 +477,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`503 passed`
+`504 passed`
