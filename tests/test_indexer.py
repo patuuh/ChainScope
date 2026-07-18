@@ -1604,6 +1604,60 @@ class TestIndexing:
         assert len(uncapped_unsafe["command_execution"]) == 5
         assert uncapped_unsafe["_summary"]["truncated"] is False
 
+    def test_scanners_ignore_empty_metadata_findings(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for suffix, value in (
+            ("empty", []),
+            ("false", False),
+            ("hit", [{"line": 3}]),
+        ):
+            db.insert_node(
+                id=f"{suffix}/Vault.sol::Vault.checkDeadline(uint256)",
+                label=f"checkDeadline_{suffix}",
+                type="function",
+                visibility="external",
+                file=f"{suffix}/Vault.sol",
+                line_start=1,
+                metadata=json.dumps({
+                    "timestamp_dependence": value,
+                    "source_context": "production",
+                }),
+            )
+            db.insert_node(
+                id=f"{suffix}/ops.py::run_cmd",
+                label=f"run_cmd_{suffix}",
+                type="function",
+                file=f"{suffix}/ops.py",
+                line_start=1,
+                metadata=json.dumps({
+                    "command_injection_risk": value,
+                    "source_context": "production",
+                }),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        defi = json.loads(mcp_server.cs_defi(db=tmp_db, category="timestamp", max_per_category=1))
+        unsafe = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="command", max_per_category=1))
+
+        assert defi["_summary"]["category_totals"] == {"timestamp_dependence": 1}
+        assert defi["_summary"]["shown_findings"] == 1
+        assert [item["function"] for item in defi["timestamp_dependence"]] == ["checkDeadline_hit"]
+
+        assert unsafe["_summary"]["category_totals"] == {"command_execution": 1}
+        assert unsafe["_summary"]["shown_findings"] == 1
+        assert [item["function"] for item in unsafe["command_execution"]] == ["run_cmd_hit"]
+        assert len(parsed) == 6
+
     def test_scanners_index_only_capped_category_rows(self, tmp_db, monkeypatch):
         import mcp_server
 

@@ -318,27 +318,41 @@ _KNOWN_SOURCE_CONTEXT_FRAGMENTS = tuple(
 
 
 _JSON_DECODER = json.JSONDecoder()
+_MISSING_METADATA_VALUE = object()
 
 
-def _metadata_string_value(raw, key: str) -> str | None:
+def _metadata_raw_value(raw, key: str):
     if not isinstance(raw, str) or not key:
-        return None
+        return _MISSING_METADATA_VALUE
     needle = json.dumps(key)
     pos = raw.find(needle)
     while pos >= 0:
         colon = raw.find(":", pos + len(needle))
         if colon < 0:
-            return None
+            return _MISSING_METADATA_VALUE
         value_pos = colon + 1
         while value_pos < len(raw) and raw[value_pos] in " \t\r\n":
             value_pos += 1
         try:
             value, _end = _JSON_DECODER.raw_decode(raw[value_pos:])
         except ValueError:
-            return None
-        if isinstance(value, str):
-            return value
+            return _MISSING_METADATA_VALUE
+        return value
         pos = raw.find(needle, pos + len(needle))
+    return _MISSING_METADATA_VALUE
+
+
+def _metadata_raw_value_truthy(raw, key: str) -> bool:
+    value = _metadata_raw_value(raw, key)
+    if value is _MISSING_METADATA_VALUE:
+        return bool(_load_metadata(raw).get(key))
+    return bool(value)
+
+
+def _metadata_string_value(raw, key: str) -> str | None:
+    value = _metadata_raw_value(raw, key)
+    if isinstance(value, str):
+        return value
     return None
 
 
@@ -823,7 +837,17 @@ def _metadata_rows_by_key(
             if max_per_key == 0 or len(indexed[key]) < max_per_key
         ]
         meta = _load_metadata(raw) if retained_keys else None
-        for key in matched:
+
+        def _key_active(key: str) -> bool:
+            if meta is not None:
+                return bool(meta.get(key))
+            return _metadata_raw_value_truthy(raw, key)
+
+        active_keys = [
+            key for key in matched
+            if _key_active(key)
+        ]
+        for key in active_keys:
             totals[key] += 1
             if meta is not None and (max_per_key == 0 or len(indexed[key]) < max_per_key):
                 indexed[key].append((row, meta))
