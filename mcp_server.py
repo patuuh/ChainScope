@@ -3406,16 +3406,23 @@ def cs_paths(
                     if node_id in seen:
                         continue
                     seen.add(node_id)
-                    reads = conn.execute(
-                        "SELECT target FROM edges WHERE source=? AND relation='reads_state'",
-                        (node_id,)
+                    access_rows = conn.execute(
+                        """
+                        SELECT e.relation, e.target
+                        FROM edges AS e INDEXED BY idx_edges_source_relation
+                        WHERE e.source = ? AND e.relation IN ('reads_state', 'writes_state')
+                        ORDER BY e.relation, e.target
+                        """,
+                        (node_id,),
                     )
-                    writes = conn.execute(
-                        "SELECT target FROM edges WHERE source=? AND relation='writes_state'",
-                        (node_id,)
-                    )
-                    read_labels = [r[0].split("::")[-1] for r in reads]
-                    write_labels = [w[0].split("::")[-1] for w in writes]
+                    read_labels = []
+                    write_labels = []
+                    for row in access_rows:
+                        label = row["target"].split("::")[-1]
+                        if row["relation"] == "reads_state":
+                            read_labels.append(label)
+                        else:
+                            write_labels.append(label)
                     if read_labels or write_labels:
                         result["state_access"][_label_for_node(node_id)] = {
                             "reads": read_labels,

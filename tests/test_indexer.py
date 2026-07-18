@@ -4015,6 +4015,7 @@ class TestIndexing:
         db.insert_edge(finish_id, state_id, "writes_state")
 
         real_open = mcp_server._open_query_connection
+        statements = []
 
         class StreamingRows:
             def __init__(self, rows):
@@ -4032,11 +4033,15 @@ class TestIndexing:
 
             def execute(self, sql, *args, **kwargs):
                 normalized = " ".join(sql.split())
+                statements.append(normalized)
+                if normalized == "SELECT target FROM edges WHERE source=? AND relation='reads_state'":
+                    raise AssertionError("cs_paths show_state should not issue a separate reads query")
+                if normalized == "SELECT target FROM edges WHERE source=? AND relation='writes_state'":
+                    raise AssertionError("cs_paths show_state should not issue a separate writes query")
                 rows = self._conn.execute(sql, *args, **kwargs)
                 if (
                     "e.relation = 'guards'" in normalized
-                    or "relation='reads_state'" in normalized
-                    or "relation='writes_state'" in normalized
+                    or "e.relation IN ('reads_state', 'writes_state')" in normalized
                 ):
                     return StreamingRows(rows)
                 return rows
@@ -4061,6 +4066,8 @@ class TestIndexing:
         assert paths["guards"] == {"start": ["onlyOwner"]}
         assert paths["state_access"]["start"]["reads"] == ["Vault.total"]
         assert paths["state_access"]["finish"]["writes"] == ["Vault.total"]
+        assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
+        assert any("e.relation IN ('reads_state', 'writes_state')" in sql for sql in statements)
 
     def test_paths_show_state_omits_empty_state_access_entries(self, tmp_db):
         import mcp_server
