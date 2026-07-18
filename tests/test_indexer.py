@@ -4,6 +4,7 @@ import pytest
 from pathlib import Path
 from core.indexer import Indexer
 from core.indexer import classify_source_context
+from core.indexer import should_index_source_file
 from core.schema import GraphDB
 
 
@@ -118,17 +119,28 @@ class TestIndexing:
         assert classify_source_context("contracts/deploy/Foo.s.sol") == "script"
         assert classify_source_context("contracts/deployments/mainnet/Foo.sol") == "script"
         assert classify_source_context("broadcast/Deploy.s.sol/1/run-latest.json") == "script"
+        assert classify_source_context("ts-src/utils/deploy-circle-fiat-token.ts") == "script"
+        assert classify_source_context("ts-src/utils/deploy-usdt.ts") == "script"
+        assert classify_source_context("ts-src/utils/deployer.ts") == "production"
+        assert classify_source_context("src/DeploymentRegistry.sol") == "production"
+        assert should_index_source_file("ts-src/utils/deploy-usdt.ts") is False
+        assert should_index_source_file("ts-src/utils/deploy-usdt.ts", include_research=True) is True
 
     def test_index_skips_deploy_dirs_unless_research_enabled(self, tmp_path, tmp_db):
         repo = tmp_path / "repo"
         repo.mkdir()
         deploy = repo / "deploy"
         deploy.mkdir()
+        ts_utils = repo / "ts-src" / "utils"
+        ts_utils.mkdir(parents=True)
         (repo / "Vault.sol").write_text(
             "pragma solidity ^0.8.0; contract Vault { uint256 public total; function set(uint256 x) external { total = x; } }"
         )
         (deploy / "Verifier.sol").write_text(
             "pragma solidity ^0.8.0; contract Verifier { uint256 public total; function execute(uint256 x) external { total = x; } }"
+        )
+        (ts_utils / "deploy-usdt.ts").write_text(
+            "export const deployUSDTOFT = async () => { await token.transfer(user, amount); }"
         )
 
         Indexer(str(repo), include_research=False).index(tmp_db)
@@ -138,6 +150,7 @@ class TestIndexing:
         conn.close()
         assert "set" in labels
         assert "execute" not in labels
+        assert "deployUSDTOFT" not in labels
 
         Indexer(str(repo), include_research=True).index(tmp_db)
         db = GraphDB(tmp_db)
@@ -147,6 +160,7 @@ class TestIndexing:
         contexts = {row["label"]: json.loads(row["metadata"] or "{}").get("source_context", "production") for row in rows}
         assert contexts["set"] == "production"
         assert contexts["execute"] == "script"
+        assert contexts["deployUSDTOFT"] == "script"
 
     def test_index_solidity_repo(self, sol_repo, tmp_db):
         indexer = Indexer(sol_repo)

@@ -85,6 +85,21 @@ RESEARCH_CONTEXT_ALIASES = {
 }
 
 
+SCRIPT_FILE_EXTENSIONS = {".ts", ".tsx", ".js", ".jsx", ".py"}
+DEPLOYMENT_FILE_TOKENS = {"deploy", "deploys", "deployment", "deployments"}
+
+
+def _classify_research_filename(path: Path) -> str:
+    lower = path.name.lower()
+    if path.suffix.lower() == ".sol" and lower.endswith(".s.sol"):
+        return "script"
+    if path.suffix.lower() in SCRIPT_FILE_EXTENSIONS:
+        stem_tokens = _name_tokens(path.stem)
+        if stem_tokens & DEPLOYMENT_FILE_TOKENS:
+            return "script"
+    return "production"
+
+
 def classify_source_context(file_path: str) -> str:
     """Classify whether a file comes from production or research context."""
     lower = file_path.lower().replace("\\", "/")
@@ -92,9 +107,7 @@ def classify_source_context(file_path: str) -> str:
     for part in parts[:-1]:
         if part in RESEARCH_DIR_NAMES:
             return RESEARCH_CONTEXT_ALIASES.get(part, part)
-    if lower.endswith(".s.sol"):
-        return "script"
-    return "production"
+    return _classify_research_filename(Path(lower))
 
 # File extensions per chain
 CHAIN_EXTENSIONS = {
@@ -236,6 +249,13 @@ def classify_source_noise(file_path: str, include_research: bool = False) -> str
         if should_skip_dir_name(part, include_research=include_research):
             return f"ignored_dir:{part}"
 
+    if ext == ".sol" and lower.endswith(".s.sol") and not include_research:
+        return "foundry_test_or_script"
+
+    source_context = _classify_research_filename(path)
+    if source_context != "production" and not include_research:
+        return f"research_file:{source_context}"
+
     # Test/spec/integration filenames that often live outside canonical test dirs.
     test_suffixes = (
         "_test.go", "_test.rs", "_tests.rs", "_test.py", "_tests.py",
@@ -259,8 +279,6 @@ def classify_source_noise(file_path: str, include_research: bool = False) -> str
     )):
         return "test_file"
     if ext == ".sol" and lower.endswith(".t.sol"):
-        return "foundry_test_or_script"
-    if ext == ".sol" and lower.endswith(".s.sol") and not include_research:
         return "foundry_test_or_script"
     if ext == ".sol" and (
         lower.startswith(("test", "mock"))
