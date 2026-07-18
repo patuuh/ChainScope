@@ -262,7 +262,9 @@ set `max_per_category=0` only when an exhaustive category dump is intentional.
 
 `cs_audit` is a top-N overview. Its `_summary` reports full section totals and
 which sections were truncated so agents can drill down with specialized tools
-instead of treating the overview as exhaustive.
+instead of treating the overview as exhaustive. Raw attack-surface metadata is
+omitted by default for MCP context; set `include_metadata=true` only when that
+raw JSON is needed.
 
 Broad `cs_state` output is also capped by entity groups, transitions per entity,
 and warnings. Prefer `entity=` when investigating one state machine, or set the
@@ -470,4 +472,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`481 passed`
+`482 passed`

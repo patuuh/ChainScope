@@ -443,6 +443,41 @@ class TestIndexing:
         assert [item["function"] for item in audit["critical_hotspots"]] == ["set0", "set1"]
         assert max(heap_sizes) == 2
 
+    def test_audit_omits_attack_surface_metadata_by_default(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        func_id = "Vault.sol::Vault.set(uint256)"
+        state_id = "Vault.sol::Vault.total"
+        db.insert_node(
+            id=func_id,
+            label="set",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            signature="function set(uint256 x) external",
+            metadata=json.dumps({
+                "source_context": "production",
+                "large": ["x"] * 50,
+            }),
+        )
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+        )
+        db.insert_edge(func_id, state_id, "writes_state")
+
+        compact = json.loads(mcp_server.cs_audit(db=tmp_db, top=1))
+        detailed = json.loads(mcp_server.cs_audit(db=tmp_db, top=1, include_metadata=True))
+
+        assert compact["_summary"]["include_metadata"] is False
+        assert compact["attack_surface"][0]["label"] == "set"
+        assert "metadata" not in compact["attack_surface"][0]
+        assert detailed["_summary"]["include_metadata"] is True
+        assert json.loads(detailed["attack_surface"][0]["metadata"])["large"] == ["x"] * 50
+
     def test_audit_retains_only_top_append_sections(self, tmp_db, monkeypatch):
         import mcp_server
 

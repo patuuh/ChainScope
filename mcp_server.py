@@ -915,7 +915,7 @@ def cs_help() -> str:
         ],
         "core_tools": {
             "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths.",
-            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections.",
+            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata is opt-in with include_metadata.",
             "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build.",
             "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
         },
@@ -1318,6 +1318,7 @@ def cs_audit(
     top: int = 15,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
+    include_metadata: bool = False,
 ) -> str:
     """Generate a comprehensive security audit report in one call.
 
@@ -1333,6 +1334,7 @@ def cs_audit(
         top: Max findings per category (default: 15)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+        include_metadata: Include raw metadata JSON in attack-surface rows
     """
     if top < 0:
         top = 0
@@ -1566,15 +1568,23 @@ def cs_audit(
             reachable = _reachable(row["id"])
             write_count = sum(write_map.get(rid, 0) for rid in reachable)
             attack_surface_total += 1
-            _keep_ranked_result(attack_surface_heap, {
+            attack_entry = {
                 "id": row["id"],
                 "label": row["label"],
                 "file": row["file"],
                 "signature": row["signature"],
                 "reachable_count": len(reachable),
                 "state_writes": write_count,
-                "metadata": row["metadata"],
-            }, write_count, attack_surface_sequence, top)
+            }
+            if include_metadata:
+                attack_entry["metadata"] = row["metadata"]
+            _keep_ranked_result(
+                attack_surface_heap,
+                attack_entry,
+                write_count,
+                attack_surface_sequence,
+                top,
+            )
             attack_surface_sequence += 1
         if attack_surface_total:
             report["attack_surface"] = _ranked_results(attack_surface_heap)
@@ -1932,6 +1942,7 @@ def cs_audit(
         report["_summary"] = {
             "top": top,
             "query_scope": report["query_scope"],
+            "include_metadata": include_metadata,
             "sections": sections,
             "truncated_sections": truncated_sections,
             "truncated": bool(truncated_sections),
