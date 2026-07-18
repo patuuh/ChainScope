@@ -2585,7 +2585,71 @@ class TestIndexing:
 
         assert hotspots["_summary"]["total_scored"] == 400
         assert hotspots["_summary"]["top_shown"] == 25
-        assert len(statements) == 4
+        graph_statements = [
+            sql for sql in statements
+            if "sqlite_master" not in sql
+        ]
+        assert len(graph_statements) == 4
+        assert any("idx_edges_relation_target" in sql for sql in statements)
+        assert any("idx_edges_source_relation" in sql and "EXISTS" in sql for sql in statements)
+
+    def test_hotspots_guard_counts_only_writable_entries(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        rows = (
+            ("Vault.sol::Vault.writeEntry()", "writeEntry", "external", True),
+            ("Vault.sol::Vault.readEntry()", "readEntry", "external", False),
+            ("Vault.sol::Vault.writeInternal()", "writeInternal", "internal", True),
+        )
+        for func_id, label, visibility, writes in rows:
+            db.insert_node(
+                id=func_id,
+                label=label,
+                type="function",
+                visibility=visibility,
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=f"Vault.sol::Vault.onlyOwner_{label}",
+                label=f"onlyOwner_{label}",
+                type="modifier",
+                file="Vault.sol",
+            )
+            db.insert_edge(f"Vault.sol::Vault.onlyOwner_{label}", func_id, "guards")
+            if writes:
+                db.insert_edge(func_id, f"Vault.sol::Vault.total_{label}", "writes_state")
+
+        conn = db.get_connection()
+        try:
+            counts = mcp_server._guard_counts_for_writable_entries(conn)
+        finally:
+            conn.close()
+
+        assert counts == {"Vault.sol::Vault.writeEntry()": 1}
+
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, wrapped):
+                self._wrapped = wrapped
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(sql)
+                return self._wrapped.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._wrapped.close()
+
+        monkeypatch.setattr(mcp_server, "_sqlite_index_exists", lambda conn, name: False)
+        conn = CountingConnection(db.get_connection())
+        try:
+            fallback_counts = mcp_server._guard_counts_for_writable_entries(conn)
+        finally:
+            conn.close()
+
+        assert fallback_counts == counts
+        assert all("INDEXED BY" not in sql for sql in statements)
 
     def test_hotspots_streams_aggregate_rows(self, tmp_db, monkeypatch):
         import mcp_server

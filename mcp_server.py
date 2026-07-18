@@ -349,6 +349,37 @@ def _external_call_counts(conn, include_cpi: bool = False) -> dict[str, int]:
     return counts
 
 
+def _guard_counts_for_writable_entries(conn) -> dict[str, int]:
+    """Count guards only for writable public/external functions."""
+    guard_index = (
+        " INDEXED BY idx_edges_relation_target"
+        if _sqlite_index_exists(conn, "idx_edges_relation_target")
+        else ""
+    )
+    write_index = (
+        " INDEXED BY idx_edges_source_relation"
+        if _sqlite_index_exists(conn, "idx_edges_source_relation")
+        else ""
+    )
+    counts: dict[str, int] = {}
+    for row in conn.execute(f"""
+        SELECT g.target, COUNT(*) AS cnt
+        FROM edges AS g{guard_index}
+        JOIN nodes AS n ON g.target = n.id
+        WHERE g.relation = 'guards'
+          AND n.type = 'function'
+          AND n.visibility IN ('external', 'public')
+          AND EXISTS (
+            SELECT 1
+            FROM edges AS w{write_index}
+            WHERE w.source = g.target AND w.relation = 'writes_state'
+          )
+        GROUP BY g.target
+    """):
+        counts[row["target"]] = row["cnt"]
+    return counts
+
+
 def _iter_cross_call_rows(conn, exclude_research: bool):
     """Yield true trust-boundary call rows for broad cross-boundary scans."""
     rows = conn.execute("""
@@ -547,6 +578,14 @@ def _section_summary(total: int, shown: int) -> dict:
 
 def _single_count(conn, sql: str, params: tuple = ()) -> int:
     return conn.execute(sql, params).fetchone()[0]
+
+
+def _sqlite_index_exists(conn, name: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?",
+        (name,),
+    ).fetchone()
+    return row is not None
 
 
 def _count_rows(conn, sql: str, key_column: str = "key") -> dict[str, int]:
@@ -2245,14 +2284,7 @@ def cs_hotspots(
             """):
             write_map[r["source"]] = r["cnt"]
         ext_call_map = _external_call_counts(conn)
-        guard_map = {}
-        for r in conn.execute("""
-                SELECT target, COUNT(*) as cnt
-                FROM edges
-                WHERE relation = 'guards'
-                GROUP BY target
-            """):
-            guard_map[r["target"]] = r["cnt"]
+        guard_map = _guard_counts_for_writable_entries(conn)
 
         total_scored = 0
         critical = 0
