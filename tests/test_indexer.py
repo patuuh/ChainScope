@@ -3108,6 +3108,90 @@ class TestIndexing:
         assert len(result["sinks"][0]["callers"]) == 2
         assert len(parsed) == 3
 
+    def test_sinks_exclude_research_uses_raw_context_filter(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        prod_sink_id = "contracts/Vault.sol::Vault.transfer()"
+        prod_sink_metadata = json.dumps({
+            "is_sink": True,
+            "sink_type": "fund_transfer",
+            "source_context": "production",
+            "large": ["x"] * 20,
+        })
+        db.insert_node(
+            id=prod_sink_id,
+            label="transfer",
+            type="function",
+            visibility="public",
+            file="contracts/Vault.sol",
+            metadata=prod_sink_metadata,
+        )
+        db.insert_node(
+            id="scripts/Vault.sol::Vault.transfer()",
+            label="scriptTransfer",
+            type="function",
+            visibility="public",
+            file="scripts/Vault.sol",
+            metadata=json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "script",
+                "large": ["x"] * 20,
+            }),
+        )
+        for i in range(8):
+            caller_id = f"contracts/Caller{i:02d}.sol::Caller{i:02d}.callTransfer()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callTransfer{i:02d}",
+                type="function",
+                visibility="external",
+                file=f"contracts/Caller{i:02d}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+            db.insert_edge(caller_id, prod_sink_id, "calls")
+        for i in range(8):
+            caller_id = f"scripts/Caller{i:02d}.sol::Caller{i:02d}.callTransfer()"
+            db.insert_node(
+                id=caller_id,
+                label=f"scriptCallTransfer{i:02d}",
+                type="function",
+                visibility="external",
+                file=f"scripts/Caller{i:02d}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({"source_context": "script", "large": ["x"] * 20}),
+            )
+            db.insert_edge(caller_id, prod_sink_id, "calls")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            exclude_research=True,
+            max_results=1,
+            max_callers_per_sink=3,
+        ))
+
+        sink = result["sinks"][0]
+        assert result["total"] == 1
+        assert sink["caller_summary"] == {"total": 8, "shown": 3, "truncated": True}
+        assert [caller["label"] for caller in sink["callers"]] == [
+            "callTransfer00",
+            "callTransfer01",
+            "callTransfer02",
+        ]
+        assert parsed == [prod_sink_metadata]
+
     def test_sinks_skips_untagged_caller_context_parses(self, tmp_db, monkeypatch):
         import mcp_server
 

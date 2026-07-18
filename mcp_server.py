@@ -3593,13 +3593,14 @@ def cs_sinks(
         total = 0
         by_type: dict[str, int] = {}
         for row in sink_rows:
-            meta = _load_metadata(row["metadata"])
+            raw_meta = row["metadata"]
+            if exclude_research and _is_research_metadata_raw(raw_meta):
+                continue
+            meta = _load_metadata(raw_meta)
             if not meta.get("is_sink"):
                 continue
             current_type = meta.get("sink_type", "unknown")
             if sink_type and current_type != sink_type:
-                continue
-            if not _include_metadata(meta, exclude_research):
                 continue
             by_type[current_type] = by_type.get(current_type, 0) + 1
             sink_entry = {
@@ -3642,10 +3643,8 @@ def cs_sinks(
                         caller = _node_for_id(conn, caller_id, node_map)
                         if not caller or caller.get("type") != "function":
                             continue
-                        caller_meta = None
                         if exclude_research:
-                            caller_meta = _load_metadata(caller.get("metadata"))
-                            if not _include_metadata(caller_meta, exclude_research):
+                            if _is_research_metadata_raw(caller.get("metadata")):
                                 continue
                         if external_only and caller.get("visibility") not in ("public", "external"):
                             continue
@@ -3660,8 +3659,6 @@ def cs_sinks(
                             "distance": distance + 1,
                             "_metadata_raw": caller.get("metadata"),
                         }
-                        if caller_meta is not None:
-                            caller_entry["source_context"] = caller_meta.get("source_context", "production")
                         callers_total += 1
                         sort_key = (
                             caller_entry["distance"],
