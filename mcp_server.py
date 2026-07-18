@@ -301,16 +301,6 @@ def _metadata_string_fragments(key: str, value: str) -> tuple[str, str]:
     return compact, spaced
 
 
-_KNOWN_SOURCE_CONTEXTS = (
-    "production",
-    "script",
-    "poc",
-    "fuzz",
-    "invariant",
-    "certora",
-    "echidna",
-)
-
 _JSON_DECODER = json.JSONDecoder()
 _MISSING_METADATA_VALUE = object()
 
@@ -971,45 +961,14 @@ def _sorted_count_mapping(counter: dict[str, int]) -> dict[str, int]:
 
 
 def _source_context_counts(conn, total_nodes: int) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    known_filters: list[str] = []
-    known_params: list[str] = []
-    select_parts = ["COUNT(*) AS explicit_total"]
-    for context in _KNOWN_SOURCE_CONTEXTS:
-        value_filter, value_params = _metadata_string_value_filter("source_context", context)
-        if not value_filter:
+    counts: dict[str, int] = {"production": total_nodes} if total_nodes else {}
+    for row in conn.execute("SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'"):
+        source_context = _metadata_string_value(row["metadata"], "source_context")
+        if source_context in (None, "", "production"):
             continue
-        condition = value_filter.removeprefix(" AND ")
-        select_parts.append(f"SUM(CASE WHEN {condition} THEN 1 ELSE 0 END) AS c{len(known_filters)}")
-        known_filters.append(condition)
-        known_params.extend(value_params)
-    aggregate = conn.execute(
-        "SELECT "
-        + ", ".join(select_parts)
-        + " FROM nodes WHERE metadata LIKE '%\"source_context\"%'",
-        tuple(known_params),
-    ).fetchone()
-    explicit_total = aggregate["explicit_total"] if aggregate else 0
-    known_total = 0
-    for index, context in enumerate(_KNOWN_SOURCE_CONTEXTS):
-        count = aggregate[f"c{index}"] if aggregate else 0
-        if count:
-            counts[context] = count
-            known_total += count
-
-    unknown_filter = ""
-    if known_filters and explicit_total > known_total:
-        unknown_filter = " AND NOT (" + " OR ".join(f"({part})" for part in known_filters) + ")"
-        for row in conn.execute(
-            f"SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'{unknown_filter}",
-            tuple(known_params),
-        ):
-            source_context = _metadata_source_context(row["metadata"])
-            counts[source_context] = counts.get(source_context, 0) + 1
-    implicit_production = total_nodes - explicit_total
-    if implicit_production > 0:
-        counts["production"] = counts.get("production", 0) + implicit_production
-    return counts
+        counts["production"] = counts.get("production", 0) - 1
+        counts[source_context] = counts.get(source_context, 0) + 1
+    return {key: value for key, value in counts.items() if value > 0}
 
 
 def _cap_items(items: list, max_items: int) -> tuple[list, dict]:

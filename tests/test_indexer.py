@@ -275,6 +275,14 @@ class TestIndexing:
             file="custom/Probe.sol",
             metadata=custom_metadata,
         )
+        db.insert_node(
+            id="Vault.sol::Vault.nestedContext()",
+            label="nestedContext",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"nested": {"source_context": "script"}, "large": ["x"] * 20}),
+        )
         for i in range(40):
             db.insert_node(
                 id=f"Vault.sol::Vault.helper{i}()",
@@ -313,16 +321,16 @@ class TestIndexing:
 
         summary = json.loads(mcp_server.cs_summary(db=tmp_db))
 
-        assert summary["nodes"] == 43
+        assert summary["nodes"] == 44
         assert summary["source_context_summary"] == {
-            "production": 41,
+            "production": 42,
             "script": 1,
             "custom": 1,
         }
         assert parsed == []
-        assert sum("SUM(CASE WHEN" in sql and "source_context" in sql for sql in statements) == 1
+        assert not any("SUM(CASE WHEN" in sql and "source_context" in sql for sql in statements)
         assert not any("SELECT COUNT(*) FROM nodes WHERE 1=1" in sql for sql in statements)
-        assert any("AND NOT" in sql and "SELECT metadata FROM nodes" in sql for sql in statements)
+        assert any("SELECT metadata FROM nodes WHERE metadata LIKE" in sql for sql in statements)
 
     def test_source_context_helpers_avoid_json_parse(self, monkeypatch):
         import mcp_server
