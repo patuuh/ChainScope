@@ -4124,13 +4124,11 @@ def cs_trace(
 
         def _accessor_item(row) -> dict | None:
             item = dict(row)
+            raw_meta = item.pop("metadata", None)
             if exclude_research:
-                meta = _load_metadata(item.pop("metadata", None))
-                if not _include_metadata(meta, exclude_research):
+                if _is_research_metadata_raw(raw_meta):
                     return None
-                item["source_context"] = meta.get("source_context", "production")
-            else:
-                item["_metadata_raw"] = item.pop("metadata", None)
+            item["_metadata_raw"] = raw_meta
             return item
 
         def _finalize_accessor_items(items: list[dict]) -> list[dict]:
@@ -4200,14 +4198,11 @@ def cs_trace(
             callers_total = 0
             for row in rows:
                 item = dict(row)
-                caller_meta = None
+                raw_meta = item.pop("metadata", None)
                 if exclude_research:
-                    caller_meta = _load_metadata(item.pop("metadata", None))
-                    if not _include_metadata(caller_meta, exclude_research):
+                    if _is_research_metadata_raw(raw_meta):
                         continue
-                    item["source_context"] = caller_meta.get("source_context", "production")
-                else:
-                    item["_metadata_raw"] = item.pop("metadata", None)
+                item["_metadata_raw"] = raw_meta
                 callers_total += 1
                 sort_key = (item["file"] or "", item["id"])
                 if max_callers_per_accessor == 0:

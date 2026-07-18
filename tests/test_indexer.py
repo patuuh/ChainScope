@@ -5115,6 +5115,87 @@ class TestIndexing:
         assert caller["source_context"] == "production"
         assert parsed == []
 
+    def test_trace_exclude_research_filters_accessors_without_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        state_id = "Vault.sol::Vault.total"
+        writer_id = "Vault.sol::Vault.set(uint256)"
+        script_writer_id = "scripts/Deploy.sol::Deploy.set(uint256)"
+        caller_id = "Caller.sol::Caller.callSet()"
+        script_caller_id = "scripts/Caller.sol::Caller.callSet()"
+        prod_metadata = json.dumps({"source_context": "production", "large": ["x"] * 20})
+        script_metadata = json.dumps({"source_context": "script", "large": ["x"] * 20})
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+            metadata=prod_metadata,
+        )
+        db.insert_node(
+            id=writer_id,
+            label="set",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=prod_metadata,
+        )
+        db.insert_node(
+            id=script_writer_id,
+            label="setScript",
+            type="function",
+            visibility="internal",
+            file="scripts/Deploy.sol",
+            metadata=script_metadata,
+        )
+        db.insert_node(
+            id=caller_id,
+            label="callSet",
+            type="function",
+            visibility="external",
+            file="Caller.sol",
+            metadata=prod_metadata,
+        )
+        db.insert_node(
+            id=script_caller_id,
+            label="callSetScript",
+            type="function",
+            visibility="external",
+            file="scripts/Caller.sol",
+            metadata=script_metadata,
+        )
+        db.insert_edge(writer_id, state_id, "writes_state")
+        db.insert_edge(script_writer_id, state_id, "writes_state")
+        db.insert_edge(caller_id, writer_id, "calls")
+        db.insert_edge(script_caller_id, writer_id, "calls")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        trace = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            exclude_research=True,
+            show_callers=True,
+            max_accessors_per_relation=0,
+            max_callers_per_accessor=0,
+        ))
+
+        assert [writer["label"] for writer in trace["writers"]] == ["set"]
+        assert trace["writers"][0]["source_context"] == "production"
+        assert [caller["label"] for caller in trace["writers"][0]["callers"]] == ["callSet"]
+        assert trace["writers"][0]["callers"][0]["source_context"] == "production"
+        assert trace["writers_summary"] == {"total": 1, "shown": 1, "truncated": False}
+        assert trace["writers"][0]["callers_summary"] == {"total": 1, "shown": 1, "truncated": False}
+        assert parsed == []
+
     def test_paths_filter_research_paths(self, tmp_path, tmp_db):
         import mcp_server
 
