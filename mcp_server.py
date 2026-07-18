@@ -2602,6 +2602,7 @@ def cs_sinks(
         ).fetchall()
 
         sinks = []
+        total = 0
         by_type: dict[str, int] = {}
         for row in sink_rows:
             meta = _load_metadata(row["metadata"])
@@ -2613,7 +2614,7 @@ def cs_sinks(
             if not _include_metadata(meta, exclude_research):
                 continue
             by_type[current_type] = by_type.get(current_type, 0) + 1
-            sinks.append({
+            total = _append_capped(sinks, {
                 "id": row["id"],
                 "label": row["label"],
                 "node_type": row["type"],
@@ -2625,10 +2626,10 @@ def cs_sinks(
                 "sink_type": current_type,
                 "source_context": meta.get("source_context", "production"),
                 "metadata": meta,
-            })
+            }, total, max_results)
 
-        total = len(sinks)
-        shown_sinks, sink_summary = _cap_items(sinks, max_results)
+        shown_sinks = sinks
+        sink_summary = _section_summary(total, len(shown_sinks))
 
         if shown_sinks:
             node_map: dict[str, dict] = {}

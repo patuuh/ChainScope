@@ -1273,6 +1273,53 @@ class TestIndexing:
         }
         assert internal_labels == set()
 
+    def test_sinks_retains_only_capped_sink_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(30):
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.transfer()",
+                label=f"transfer{i:02d}",
+                type="function",
+                visibility="public",
+                file=f"Vault{i:02d}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "is_sink": True,
+                    "sink_type": "fund_transfer",
+                    "source_context": "production",
+                }),
+            )
+
+        real_append = mcp_server._append_capped
+        sink_buffer_sizes = []
+
+        def tracking_append(items, item, total, limit):
+            updated = real_append(items, item, total, limit)
+            if isinstance(item, dict) and item.get("sink_type") == "fund_transfer":
+                sink_buffer_sizes.append(len(items))
+            return updated
+
+        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=3,
+        ))
+
+        assert result["total"] == 30
+        assert result["shown"] == 3
+        assert result["truncated"] is True
+        assert result["by_type"] == {"fund_transfer": 30}
+        assert [sink["label"] for sink in result["sinks"]] == [
+            "transfer00",
+            "transfer01",
+            "transfer02",
+        ]
+        assert max(sink_buffer_sizes) == 3
+
     def test_sinks_caps_callers_before_metadata_formatting(self, tmp_db, monkeypatch):
         import mcp_server
 
