@@ -769,7 +769,7 @@ def _metadata_rows_by_key(
     exclude_research: bool,
     max_per_key: int = 0,
 ) -> tuple[dict[str, list[tuple]], dict[str, int]]:
-    """Index capped metadata-key rows and full totals while parsing each row once."""
+    """Index capped metadata-key rows and full totals while parsing only retained rows when possible."""
     needles = {key: f'"{key}"' for key in keys}
     indexed: dict[str, list[tuple]] = {key: [] for key in keys}
     totals: dict[str, int] = {key: 0 for key in keys}
@@ -778,12 +778,19 @@ def _metadata_rows_by_key(
         matched = [key for key, needle in needles.items() if needle in raw]
         if not matched:
             continue
-        meta = _load_metadata(raw)
-        if not _include_metadata(meta, exclude_research):
-            continue
+        if exclude_research:
+            meta = _load_metadata(raw)
+            if not _include_metadata(meta, exclude_research):
+                continue
+        else:
+            retained_keys = [
+                key for key in matched
+                if max_per_key == 0 or len(indexed[key]) < max_per_key
+            ]
+            meta = _load_metadata(raw) if retained_keys else None
         for key in matched:
             totals[key] += 1
-            if max_per_key == 0 or len(indexed[key]) < max_per_key:
+            if meta is not None and (max_per_key == 0 or len(indexed[key]) < max_per_key):
                 indexed[key].append((row, meta))
     return indexed, totals
 
