@@ -920,7 +920,12 @@ def cs_audit(
         ).fetchall():
             adj.setdefault(r["source"], []).append(r["target"])
 
+        reachable_cache: dict[str, set[str]] = {}
+
         def _reachable(start_id: str) -> set[str]:
+            cached = reachable_cache.get(start_id)
+            if cached is not None:
+                return cached
             reachable = {start_id}
             queue = [start_id]
             pos = 0
@@ -931,6 +936,7 @@ def cs_audit(
                     if neighbor not in reachable:
                         reachable.add(neighbor)
                         queue.append(neighbor)
+            reachable_cache[start_id] = reachable
             return reachable
 
         # --- 4. Attack surface (formerly in cs_summary) ---
