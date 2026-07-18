@@ -791,6 +791,18 @@ def _metadata_key_filter(keys: list[str]) -> tuple[str, tuple[str, ...]]:
     return f" AND ({clauses})", params
 
 
+def _metadata_string_value_filter(key: str, value: str) -> tuple[str, tuple[str, ...]]:
+    """Return a cheap JSON string prefilter; parsed metadata remains authoritative."""
+    if not key or not value:
+        return "", ()
+    compact = json.dumps({key: value}, separators=(",", ":"))[1:-1]
+    spaced = json.dumps({key: value})[1:-1]
+    return " AND (metadata LIKE ? OR metadata LIKE ?)", (
+        f"%{compact}%",
+        f"%{spaced}%",
+    )
+
+
 def _section_summary(total: int, shown: int) -> dict:
     return {
         "total": total,
@@ -3373,11 +3385,14 @@ def cs_sinks(
         return _query_open_error("cs_sinks", db_path, exc)
 
     try:
+        sink_type_filter, sink_type_params = _metadata_string_value_filter("sink_type", sink_type)
         sink_rows = conn.execute(
             "SELECT id, label, type, visibility, file, line_start, line_end, "
             "signature, metadata FROM nodes "
             "WHERE metadata LIKE '%\"is_sink\"%' "
-            "ORDER BY file, line_start, id"
+            f"{sink_type_filter} "
+            "ORDER BY file, line_start, id",
+            sink_type_params,
         )
 
         sinks = []

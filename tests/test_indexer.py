@@ -2517,6 +2517,55 @@ class TestIndexing:
         assert detailed["include_metadata"] is True
         assert detailed["sinks"][0]["metadata"]["large"] == ["x"] * 50
 
+    def test_sinks_prefilters_sink_type_before_metadata_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(30):
+            db.insert_node(
+                id=f"Log{i}.sol::Log{i}.log()",
+                label=f"log{i}",
+                type="function",
+                file=f"Log{i}.sol",
+                metadata=json.dumps({
+                    "is_sink": True,
+                    "sink_type": "event_log",
+                    "large": ["x"] * 20,
+                }),
+            )
+        db.insert_node(
+            id="Vault.sol::Vault.transfer()",
+            label="transfer",
+            type="function",
+            visibility="public",
+            file="Vault.sol",
+            metadata=json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+            }),
+        )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+        ))
+
+        assert result["total"] == 1
+        assert result["sinks"][0]["label"] == "transfer"
+        assert len(parsed) == 1
+        assert "event_log" not in parsed[0]
+
     def test_sinks_streams_rows_and_uncaps_callers_with_zero(self, tmp_db, monkeypatch):
         import mcp_server
 
