@@ -757,6 +757,30 @@ def _reverse_reachable_nodes(
     return reachable
 
 
+def _forward_reachable_nodes(
+    adj: dict[str, list[str]],
+    node_id: str,
+    cache: dict[str, set[str]],
+    visiting: set[str] | None = None,
+) -> set[str]:
+    cached = cache.get(node_id)
+    if cached is not None:
+        return cached
+    if visiting is None:
+        visiting = set()
+    if node_id in visiting:
+        return {node_id}
+
+    visiting.add(node_id)
+    reachable = {node_id}
+    for neighbor in adj.get(node_id, []):
+        reachable |= _forward_reachable_nodes(adj, neighbor, cache, visiting)
+    visiting.remove(node_id)
+
+    cache[node_id] = reachable
+    return reachable
+
+
 def _keep_ranked_result(heap: list, item: dict, score: int, sequence: int, limit: int):
     if limit <= 0:
         return
@@ -1241,23 +1265,11 @@ def cs_summary(
             ]
 
         if attack_surface and allowed_ids:
-            def _reachable(start_id: str) -> set[str]:
-                reachable = {start_id}
-                queue = [start_id]
-                pos = 0
-                while pos < len(queue):
-                    current = queue[pos]
-                    pos += 1
-                    for neighbor in adjacency.get(current, []):
-                        if neighbor not in reachable:
-                            reachable.add(neighbor)
-                            queue.append(neighbor)
-                return reachable
-
+            reachable_cache: dict[str, set[str]] = {}
             surface = []
             surface_total = 0
             for row in attack_surface_nodes.values():
-                reachable = _reachable(row["id"])
+                reachable = _forward_reachable_nodes(adjacency, row["id"], reachable_cache)
                 write_count = sum(write_map.get(rid, 0) for rid in reachable)
                 surface_total += 1
                 item = {
@@ -1732,23 +1744,6 @@ def cs_audit(
 
         reachable_cache: dict[str, set[str]] = {}
 
-        def _reachable(start_id: str) -> set[str]:
-            cached = reachable_cache.get(start_id)
-            if cached is not None:
-                return cached
-            reachable = {start_id}
-            queue = [start_id]
-            pos = 0
-            while pos < len(queue):
-                current = queue[pos]
-                pos += 1
-                for neighbor in adj.get(current, []):
-                    if neighbor not in reachable:
-                        reachable.add(neighbor)
-                        queue.append(neighbor)
-            reachable_cache[start_id] = reachable
-            return reachable
-
         # --- 4. Attack surface (formerly in cs_summary) ---
         attack_surface_heap: list[tuple[int, int, dict]] = []
         attack_surface_total = 0
@@ -1758,7 +1753,7 @@ def cs_audit(
                 continue
             if row["id"] not in func_meta_cache:
                 continue
-            reachable = _reachable(row["id"])
+            reachable = _forward_reachable_nodes(adj, row["id"], reachable_cache)
             write_count = sum(write_map.get(rid, 0) for rid in reachable)
             attack_surface_total += 1
             attack_entry = {
@@ -1884,7 +1879,7 @@ def cs_audit(
                 if not (po >= 0 and pc > po + 1):
                     continue
                 is_guarded = row["id"] in guard_set
-                reachable = _reachable(row["id"])
+                reachable = _forward_reachable_nodes(adj, row["id"], reachable_cache)
                 reached = reachable & sink_ids
                 if reached:
                     risk = "HIGH" if not is_guarded else "MEDIUM"

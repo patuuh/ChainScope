@@ -731,6 +731,34 @@ class TestIndexing:
         assert len(buffer) == 3
         assert [item["key"] for item in mcp_server._sorted_results(buffer)] == [1, 2, 3]
 
+    def test_forward_reachable_nodes_reuses_shared_callee_cache(self):
+        import mcp_server
+
+        class CountingAdj(dict):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.lookups = {}
+
+            def get(self, key, default=None):
+                self.lookups[key] = self.lookups.get(key, 0) + 1
+                return super().get(key, default)
+
+        adj = CountingAdj({
+            "entry0": ["shared"],
+            "entry1": ["shared"],
+            "shared": ["leaf"],
+            "leaf": [],
+        })
+        cache = {}
+
+        first = mcp_server._forward_reachable_nodes(adj, "entry0", cache)
+        second = mcp_server._forward_reachable_nodes(adj, "entry1", cache)
+
+        assert first == {"entry0", "shared", "leaf"}
+        assert second == {"entry1", "shared", "leaf"}
+        assert cache["shared"] == {"shared", "leaf"}
+        assert adj.lookups["shared"] == 1
+
     def test_audit_taint_summary_reports_full_total(self, tmp_db):
         import mcp_server
 
