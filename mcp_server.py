@@ -303,11 +303,36 @@ def _include_metadata(meta: dict, exclude_research: bool) -> bool:
     return not (exclude_research and _is_research_meta(meta))
 
 
+def _metadata_string_fragments(key: str, value: str) -> tuple[str, str]:
+    compact = json.dumps({key: value}, separators=(",", ":"))[1:-1]
+    spaced = json.dumps({key: value})[1:-1]
+    return compact, spaced
+
+
+_KNOWN_SOURCE_CONTEXTS = (
+    "production",
+    "script",
+    "poc",
+    "fuzz",
+    "invariant",
+    "certora",
+    "echidna",
+)
+
+_KNOWN_SOURCE_CONTEXT_FRAGMENTS = tuple(
+    (context, *_metadata_string_fragments("source_context", context))
+    for context in _KNOWN_SOURCE_CONTEXTS
+)
+
+
 def _metadata_source_context(raw) -> str:
     if isinstance(raw, dict):
         return raw.get("source_context", "production")
     if not raw or '"source_context"' not in raw:
         return "production"
+    for context, compact, spaced in _KNOWN_SOURCE_CONTEXT_FRAGMENTS:
+        if compact in raw or spaced in raw:
+            return context
     return _load_metadata(raw).get("source_context", "production")
 
 
@@ -818,8 +843,7 @@ def _metadata_string_value_filter(key: str, value: str) -> tuple[str, tuple[str,
     """Return a cheap JSON string prefilter; parsed metadata remains authoritative."""
     if not key or not value:
         return "", ()
-    compact = json.dumps({key: value}, separators=(",", ":"))[1:-1]
-    spaced = json.dumps({key: value})[1:-1]
+    compact, spaced = _metadata_string_fragments(key, value)
     return " AND (metadata LIKE ? OR metadata LIKE ?)", (
         f"%{compact}%",
         f"%{spaced}%",
@@ -855,17 +879,6 @@ def _count_rows(conn, sql: str, key_column: str = "key") -> dict[str, int]:
 
 def _sorted_count_mapping(counter: dict[str, int]) -> dict[str, int]:
     return dict(sorted(counter.items(), key=lambda item: (-item[1], item[0])))
-
-
-_KNOWN_SOURCE_CONTEXTS = (
-    "production",
-    "script",
-    "poc",
-    "fuzz",
-    "invariant",
-    "certora",
-    "echidna",
-)
 
 
 def _source_context_counts(conn, total_nodes: int) -> dict[str, int]:
@@ -1156,6 +1169,14 @@ def _ranked_results(heap: list) -> list[dict]:
             key=lambda entry: (-entry[0], -entry[1]),
         )
     ]
+
+
+def _finalize_deferred_source_contexts(items: list[dict]) -> list[dict]:
+    for item in items:
+        raw = item.pop("_source_context_raw", None)
+        if "source_context" not in item:
+            item["source_context"] = _metadata_source_context(raw)
+    return items
 
 
 def _keep_sorted_result(buffer: list, item: dict, sort_key, limit: int):
@@ -1742,6 +1763,8 @@ def _is_research_metadata_raw(raw) -> bool:
     """Fast production default for metadata without provenance keys."""
     if not raw or ('"source_context"' not in raw and '"source_kind"' not in raw):
         return False
+    if '"source_kind"' not in raw:
+        return _metadata_source_context(raw) not in ("", "production")
     return _is_research_meta(_load_metadata(raw))
 
 
@@ -2309,17 +2332,21 @@ def cs_audit(
                     hotspot_critical += 1
                 else:
                     hotspot_high += 1
-                _keep_ranked_result(hotspot_heap, {
+                hotspot = {
                     "function": row["label"],
                     "file": row["file"],
                     "line": row["line_start"],
-                    "source_context": _func_source_context(row, meta if has_score_metadata else None),
                     "score": score,
                     "reasons": reasons,
-                }, score, hotspot_sequence, top)
+                }
+                if has_score_metadata:
+                    hotspot["source_context"] = _func_source_context(row, meta)
+                else:
+                    hotspot["_source_context_raw"] = row["metadata"]
+                _keep_ranked_result(hotspot_heap, hotspot, score, hotspot_sequence, top)
                 hotspot_sequence += 1
 
-        report["critical_hotspots"] = _ranked_results(hotspot_heap)
+        report["critical_hotspots"] = _finalize_deferred_source_contexts(_ranked_results(hotspot_heap))
         report["hotspot_summary"] = {
             "total_scored": hotspot_total,
             "critical_8plus": hotspot_critical,
@@ -2778,22 +2805,22 @@ def cs_hotspots(
                 else:
                     medium += 1
 
-                _keep_ranked_result(top_heap, {
+                hotspot = {
                     "function": r["label"],
                     "file": r["file"],
                     "line": r["line_start"],
                     "visibility": r["visibility"],
-                    "source_context": (
-                        meta.get("source_context", "production")
-                        if has_score_metadata
-                        else _metadata_source_context(r["metadata"])
-                    ),
                     "score": score,
                     "reasons": reasons,
-                }, score, sequence, top)
+                }
+                if has_score_metadata:
+                    hotspot["source_context"] = meta.get("source_context", "production")
+                else:
+                    hotspot["_source_context_raw"] = r["metadata"]
+                _keep_ranked_result(top_heap, hotspot, score, sequence, top)
                 sequence += 1
 
-        result = _ranked_results(top_heap)
+        result = _finalize_deferred_source_contexts(_ranked_results(top_heap))
 
         return json.dumps({
             "hotspots": result,

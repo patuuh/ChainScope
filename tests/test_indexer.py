@@ -324,6 +324,22 @@ class TestIndexing:
         assert not any("SELECT COUNT(*) FROM nodes WHERE 1=1" in sql for sql in statements)
         assert any("AND NOT" in sql and "SELECT metadata FROM nodes" in sql for sql in statements)
 
+    def test_known_source_context_helpers_avoid_json_parse(self, monkeypatch):
+        import mcp_server
+
+        def fail_load(_raw):
+            raise AssertionError("known source_context values should not require JSON parsing")
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", fail_load)
+
+        production = json.dumps({"source_context": "production", "large": ["x"] * 20})
+        script = json.dumps({"source_context": "script", "large": ["x"] * 20})
+
+        assert mcp_server._metadata_source_context(production) == "production"
+        assert mcp_server._metadata_source_context(script) == "script"
+        assert mcp_server._is_research_metadata_raw(production) is False
+        assert mcp_server._is_research_metadata_raw(script) is True
+
     def test_summary_reports_attack_surface_truncation(self, tmp_db):
         import mcp_server
 
@@ -2964,7 +2980,7 @@ class TestIndexing:
                 type="function",
                 visibility="external",
                 file=f"Caller{i}.sol",
-                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+                metadata=json.dumps({"source_context": f"custom{i}", "large": ["x"] * 20}),
             )
             db.insert_edge(caller_id, sink_id, "calls")
         for i in range(200):
@@ -3404,6 +3420,47 @@ class TestIndexing:
         assert hotspots["_summary"]["top_shown"] == 3
         assert [item["function"] for item in hotspots["hotspots"]] == ["entry0", "entry1", "entry2"]
         assert max(heap_sizes) == 3
+
+    def test_hotspots_formats_only_top_source_contexts(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        metadata_by_index = {}
+        for i in range(10):
+            func_id = f"Vault{i:02d}.sol::Vault{i:02d}.entry()"
+            state_id = f"Vault{i:02d}.sol::Vault{i:02d}.total"
+            metadata_by_index[i] = json.dumps({"source_context": f"custom{i}", "large": ["x"] * 20})
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i:02d}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i:02d}.sol",
+                metadata=metadata_by_index[i],
+            )
+            db.insert_node(
+                id=state_id,
+                label=f"total{i:02d}",
+                type="state_var",
+                file=f"Vault{i:02d}.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=3))
+
+        assert hotspots["_summary"]["total_scored"] == 10
+        assert [item["function"] for item in hotspots["hotspots"]] == ["entry00", "entry01", "entry02"]
+        assert [item["source_context"] for item in hotspots["hotspots"]] == ["custom0", "custom1", "custom2"]
+        assert parsed == [metadata_by_index[0], metadata_by_index[1], metadata_by_index[2]]
 
     def test_hotspots_skips_neutral_metadata_parses(self, tmp_db, monkeypatch):
         import mcp_server
@@ -3941,17 +3998,18 @@ class TestIndexing:
             for sql in statements
         )
 
-    def test_lookup_parses_only_tagged_relation_contexts(self, tmp_db, monkeypatch):
+    def test_lookup_formats_known_relation_contexts_without_parse(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
+        target_metadata = json.dumps({"source_context": "production"})
         db.insert_node(
             id="Vault.sol::Vault.ping()",
             label="ping",
             type="function",
             visibility="external",
             file="Vault.sol",
-            metadata=json.dumps({"source_context": "production"}),
+            metadata=target_metadata,
         )
         db.insert_node(
             id="Vault.sol::Vault.prodCaller()",
@@ -3992,8 +4050,7 @@ class TestIndexing:
             for caller in lookup["functions"][0]["callers"]
         }
         assert callers == {"prodCaller": "production", "run": "script"}
-        assert any('"source_context": "script"' in raw for raw in parsed)
-        assert not any(raw == json.dumps({}) for raw in parsed)
+        assert parsed == [target_metadata]
 
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
@@ -4184,7 +4241,7 @@ class TestIndexing:
                 type="state_var",
                 file=f"Vault{i:02d}.sol",
                 signature="uint256 public total",
-                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+                metadata=json.dumps({"source_context": f"custom{i}", "large": ["x"] * 20}),
             )
 
         real_load = mcp_server._load_metadata
@@ -4353,7 +4410,7 @@ class TestIndexing:
             label="total",
             type="state_var",
             file="Vault.sol",
-            metadata=json.dumps({"source_context": "production"}),
+            metadata=json.dumps({"source_context": "custom_state"}),
         )
         for i in range(8):
             writer_id = f"Writer{i:02d}.sol::Writer{i:02d}.set(uint256)"
@@ -4364,7 +4421,7 @@ class TestIndexing:
                 visibility="external",
                 file=f"Writer{i:02d}.sol",
                 line_start=i + 1,
-                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+                metadata=json.dumps({"source_context": f"custom_writer{i}", "large": ["x"] * 20}),
             )
             db.insert_edge(writer_id, state_id, "writes_state")
 
@@ -4500,7 +4557,7 @@ class TestIndexing:
                 type="function",
                 visibility="external",
                 file=f"Caller{i:02d}.sol",
-                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+                metadata=json.dumps({"source_context": f"custom_caller{i}", "large": ["x"] * 20}),
             )
             db.insert_edge(caller_id, "Vault.sol::Vault.set(uint256)", "calls")
 
@@ -4532,7 +4589,7 @@ class TestIndexing:
         assert writer["callers_summary"] == {"total": 40, "shown": 3, "truncated": True}
         assert [caller["label"] for caller in writer["callers"]] == ["callSet00", "callSet01", "callSet02"]
         assert max(caller_buffer_sizes) == 3
-        assert len(parsed) == 5
+        assert len(parsed) == 3
 
     def test_trace_skips_untagged_source_context_parses(self, tmp_db, monkeypatch):
         import mcp_server
@@ -5418,7 +5475,7 @@ class TestIndexing:
         metadata_by_entity = {}
         for i in range(5):
             fn_id = f"Vault{i}.sol::Vault{i}.advance()"
-            metadata_by_entity[i] = json.dumps({"source_context": "production", "entity": i, "large": ["x"] * 20})
+            metadata_by_entity[i] = json.dumps({"source_context": f"custom{i}", "entity": i, "large": ["x"] * 20})
             db.insert_node(
                 id=fn_id,
                 label=f"advance{i}",
@@ -5451,7 +5508,7 @@ class TestIndexing:
         assert len(parsed) == 6
         assert set(parsed) == {metadata_by_entity[0], metadata_by_entity[1]}
         assert all(
-            item["source_context"] == "production"
+            item["source_context"] in {"custom0", "custom1"}
             for transitions in state["entities"].values()
             for item in transitions
         )
