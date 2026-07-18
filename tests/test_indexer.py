@@ -53,6 +53,10 @@ class TestIndexing:
         assert "timeout_seconds are opt-in" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_audit).parameters["include_dead_code_details"].default is False
         assert "detailed dead-code rows" in help_payload["core_tools"]["cs_audit"]
+        assert inspect.signature(mcp_server.cs_defi).parameters["max_per_category"].default == 25
+        assert inspect.signature(mcp_server.cs_unsafe).parameters["max_per_category"].default == 25
+        assert "max_per_category=25" in help_payload["scanner_tools"]["cs_defi"]
+        assert "max_per_category=25" in help_payload["scanner_tools"]["cs_unsafe"]
         assert inspect.signature(mcp_server.cs_lookup).parameters["max_metadata_bytes"].default == 4096
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50

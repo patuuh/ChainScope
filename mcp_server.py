@@ -1599,8 +1599,8 @@ def cs_help() -> str:
         },
         "scanner_tools": {
             "cs_hotspots": "Composite risk scorer — broad scan with SQL candidate prefilters and detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
-            "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter; category output is capped by max_per_category.",
-            "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output is capped by max_per_category.",
+            "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter; category output defaults to max_per_category=25.",
+            "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output defaults to max_per_category=25.",
         },
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes.",
@@ -3036,7 +3036,7 @@ def cs_defi(
     category: str = "",
     exclude_research: bool = False,
     timeout_seconds: int = 0,
-    max_per_category: int = 50,
+    max_per_category: int = 25,
 ) -> str:
     """Find DeFi-specific vulnerability patterns in Solidity contracts.
 
@@ -3061,7 +3061,7 @@ def cs_defi(
         category: Filter: timestamp, erc20, oracle, signature, precision, dos, frontrun, downcast, flashloan, slippage, callback, anchor, cpi_reentrancy, transfer, crosscontract, all (default: all)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
-        max_per_category: Maximum findings to return per category (0 disables)
+        max_per_category: Maximum findings to return per category (default: 25; 0 disables)
     """
     if max_per_category < 0:
         max_per_category = 0
@@ -3354,7 +3354,7 @@ def cs_unsafe(
     category: str = "",
     exclude_research: bool = False,
     timeout_seconds: int = 0,
-    max_per_category: int = 50,
+    max_per_category: int = 25,
 ) -> str:
     """Find Rust/Go/Java/Python/TypeScript/DSL security issues.
 
@@ -3370,7 +3370,7 @@ def cs_unsafe(
         category: Filter: unsafe, panic, race, ffi, validation, go, type_assert, sql, java, python, js, command, keys, deser, reflection, injection, crypto, downcast, dead_params, all (default: all)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
-        max_per_category: Maximum findings to return per category (0 disables)
+        max_per_category: Maximum findings to return per category (default: 25; 0 disables)
     """
     if max_per_category < 0:
         max_per_category = 0

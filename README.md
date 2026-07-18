@@ -263,8 +263,9 @@ reports the total entry points, how many were shown, and whether the list was
 truncated; increase `top` when you need a broader entry-point inventory.
 
 Scanner category output from `cs_defi` and `cs_unsafe` is capped by
-`max_per_category` by default. The summary still reports full category totals;
-set `max_per_category=0` only when an exhaustive category dump is intentional.
+`max_per_category=25` by default. The summary still reports full category
+totals; set `max_per_category=0` only when an exhaustive category dump is
+intentional.
 
 `cs_audit` is a top-N overview. Its `_summary` reports full section totals and
 which sections were truncated so agents can drill down with specialized tools
