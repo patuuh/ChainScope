@@ -1326,6 +1326,70 @@ class TestIndexing:
         assert len(cross["calls"]) == 3
         assert max(call_buffer_sizes) == 3
 
+    def test_cross_from_func_streams_graph_setup_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.ping(address)"
+        db.insert_node(
+            id=start_id,
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge(
+            source=start_id,
+            target="External.doThing()",
+            relation="calls",
+            attributes=json.dumps({"unresolved": True}),
+        )
+
+        real_open = mcp_server._open_query_connection
+
+        class StreamingRows:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchall(self):
+                raise AssertionError("cs_cross graph setup rows should stream")
+
+        class StreamingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                rows = self._conn.execute(sql, *args, **kwargs)
+                if (
+                    normalized == "SELECT id, label, type, file, metadata FROM nodes"
+                    or (
+                        "SELECT source, target FROM edges" in normalized
+                        and "relation IN" in normalized
+                    )
+                ):
+                    return StreamingRows(rows)
+                return rows
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: StreamingConnection(real_open(*args, **kwargs)),
+        )
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, from_func="ping"))
+
+        assert cross["total"] == 1
+        assert cross["shown"] == 1
+        assert cross["calls"][0]["source"]["label"] == "ping"
+
     def test_cross_from_func_ignores_non_function_candidates(self, tmp_db):
         import mcp_server
 

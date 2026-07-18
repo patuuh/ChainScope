@@ -3430,19 +3430,21 @@ def cs_cross(
                     )
                 return json.dumps(response, indent=2)
 
-            all_nodes = conn.execute(
+            node_rows = conn.execute(
                 "SELECT id, label, type, file, metadata FROM nodes"
-            ).fetchall()
-            node_by_id = {row["id"]: dict(row) for row in all_nodes}
-            if exclude_research:
-                node_meta = {row["id"]: _load_metadata(row["metadata"]) for row in all_nodes}
-                allowed_ids = {
-                    row["id"] for row in all_nodes
-                    if _include_metadata(node_meta[row["id"]], exclude_research)
-                }
-            else:
-                node_meta: dict[str, dict] = {}
-                allowed_ids = set(node_by_id)
+            )
+            node_by_id: dict[str, dict] = {}
+            node_meta: dict[str, dict] = {}
+            allowed_ids: set[str] = set()
+            for row in node_rows:
+                node_by_id[row["id"]] = dict(row)
+                if exclude_research:
+                    meta = _load_metadata(row["metadata"])
+                    node_meta[row["id"]] = meta
+                    if _include_metadata(meta, exclude_research):
+                        allowed_ids.add(row["id"])
+                else:
+                    allowed_ids.add(row["id"])
 
             def _metadata_for_node(node_id: str) -> dict:
                 meta = node_meta.get(node_id)
@@ -3458,7 +3460,7 @@ def cs_cross(
             for row in conn.execute(
                 "SELECT source, target FROM edges WHERE relation IN (?, ?, ?)",
                 TRAVERSAL_RELATIONS,
-            ).fetchall():
+            ):
                 if row["source"] not in allowed_ids or row["target"] not in allowed_ids:
                     continue
                 adjacency.setdefault(row["source"], []).append(row["target"])
