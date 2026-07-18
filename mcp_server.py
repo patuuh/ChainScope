@@ -3373,6 +3373,56 @@ def cs_cross(
             if not nodes:
                 return json.dumps({"error": f"No function found matching '{from_func}'"})
 
+            matching_starts = []
+            matching_starts_total = 0
+            for node in _iter_nodes_by_ids(conn, [row["id"] for row in nodes]):
+                if node.get("type") != "function":
+                    continue
+                if exclude_research:
+                    meta = _load_metadata(node.get("metadata"))
+                    if not _include_metadata(meta, exclude_research):
+                        continue
+                    node["_metadata_parsed"] = meta
+                matching_starts_total = _append_capped(
+                    matching_starts,
+                    node,
+                    matching_starts_total,
+                    max_start_candidates,
+                )
+            if not matching_starts:
+                return json.dumps({"error": f"No production function found matching '{from_func}'"})
+            if matching_starts_total > 1:
+                candidates = []
+                for node in matching_starts:
+                    meta = node.pop("_metadata_parsed", None)
+                    if meta is None:
+                        meta = _load_metadata(node.get("metadata"))
+                    candidates.append({
+                        "id": node["id"],
+                        "label": node["label"],
+                        "file": node["file"],
+                        "source_context": meta.get("source_context", "production"),
+                    })
+                candidate_summary = _section_summary(matching_starts_total, len(candidates))
+                response = {
+                    "error": (
+                        f"Ambiguous from_func '{from_func}' matched {matching_starts_total} functions. "
+                        "Use a more qualified function name."
+                    ),
+                    "tool": "cs_cross",
+                    "from_func": from_func,
+                    "query_scope": "production_only" if exclude_research else "all_sources",
+                    "max_start_candidates": max_start_candidates,
+                    "start_candidates": candidates,
+                    "start_candidate_summary": candidate_summary,
+                }
+                if candidate_summary["truncated"]:
+                    response["_warning"] = (
+                        "cs_cross start candidate list was capped. Increase max_start_candidates "
+                        "or set max_start_candidates=0 for all candidates."
+                    )
+                return json.dumps(response, indent=2)
+
             all_nodes = conn.execute(
                 "SELECT id, label, type, file, metadata FROM nodes"
             ).fetchall()
@@ -3394,47 +3444,6 @@ def cs_cross(
                     meta = _load_metadata(row.get("metadata") if row else None)
                     node_meta[node_id] = meta
                 return meta
-
-            matching_starts = [
-                node_by_id[node["id"]]
-                for node in nodes
-                if (
-                    node["id"] in allowed_ids
-                    and node["id"] in node_by_id
-                    and node_by_id[node["id"]].get("type") == "function"
-                )
-            ]
-            if not matching_starts:
-                return json.dumps({"error": f"No production function found matching '{from_func}'"})
-            if len(matching_starts) > 1:
-                candidates = []
-                for node in matching_starts:
-                    meta = _metadata_for_node(node["id"])
-                    candidates.append({
-                        "id": node["id"],
-                        "label": node["label"],
-                        "file": node["file"],
-                        "source_context": meta.get("source_context", "production"),
-                    })
-                shown_candidates, candidate_summary = _cap_items(candidates, max_start_candidates)
-                response = {
-                    "error": (
-                        f"Ambiguous from_func '{from_func}' matched {len(matching_starts)} functions. "
-                        "Use a more qualified function name."
-                    ),
-                    "tool": "cs_cross",
-                    "from_func": from_func,
-                    "query_scope": "production_only" if exclude_research else "all_sources",
-                    "max_start_candidates": max_start_candidates,
-                    "start_candidates": shown_candidates,
-                    "start_candidate_summary": candidate_summary,
-                }
-                if candidate_summary["truncated"]:
-                    response["_warning"] = (
-                        "cs_cross start candidate list was capped. Increase max_start_candidates "
-                        "or set max_start_candidates=0 for all candidates."
-                    )
-                return json.dumps(response, indent=2)
 
             start_id = matching_starts[0]["id"]
 

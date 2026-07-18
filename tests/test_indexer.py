@@ -1102,6 +1102,61 @@ class TestIndexing:
         assert "Ambiguous from_func" in summary["error"]
         assert summary["start_candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
 
+    def test_cross_from_func_ambiguous_returns_before_full_graph_load(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(40):
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.ping(address)",
+                label="ping",
+                type="function",
+                visibility="external",
+                file=f"Vault{i:02d}.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+
+        real_open = mcp_server._open_query_connection
+        real_append = mcp_server._append_capped
+        start_buffer_sizes = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                if normalized == "SELECT id, label, type, file, metadata FROM nodes":
+                    raise AssertionError("ambiguous cs_cross should not load full graph")
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        def tracking_append(items, item, total, limit):
+            updated = real_append(items, item, total, limit)
+            if isinstance(item, dict) and item.get("label") == "ping":
+                start_buffer_sizes.append(len(items))
+            return updated
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+
+        cross = json.loads(mcp_server.cs_cross(
+            db=tmp_db,
+            from_func="ping",
+            max_start_candidates=3,
+        ))
+
+        assert "Ambiguous from_func" in cross["error"]
+        assert cross["start_candidate_summary"] == {"total": 40, "shown": 3, "truncated": True}
+        assert len(cross["start_candidates"]) == 3
+        assert max(start_buffer_sizes) == 3
+
     def test_cross_from_func_avoids_full_graph_metadata_parse(self, tmp_db, monkeypatch):
         import mcp_server
 
