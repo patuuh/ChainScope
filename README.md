@@ -142,7 +142,7 @@ Typical tool flow:
 2. `cs_build` to create the graph
 3. `cs_summary` to confirm graph health, build metadata, and scope
 4. `cs_audit` or `cs_hotspots` to rank the attack surface
-5. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate the structure
+5. `cs_paths`, `cs_trace`, `cs_cross_summary`, `cs_cross`, and `cs_state` to validate the structure
 
 `graph.db` is written to the current working directory unless you pass `--db`. After `.mcp.json` changes, start a fresh Codex session so the tool list reloads. In Claude Code, `/mcp` is the quickest way to confirm that the server is connected.
 
@@ -175,7 +175,7 @@ cs_summary
    ->
 cs_hotspots / cs_audit
    ->
-cs_paths / cs_trace / cs_cross / cs_state
+cs_paths / cs_trace / cs_cross_summary / cs_cross / cs_state
    ->
 manual source review
    ->
@@ -212,6 +212,7 @@ Query it:
 python cs_summary.py --db graph.db
 python cs_paths.py --db graph.db --from deposit --to withdraw
 python cs_trace.py --db graph.db --var balances
+python cs_cross.py --db graph.db --summary
 python cs_cross.py --db graph.db --external-calls
 python cs_state.py --db graph.db --all
 ```
@@ -221,13 +222,17 @@ For agents, the usual loop is:
 2. `cs_build` to create the graph
 3. `cs_summary` via MCP to confirm the DB is populated and scoped correctly
 4. `cs_hotspots` or `cs_audit` via MCP to identify promising surfaces
-5. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate structure
+5. `cs_paths`, `cs_trace`, `cs_cross_summary`, `cs_cross`, and `cs_state` to validate structure
 6. direct source reading only where the graph indicates it matters
 
 For common function names, prefer qualified `cs_lookup` queries such as
 `Vault.deposit` or `TokenMessaging.send`. Broad lookups are capped by default
 so agents get candidates instead of an oversized response; set `max_matches=0`
 only when exhaustive output is intentional.
+
+For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
+totals, top source files, top targets, and bounded sample calls so agents can
+choose where to inspect without dumping every trust-boundary edge.
 
 ## Query surface
 
@@ -242,6 +247,7 @@ only when exhaustive output is intentional.
 - `cs_unsafe`
 - `cs_paths`
 - `cs_trace`
+- `cs_cross_summary`
 - `cs_cross`
 - `cs_state`
 - `cs_lookup`
@@ -253,6 +259,7 @@ only when exhaustive output is intentional.
 - `python cs_summary.py ...`
 - `python cs_paths.py ...`
 - `python cs_trace.py ...`
+- `python cs_cross.py --summary ...`
 - `python cs_cross.py ...`
 - `python cs_state.py ...`
 - `python cs_sinks.py ...`
@@ -289,6 +296,7 @@ When you build a mixed graph, you can still query just production code:
 python cs_summary.py --db graph.db --exclude-research
 python cs_paths.py --db graph.db --from start --to finish --exclude-research
 python cs_trace.py --db graph.db --var total --exclude-research
+python cs_cross.py --db graph.db --summary --exclude-research
 python cs_cross.py --db graph.db --external-calls --exclude-research
 python cs_state.py --db graph.db --all --exclude-research
 python cs_sinks.py --db graph.db --type self_destruct --exclude-research
@@ -398,4 +406,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`404 passed`
+`406 passed`

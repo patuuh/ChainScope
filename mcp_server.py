@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """ChainScope MCP Server — exposes web3 knowledge graph tools to AI agents.
 
-Consolidated tool set (13 tools):
+Consolidated tool set (14 tools):
   Core:        cs_profile, cs_build, cs_help, cs_summary, cs_audit
   Scanners:    cs_hotspots, cs_defi, cs_unsafe
-  Exploration: cs_paths, cs_trace, cs_cross, cs_state, cs_lookup
+  Exploration: cs_paths, cs_trace, cs_cross, cs_cross_summary, cs_state, cs_lookup
 """
 
 import json
@@ -147,6 +147,168 @@ def _include_metadata(meta: dict, exclude_research: bool) -> bool:
 
 
 TRAVERSAL_RELATIONS = ("calls", "flows_to", "inherits")
+
+
+def _attr_enabled(value) -> bool:
+    """Interpret common JSON attribute encodings without treating false-like strings as true."""
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() not in ("", "0", "false", "no", "none", "null")
+    return bool(value)
+
+
+def _is_unresolved_external_call(attrs: dict) -> bool:
+    return _attr_enabled(attrs.get("unresolved")) and not _attr_enabled(attrs.get("internal_candidate"))
+
+
+def _is_trust_boundary_call(attrs: dict) -> bool:
+    return (
+        _is_unresolved_external_call(attrs)
+        or _attr_enabled(attrs.get("sink"))
+        or _attr_enabled(attrs.get("cross_boundary"))
+    )
+
+
+def _external_call_counts(conn, include_cpi: bool = False) -> dict[str, int]:
+    """Count true external calls per source without trusting JSON key presence."""
+    query = (
+        "SELECT source, attributes FROM edges WHERE relation = 'calls' "
+        "AND (attributes LIKE '%\"unresolved\"%'"
+    )
+    if include_cpi:
+        query += " OR attributes LIKE '%\"cpi\"%'"
+    query += ")"
+
+    counts: dict[str, int] = {}
+    for row in conn.execute(query):
+        attrs = _load_metadata(row["attributes"])
+        if _is_unresolved_external_call(attrs) or (include_cpi and _attr_enabled(attrs.get("cpi"))):
+            counts[row["source"]] = counts.get(row["source"], 0) + 1
+    return counts
+
+
+def _iter_cross_call_rows(conn, exclude_research: bool):
+    """Yield true trust-boundary call rows for broad cross-boundary scans."""
+    rows = conn.execute("""
+        SELECT e.source, e.target, e.attributes,
+               s.label as source_label, s.file as source_file, s.metadata as source_metadata,
+               t.label as target_label, t.file as target_file, t.metadata as target_metadata
+        FROM edges e
+        LEFT JOIN nodes s ON e.source = s.id
+        LEFT JOIN nodes t ON e.target = t.id
+        WHERE e.relation = 'calls' AND (
+            e.attributes LIKE '%"unresolved"%'
+            OR e.attributes LIKE '%"sink"%'
+            OR e.attributes LIKE '%"cross_boundary"%'
+        )
+    """)
+
+    for row in rows:
+        entry = dict(row)
+        attrs = _load_metadata(entry.get("attributes"))
+        if not _is_trust_boundary_call(attrs):
+            continue
+        source_meta = _load_metadata(entry.pop("source_metadata", None))
+        target_meta = _load_metadata(entry.pop("target_metadata", None))
+        if not _include_metadata(source_meta, exclude_research):
+            continue
+        if entry.get("target_label") and not _include_metadata(target_meta, exclude_research):
+            continue
+        entry["source_context"] = source_meta.get("source_context", "production")
+        if entry.get("target_label"):
+            entry["target_source_context"] = target_meta.get("source_context", "production")
+        yield entry
+
+
+def _cross_call_rows(conn, exclude_research: bool) -> list[dict]:
+    """Return all true trust-boundary call rows for exhaustive cross scans."""
+    return list(_iter_cross_call_rows(conn, exclude_research))
+
+
+def _cross_entry_attrs(entry: dict) -> dict:
+    attrs = entry.get("attributes", {})
+    if isinstance(attrs, dict):
+        return attrs
+    return _load_metadata(attrs)
+
+
+def _compact_cross_entry(entry: dict) -> dict:
+    attrs = _cross_entry_attrs(entry)
+    if isinstance(entry.get("source"), dict):
+        source = entry.get("source") or {}
+        target = entry.get("target") or {}
+        return {
+            "source_label": source.get("label"),
+            "source_file": source.get("file"),
+            "source_context": source.get("source_context", "production"),
+            "target_label": target.get("label"),
+            "target_file": target.get("file"),
+            "target_source_context": target.get("source_context", "production"),
+            "attributes": attrs,
+        }
+    return {
+        "source_label": entry.get("source_label"),
+        "source_file": entry.get("source_file"),
+        "source_context": entry.get("source_context", "production"),
+        "target_label": entry.get("target_label") or entry.get("target"),
+        "target_file": entry.get("target_file"),
+        "target_source_context": entry.get("target_source_context"),
+        "attributes": attrs,
+    }
+
+
+def _bump(counter: dict[str, int], key: str | None):
+    if key:
+        counter[key] = counter.get(key, 0) + 1
+
+
+def _top_counter(counter: dict[str, int], limit: int) -> list[dict]:
+    return [
+        {"name": key, "calls": count}
+        for key, count in sorted(counter.items(), key=lambda item: (-item[1], item[0]))[:limit]
+    ]
+
+
+def _summarize_cross_entries(entries, top: int) -> dict:
+    top = max(top, 0)
+    total = 0
+    attr_counts: dict[str, int] = {}
+    context_counts: dict[str, int] = {}
+    source_file_counts: dict[str, int] = {}
+    target_counts: dict[str, int] = {}
+    samples = []
+
+    for entry in entries:
+        total += 1
+        compact = _compact_cross_entry(entry)
+        attrs = compact["attributes"]
+        if _is_unresolved_external_call(attrs):
+            _bump(attr_counts, "unresolved")
+        if _attr_enabled(attrs.get("sink")):
+            _bump(attr_counts, "sink")
+        if _attr_enabled(attrs.get("cross_boundary")):
+            _bump(attr_counts, "cross_boundary")
+        _bump(context_counts, compact.get("source_context") or "production")
+        _bump(source_file_counts, compact.get("source_file") or "<unknown>")
+        _bump(target_counts, compact.get("target_label") or "<unresolved>")
+        if len(samples) < top:
+            samples.append(compact)
+
+    return {
+        "total": total,
+        "shown": len(samples),
+        "truncated": total > len(samples),
+        "by_attribute": dict(sorted(attr_counts.items(), key=lambda item: (-item[1], item[0]))),
+        "by_source_context": dict(sorted(context_counts.items(), key=lambda item: (-item[1], item[0]))),
+        "top_source_files": _top_counter(source_file_counts, 10),
+        "top_targets": _top_counter(target_counts, 10),
+        "calls": samples,
+    }
 
 
 def _load_build_info(conn) -> object | None:
@@ -405,6 +567,7 @@ def cs_help() -> str:
             "cs_paths": "Find call paths between two functions (from_label → to_label)",
             "cs_trace": "Trace all readers/writers of a state variable",
             "cs_cross": "Cross-contract/module boundary calls (trust boundary crossings)",
+            "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
             "cs_state": "State machine transitions and lifecycle analysis",
         },
         "_tip": "All tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
@@ -901,17 +1064,7 @@ def cs_audit(
         ).fetchall():
             guard_set.add(r["target"])
 
-        ext_call_map: dict[str, int] = {}
-        for r in conn.execute(
-            "SELECT source, COUNT(*) as cnt FROM edges "
-            "WHERE relation='calls' AND attributes LIKE '%\"unresolved\"%' "
-            "AND attributes NOT LIKE '%\"internal_candidate\"%' GROUP BY source"
-        ).fetchall():
-            ext_call_map[r["source"]] = r["cnt"]
-        for r in conn.execute(
-            "SELECT source, COUNT(*) as cnt FROM edges WHERE relation='calls' AND attributes LIKE '%\"cpi\"%' GROUP BY source"
-        ).fetchall():
-            ext_call_map[r["source"]] = ext_call_map.get(r["source"], 0) + r["cnt"]
+        ext_call_map = _external_call_counts(conn, include_cpi=True)
 
         adj: dict[str, list[str]] = {}
         for r in conn.execute(
@@ -1357,17 +1510,7 @@ def cs_hotspots(
                 GROUP BY source
             """).fetchall()
         }
-        ext_call_map = {
-            r["source"]: r["cnt"]
-            for r in conn.execute("""
-                SELECT source, COUNT(*) as cnt
-                FROM edges
-                WHERE relation = 'calls'
-                  AND attributes LIKE '%"unresolved"%'
-                  AND attributes NOT LIKE '%"internal_candidate"%'
-                GROUP BY source
-            """).fetchall()
-        }
+        ext_call_map = _external_call_counts(conn)
         guard_map = {
             r["target"]: r["cnt"]
             for r in conn.execute("""
@@ -2503,8 +2646,7 @@ def cs_cross(
                 edges = call_edges_by_source.get(node_id, [])
                 for edge in edges:
                     attrs = _load_metadata(edge["attributes"])
-                    if ((attrs.get("unresolved") and not attrs.get("internal_candidate"))
-                            or attrs.get("sink") or attrs.get("cross_boundary")):
+                    if _is_trust_boundary_call(attrs):
                         target = node_by_id.get(edge["target"])
                         target_meta = node_meta.get(edge["target"], {})
                         if target and edge["target"] not in allowed_ids:
@@ -2525,36 +2667,7 @@ def cs_cross(
 
             return json.dumps(cross_boundary, indent=2)
         else:
-            rows = conn.execute("""
-                SELECT e.source, e.target, e.attributes,
-                       s.label as source_label, s.file as source_file, s.metadata as source_metadata,
-                       t.label as target_label, t.file as target_file, t.metadata as target_metadata
-                FROM edges e
-                LEFT JOIN nodes s ON e.source = s.id
-                LEFT JOIN nodes t ON e.target = t.id
-                WHERE e.relation = 'calls' AND (
-                    (e.attributes LIKE '%"unresolved"%'
-                     AND e.attributes NOT LIKE '%"internal_candidate"%')
-                    OR e.attributes LIKE '%"sink"%'
-                    OR e.attributes LIKE '%"cross_boundary"%'
-                )
-            """).fetchall()
-
-            results = []
-            for row in rows:
-                entry = dict(row)
-                source_meta = _load_metadata(entry.pop("source_metadata", None))
-                target_meta = _load_metadata(entry.pop("target_metadata", None))
-                if not _include_metadata(source_meta, exclude_research):
-                    continue
-                if entry.get("target_label") and not _include_metadata(target_meta, exclude_research):
-                    continue
-                entry["source_context"] = source_meta.get("source_context", "production")
-                if entry.get("target_label"):
-                    entry["target_source_context"] = target_meta.get("source_context", "production")
-                results.append(entry)
-
-            return json.dumps(results, indent=2, default=str)
+            return json.dumps(_cross_call_rows(conn, exclude_research), indent=2, default=str)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_cross",
@@ -2565,6 +2678,70 @@ def cs_cross(
         )
     finally:
         conn.close()
+
+
+@mcp.tool()
+def cs_cross_summary(
+    db: str = "",
+    from_func: str = "",
+    top: int = 50,
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
+    """Summarize trust-boundary calls with bounded samples for large graphs.
+
+    Use this before exhaustive cs_cross on large repos. It reports totals,
+    top source files/targets, source context counts, and at most top sample
+    calls so MCP clients avoid spending large context on raw edge lists.
+
+    Args:
+        db: Database path (default: graph.db)
+        from_func: Optional function to trace before summarizing trust-boundary calls
+        top: Maximum sample calls to include
+        exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+    """
+    db_path = _resolve_db(db)
+    try:
+        if from_func:
+            cross_result = json.loads(cs_cross(
+                db=db_path,
+                from_func=from_func,
+                exclude_research=exclude_research,
+                timeout_seconds=timeout_seconds,
+            ))
+            if isinstance(cross_result, dict) and "error" in cross_result:
+                cross_result["tool"] = "cs_cross_summary"
+                return json.dumps(cross_result, indent=2)
+            summary = _summarize_cross_entries(cross_result, top)
+        else:
+            conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+            try:
+                summary = _summarize_cross_entries(_iter_cross_call_rows(conn, exclude_research), top)
+            finally:
+                conn.close()
+
+        summary.update({
+            "tool": "cs_cross_summary",
+            "query_scope": "production_only" if exclude_research else "all_sources",
+            "from_func": from_func or None,
+            "_next_steps": [
+                "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+                "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+                "Use direct source review on the top source files before treating this as a finding.",
+            ],
+        })
+        return json.dumps(summary, indent=2, default=str)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_cross_summary",
+            exc,
+            timeout_seconds,
+            from_func=from_func,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_cross_summary", db_path, exc)
 
 
 @mcp.tool()

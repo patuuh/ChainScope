@@ -309,6 +309,105 @@ class TestIndexing:
         prod_cross_sources = {(item["source_file"], item["source_context"]) for item in prod_cross if item["source_label"] == "ping"}
         assert prod_cross_sources == {("Vault.sol", "production")}
 
+    def test_cross_summary_caps_output_and_filters_false_attributes(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            db.insert_node(
+                id=f"Vault.sol::Vault.call{i}()",
+                label=f"call{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+            db.insert_edge(
+                source=f"Vault.sol::Vault.call{i}()",
+                target=f"External{i}.doThing()",
+                relation="calls",
+                attributes=json.dumps({"unresolved": True, "interface": f"IExternal{i}"}),
+            )
+
+        db.insert_node(
+            id="scripts/Deploy.s.sol::Deploy.run()",
+            label="run",
+            type="function",
+            visibility="external",
+            file="scripts/Deploy.s.sol",
+            metadata=json.dumps({"source_context": "script"}),
+        )
+        db.insert_edge(
+            source="scripts/Deploy.s.sol::Deploy.run()",
+            target="Broadcast.send()",
+            relation="calls",
+            attributes=json.dumps({"sink": "broadcast"}),
+        )
+
+        db.insert_node(
+            id="Vault.sol::Vault.internalCall()",
+            label="internalCall",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_edge(
+            source="Vault.sol::Vault.internalCall()",
+            target="Vault.sol::Vault.helper()",
+            relation="calls",
+            attributes=json.dumps({"unresolved": False}),
+        )
+
+        summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, top=3))
+
+        assert summary["total"] == 6
+        assert summary["shown"] == 3
+        assert summary["truncated"] is True
+        assert summary["by_attribute"] == {"unresolved": 5, "sink": 1}
+        assert summary["by_source_context"] == {"production": 5, "script": 1}
+        assert len(summary["calls"]) == 3
+
+        prod_summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, top=10, exclude_research=True))
+        assert prod_summary["total"] == 5
+        assert prod_summary["by_source_context"] == {"production": 5}
+
+        raw_cross = json.loads(mcp_server.cs_cross(db=tmp_db))
+        assert {item["source_label"] for item in raw_cross} == {"call0", "call1", "call2", "call3", "call4", "run"}
+
+    def test_hotspots_do_not_count_false_unresolved_call_edges(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.safeSet(uint256)",
+            label="safeSet",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.total",
+            label="total",
+            type="variable",
+            file="Vault.sol",
+        )
+        db.insert_edge(
+            source="Vault.sol::Vault.safeSet(uint256)",
+            target="Vault.sol::Vault.total",
+            relation="writes_state",
+        )
+        db.insert_edge(
+            source="Vault.sol::Vault.safeSet(uint256)",
+            target="Vault.sol::Vault.helper()",
+            relation="calls",
+            attributes=json.dumps({"unresolved": False}),
+        )
+
+        hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=10))
+        safe_set = next(item for item in hotspots["hotspots"] if item["function"] == "safeSet")
+
+        assert "ext_calls(1)" not in safe_set["reasons"]
+
     def test_lookup_query_connection_falls_back_to_immutable(self, tmp_db, monkeypatch):
         import mcp_server
 

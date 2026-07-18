@@ -13,18 +13,28 @@ def cross(
     external_calls: bool = typer.Option(False, "--external-calls", help="List all cross-contract calls"),
     from_func: str = typer.Option(None, "--from", help="Trace from a specific function"),
     max_depth: int = typer.Option(10, help="Max depth for tracing"),
+    summary: bool = typer.Option(False, "--summary", help="Show bounded cross-boundary summary"),
+    top: int = typer.Option(50, "--top", help="Max sample calls for --summary"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
-    if not external_calls and not from_func:
-        typer.echo("Specify --external-calls or --from <function>", err=True)
+    if not external_calls and not from_func and not summary:
+        typer.echo("Specify --external-calls, --summary, or --from <function>", err=True)
         raise typer.Exit(1)
 
-    result = json.loads(mcp_server.cs_cross(
-        db=db,
-        from_func=from_func or "",
-        exclude_research=exclude_research,
-    ))
+    if summary:
+        result = json.loads(mcp_server.cs_cross_summary(
+            db=db,
+            from_func=from_func or "",
+            top=top,
+            exclude_research=exclude_research,
+        ))
+    else:
+        result = json.loads(mcp_server.cs_cross(
+            db=db,
+            from_func=from_func or "",
+            exclude_research=exclude_research,
+        ))
 
     if isinstance(result, dict) and "error" in result:
         typer.echo(result["error"], err=True)
@@ -32,6 +42,29 @@ def cross(
 
     if json_output:
         typer.echo(json.dumps(result, indent=2, default=str))
+        return
+
+    if summary:
+        typer.echo(
+            f"Cross-boundary summary: {result['total']} calls "
+            f"({result['shown']} shown, scope: {result['query_scope']})"
+        )
+        if result.get("by_attribute"):
+            attrs = ", ".join(f"{name}={count}" for name, count in result["by_attribute"].items())
+            typer.echo(f"Attributes: {attrs}")
+        if result.get("top_source_files"):
+            typer.echo("Top source files:")
+            for item in result["top_source_files"]:
+                typer.echo(f"  {item['file'] if 'file' in item else item['name']}: {item['calls']}")
+        if result.get("calls"):
+            typer.echo("Sample calls:")
+            for call in result["calls"]:
+                attrs = call.get("attributes", {})
+                interface = attrs.get("interface", "unknown")
+                typer.echo(
+                    f"  {call.get('source_label', '?')} → {call.get('target_label', '?')} "
+                    f"(interface: {interface}, context: {call.get('source_context', 'production')})"
+                )
         return
 
     if external_calls:
