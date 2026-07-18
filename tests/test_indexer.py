@@ -683,6 +683,67 @@ class TestIndexing:
         assert detailed["_summary"]["include_metadata"] is True
         assert json.loads(detailed["attack_surface"][0]["metadata"])["large"] == ["x"] * 50
 
+    def test_audit_skips_neutral_function_metadata_parses(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        entry_id = "Vault.sol::Vault.entry(uint256)"
+        state_id = "Vault.sol::Vault.total"
+        neutral_metadata = json.dumps({"large": ["x"] * 20})
+        risk_metadata = json.dumps({"reentrancy_risk": True, "large": ["x"] * 20})
+        db.insert_node(
+            id=entry_id,
+            label="entry",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            signature="function entry(uint256 amount) external",
+            metadata=neutral_metadata,
+        )
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+        )
+        db.insert_edge(entry_id, state_id, "writes_state")
+        db.insert_node(
+            id="Vault.sol::Vault.reenter()",
+            label="reenter",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=risk_metadata,
+        )
+        for i in range(30):
+            db.insert_node(
+                id=f"Helper{i}.sol::Helper{i}.noop()",
+                label=f"noop{i}",
+                type="function",
+                visibility="internal",
+                file=f"Helper{i}.sol",
+                metadata=neutral_metadata,
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10))
+
+        assert audit["source_context_summary"] == {"production": 32}
+        assert audit["detections"] == {"reentrancy_risk": 1}
+        assert audit["hotspot_summary"]["total_scored"] == 2
+        assert audit["access_gaps_total"] == 1
+        assert audit["silent_total"] == 1
+        assert audit["dead_code"]["dead_internal_total"] == 31
+        assert parsed == [risk_metadata]
+
     def test_audit_retains_only_top_append_sections(self, tmp_db, monkeypatch):
         import mcp_server
 

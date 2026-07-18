@@ -2100,6 +2100,7 @@ def cs_audit(
             "ton_accept_message", "ton_validation", "ignored_bounce",
             "streaming_rpc", "auth_boundary",
         ]
+        detection_key_tuple = tuple(DETECTION_KEYS)
         detection_counts: dict[str, int] = {}
         source_context_counts: dict[str, int] = {}
         all_funcs = []
@@ -2113,24 +2114,50 @@ def cs_audit(
             )
         for row in function_rows:
             meta = preloaded_function_meta.get(row["id"])
-            if meta is None:
+            raw_meta = row["metadata"]
+            if meta is None and exclude_research:
                 meta = _load_metadata(row["metadata"])
                 if exclude_research and _is_research_meta(meta):
                     continue
             all_funcs.append(row)
-            func_meta_cache[row["id"]] = meta
             func_by_id[row["id"]] = row
-            source_context = meta.get("source_context", "production")
+            has_detection_metadata = meta is not None or _metadata_has_any_key(raw_meta, detection_key_tuple)
+            if has_detection_metadata and meta is None:
+                meta = _load_metadata(raw_meta)
+            if meta is not None:
+                func_meta_cache[row["id"]] = meta
+            source_context = (
+                meta.get("source_context", "production")
+                if meta is not None
+                else _metadata_source_context(raw_meta)
+            )
             source_context_counts[source_context] = source_context_counts.get(source_context, 0) + 1
-            for key in DETECTION_KEYS:
-                if meta.get(key):
-                    detection_counts[key] = detection_counts.get(key, 0) + 1
+            if meta is not None:
+                for key in DETECTION_KEYS:
+                    if meta.get(key):
+                        detection_counts[key] = detection_counts.get(key, 0) + 1
 
         report["detections"] = dict(sorted(detection_counts.items(), key=lambda x: -x[1]))
         report["source_context_summary"] = dict(sorted(source_context_counts.items(), key=lambda x: (-x[1], x[0])))
 
         # --- 3. Precompute shared data structures ---
-        function_ids = set(func_meta_cache)
+        function_ids = {row["id"] for row in all_funcs}
+
+        def _func_meta(row) -> dict:
+            meta = func_meta_cache.get(row["id"])
+            if meta is None:
+                meta = _load_metadata(row["metadata"])
+                func_meta_cache[row["id"]] = meta
+            return meta
+
+        def _func_source_context(row, meta: dict | None = None) -> str:
+            if meta is not None:
+                return meta.get("source_context", "production")
+            cached = func_meta_cache.get(row["id"])
+            if cached is not None:
+                return cached.get("source_context", "production")
+            return _metadata_source_context(row["metadata"])
+
         write_map: dict[str, int] = {}
         write_targets: dict[str, list[str]] = {}
         for r in _iter_edges_for_relation(conn, "writes_state", function_ids):
@@ -2179,8 +2206,6 @@ def cs_audit(
         for row in all_funcs:
             if row["visibility"] not in ("public", "external"):
                 continue
-            if row["id"] not in func_meta_cache:
-                continue
             reachable = _forward_reachable_nodes(adj, row["id"], reachable_cache)
             write_count = sum(write_map.get(rid, 0) for rid in reachable)
             attack_surface_total += 1
@@ -2214,11 +2239,15 @@ def cs_audit(
         for row in all_funcs:
             if row["label"] in ("constructor", "fallback", "receive"):
                 continue
-            meta = func_meta_cache.get(row["id"], {})
             vis = row["visibility"]
             writes = write_map.get(row["id"], 0)
             ext_calls = ext_call_map.get(row["id"], 0)
             guard_count = 1 if row["id"] in guard_set else 0
+            relation_scored = (vis in ("external", "public") and writes > 0) or ext_calls > 0
+            has_score_metadata = _metadata_has_any_key(row["metadata"], _HOTSPOT_SCORE_METADATA_KEYS)
+            if not relation_scored and not has_score_metadata:
+                continue
+            meta = _func_meta(row) if has_score_metadata else {}
             score, reasons = _score_function(row, meta, writes, ext_calls, guard_count)
 
             if score >= 5:
@@ -2231,7 +2260,7 @@ def cs_audit(
                     "function": row["label"],
                     "file": row["file"],
                     "line": row["line_start"],
-                    "source_context": meta.get("source_context", "production"),
+                    "source_context": _func_source_context(row, meta if has_score_metadata else None),
                     "score": score,
                     "reasons": reasons,
                 }, score, hotspot_sequence, top)
@@ -2248,7 +2277,9 @@ def cs_audit(
         reent = []
         reent_total = 0
         for row in all_funcs:
-            meta = func_meta_cache.get(row["id"], {})
+            if not _metadata_has_any_key(row["metadata"], ("reentrancy_risk", "cross_reentrancy")):
+                continue
+            meta = _func_meta(row)
             if meta.get("reentrancy_risk"):
                 reent_total = _append_top(reent, {
                     "function": row["label"],
@@ -2297,7 +2328,11 @@ def cs_audit(
                 vis = row["visibility"]
                 if vis not in ("external", "public"):
                     continue
-                meta = func_meta_cache.get(row["id"], {})
+                meta = (
+                    _func_meta(row)
+                    if _metadata_has_any_key(row["metadata"], ("view", "pure"))
+                    else {}
+                )
                 if meta.get("view") or meta.get("pure"):
                     continue
                 # Check has parameters
@@ -2324,7 +2359,7 @@ def cs_audit(
                             {
                                 "entry": row["label"],
                                 "file": row["file"],
-                                "source_context": meta.get("source_context", "production"),
+                                "source_context": _func_source_context(row, meta or None),
                                 "visibility": vis,
                                 "guarded": is_guarded,
                                 "reachable_sinks": len(reached),
@@ -2370,7 +2405,11 @@ def cs_audit(
         access_gaps = []
         access_gaps_total = 0
         for row in all_funcs:
-            meta = func_meta_cache.get(row["id"], {})
+            has_access_metadata = _metadata_has_any_key(
+                row["metadata"],
+                ("view", "pure", "modifiers", "role_guards"),
+            )
+            meta = _func_meta(row) if has_access_metadata else {}
             vis = row["visibility"]
             if vis not in ("external", "public"):
                 continue
@@ -2407,7 +2446,7 @@ def cs_audit(
             access_gaps_total = _append_top(access_gaps, {
                 "function": row["label"],
                 "file": row["file"],
-                "source_context": meta.get("source_context", "production"),
+                "source_context": _func_source_context(row, meta if has_access_metadata else None),
                 "visibility": vis,
                 "state_writes": wvars,
             }, access_gaps_total, top)
@@ -2429,7 +2468,8 @@ def cs_audit(
             func = func_by_id.get(fid)
             if not func:
                 continue
-            meta = func_meta_cache.get(fid, {})
+            has_mutability_metadata = _metadata_has_any_key(func["metadata"], ("view", "pure"))
+            meta = _func_meta(func) if has_mutability_metadata else {}
             if meta.get("view") or meta.get("pure"):
                 continue
             if func["label"] == "constructor":
@@ -2439,7 +2479,7 @@ def cs_audit(
                 _keep_sorted_result(silent, {
                     "function": func["label"],
                     "file": func["file"],
-                    "source_context": meta.get("source_context", "production"),
+                    "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
                     "state_writes": wcount,
                 }, (-wcount, silent_sequence), top)
                 silent_sequence += 1
@@ -2463,7 +2503,8 @@ def cs_audit(
         for func in all_funcs:
             fid = func["id"]
             vis = func["visibility"]
-            meta = func_meta_cache.get(fid, {})
+            has_mutability_metadata = _metadata_has_any_key(func["metadata"], ("view", "pure"))
+            meta = _func_meta(func) if has_mutability_metadata else {}
             if func["label"] in ("constructor", "fallback", "receive"):
                 continue
             if fid in called_targets:
@@ -2481,7 +2522,7 @@ def cs_audit(
                 dead_internal_total = _append_top(dead_internal, {
                     "function": func["label"],
                     "file": func["file"],
-                    "source_context": meta.get("source_context", "production"),
+                    "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
                     "visibility": vis,
                 }, dead_internal_total, top)
             elif vis in ("external", "public"):
@@ -2491,7 +2532,7 @@ def cs_audit(
                     orphan_writers_total = _append_top(orphan_writers, {
                         "function": func["label"],
                         "file": func["file"],
-                        "source_context": meta.get("source_context", "production"),
+                        "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
                         "visibility": vis,
                         "state_writes": wvars,
                     }, orphan_writers_total, top)
