@@ -39,9 +39,10 @@ def sinks(
     sink_type: str = typer.Option(None, "--type", help="Filter by sink type (fund_transfer/delegate/self_destruct/cpi_transfer)"),
     external_only: bool = typer.Option(False, "--external-only", help="Only show paths from external/public functions"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
-    max_results: int = typer.Option(100, "--max-results", help="Max sinks to expand (0 = all)"),
-    max_callers_per_sink: int = typer.Option(20, "--max-callers-per-sink", help="Max reachable callers per sink (0 = all)"),
+    max_results: int = typer.Option(50, "--max-results", help="Max sinks to expand (0 = all)"),
+    max_callers_per_sink: int = typer.Option(10, "--max-callers-per-sink", help="Max reachable callers per sink (0 = all)"),
     include_metadata: bool = typer.Option(False, "--include-metadata", help="Include full parsed sink metadata in JSON results"),
+    include_caller_details: bool = typer.Option(False, "--include-caller-details", help="Include caller signature and line_end fields in MCP results"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     result = json.loads(mcp_server.cs_sinks(
@@ -52,6 +53,7 @@ def sinks(
         max_results=max_results,
         max_callers_per_sink=max_callers_per_sink,
         include_metadata=include_metadata,
+        include_caller_details=include_caller_details,
     ))
 
     if "error" in result:

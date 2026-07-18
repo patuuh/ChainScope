@@ -1608,7 +1608,7 @@ def cs_help() -> str:
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
-            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50 and callers per sink at max_callers_per_sink=10; full sink metadata is opt-in with include_metadata.",
+            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50 and callers per sink at max_callers_per_sink=10; use include_metadata and include_caller_details for verbose output.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
         "timeout_policy": "MCP tools do not self-timeout by default. Pass timeout_seconds only when a time-limited query or partial build is intentional.",
@@ -3740,6 +3740,7 @@ def cs_sinks(
     max_results: int = 50,
     max_callers_per_sink: int = 10,
     include_metadata: bool = False,
+    include_caller_details: bool = False,
 ) -> str:
     """List dangerous sink nodes and bounded caller reachability.
 
@@ -3756,6 +3757,7 @@ def cs_sinks(
         max_results: Maximum sinks to expand (default: 50; 0 disables)
         max_callers_per_sink: Maximum reachable callers per expanded sink (default: 10; 0 disables)
         include_metadata: Include full parsed sink metadata in each sink result
+        include_caller_details: Include caller signature and line_end fields
     """
     if max_results < 0:
         max_results = 0
@@ -3847,12 +3849,13 @@ def cs_sinks(
                             "label": caller["label"],
                             "file": caller["file"],
                             "line_start": caller["line_start"],
-                            "line_end": caller["line_end"],
                             "visibility": caller["visibility"],
-                            "signature": caller["signature"],
                             "distance": distance + 1,
                             "_metadata_raw": caller.get("metadata"),
                         }
+                        if include_caller_details:
+                            caller_entry["line_end"] = caller["line_end"]
+                            caller_entry["signature"] = caller["signature"]
                         callers_total += 1
                         sort_key = (
                             caller_entry["distance"],
@@ -3895,6 +3898,7 @@ def cs_sinks(
             "max_results": max_results,
             "max_callers_per_sink": max_callers_per_sink,
             "include_metadata": include_metadata,
+            "include_caller_details": include_caller_details,
             "by_type": dict(sorted(by_type.items(), key=lambda item: (-item[1], item[0]))),
             "sinks": shown_sinks,
         }

@@ -55,6 +55,7 @@ class TestIndexing:
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_callers_per_sink"].default == 10
+        assert inspect.signature(mcp_server.cs_sinks).parameters["include_caller_details"].default is False
         assert "max_callers_per_sink=10" in help_payload["exploration_tools"]["cs_sinks"]
 
     def test_mcp_uses_capped_node_match_helpers(self):
@@ -3393,6 +3394,13 @@ class TestIndexing:
             max_results=2,
             max_callers_per_sink=2,
         ))
+        detailed_callers = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            max_callers_per_sink=1,
+            include_caller_details=True,
+        ))
         uncapped_production = json.loads(mcp_server.cs_sinks(
             db=tmp_db,
             sink_type="fund_transfer",
@@ -3415,9 +3423,15 @@ class TestIndexing:
         assert "max_results=0" in capped["_warning"]
         assert capped["sinks"][0]["caller_summary"] == {"total": 4, "shown": 2, "truncated": True}
         assert len(capped["sinks"][0]["callers"]) == 2
+        assert capped["include_caller_details"] is False
+        assert "signature" not in capped["sinks"][0]["callers"][0]
+        assert "line_end" not in capped["sinks"][0]["callers"][0]
         assert capped["caller_truncated"] is True
         assert capped["caller_truncated_sinks"] == 1
         assert "max_callers_per_sink=0" in capped["_warnings"][0]
+        assert detailed_callers["include_caller_details"] is True
+        assert "signature" in detailed_callers["sinks"][0]["callers"][0]
+        assert "line_end" in detailed_callers["sinks"][0]["callers"][0]
 
         assert uncapped_production["total"] == 5
         assert uncapped_production["shown"] == 5
