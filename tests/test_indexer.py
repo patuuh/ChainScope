@@ -260,6 +260,39 @@ class TestIndexing:
         assert "attack_surface" in audit["_summary"]["truncated_sections"]
         assert "cs_hotspots" in audit["_summary"]["_hint"]
 
+    def test_audit_taint_summary_reports_full_total(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.transfer(address,uint256)",
+            label="transfer",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({"is_sink": True, "sink_type": "fund_transfer"}),
+        )
+        for i in range(5):
+            entry_id = f"Vault.sol::Vault.entry{i}(uint256)"
+            db.insert_node(
+                id=entry_id,
+                label=f"entry{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+                signature=f"function entry{i}(uint256 amount) external",
+            )
+            db.insert_edge(entry_id, "Vault.sol::Vault.transfer(address,uint256)", "calls")
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=1))
+
+        assert len(audit["taint_paths"]) == 1
+        assert audit["taint_summary"]["total"] == 5
+        assert audit["_summary"]["sections"]["taint_paths"] == {
+            "total": 5,
+            "shown": 1,
+            "truncated": True,
+        }
+
     def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
         import mcp_server
 

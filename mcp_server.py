@@ -1371,7 +1371,7 @@ def cs_audit(
                 reached = reachable & sink_ids
                 if reached:
                     sink_details = []
-                    for sid in list(reached)[:5]:
+                    for sid in sorted(reached)[:5]:
                         si = sink_info.get(sid, {})
                         sink_details.append({"sink": si.get("label", "?"), "type": si.get("type", "?")})
                     taint_results.append({
@@ -1384,8 +1384,6 @@ def cs_audit(
                         "sinks": sink_details,
                         "risk": "HIGH" if not is_guarded else "MEDIUM",
                     })
-                if len(taint_results) >= top * 2:
-                    break
         taint_results.sort(key=lambda x: (0 if x["risk"] == "HIGH" else 1, -x["reachable_sinks"]))
         if taint_results:
             report["taint_paths"] = taint_results[:top]
