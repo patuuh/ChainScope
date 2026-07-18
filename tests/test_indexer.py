@@ -2849,6 +2849,97 @@ class TestIndexing:
         assert max(endpoint_buffer_sizes["start"]) == 3
         assert max(endpoint_buffer_sizes["finish"]) == 3
 
+    def test_paths_streams_guard_and_state_annotations(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.start()"
+        finish_id = "Vault.sol::Vault.finish()"
+        guard_id = "Vault.sol::Vault.onlyOwner"
+        state_id = "Vault.sol::Vault.total"
+        db.insert_node(
+            id=start_id,
+            label="start",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id=finish_id,
+            label="finish",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id=guard_id,
+            label="onlyOwner",
+            type="modifier",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge(start_id, finish_id, "calls")
+        db.insert_edge(guard_id, start_id, "guards")
+        db.insert_edge(start_id, state_id, "reads_state")
+        db.insert_edge(finish_id, state_id, "writes_state")
+
+        real_open = mcp_server._open_query_connection
+
+        class StreamingRows:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchall(self):
+                raise AssertionError("cs_paths annotations should stream")
+
+        class StreamingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                rows = self._conn.execute(sql, *args, **kwargs)
+                if (
+                    "e.relation = 'guards'" in normalized
+                    or "relation='reads_state'" in normalized
+                    or "relation='writes_state'" in normalized
+                ):
+                    return StreamingRows(rows)
+                return rows
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: StreamingConnection(real_open(*args, **kwargs)),
+        )
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            show_guards=True,
+            show_state=True,
+        ))
+
+        assert paths["guards"] == {"start": ["onlyOwner"]}
+        assert paths["state_access"]["start"]["reads"] == ["Vault.total"]
+        assert paths["state_access"]["finish"]["writes"] == ["Vault.total"]
+
     def test_state_filters_research_transitions(self, tmp_path, tmp_db):
         import mcp_server
 

@@ -3072,7 +3072,7 @@ def cs_paths(
                         SELECT n.id, n.label, n.metadata
                         FROM edges e JOIN nodes n ON e.source = n.id
                         WHERE e.target = ? AND e.relation = 'guards'
-                    """, (node_id,)).fetchall()
+                    """, (node_id,))
                     labels = []
                     for guard in guards:
                         meta = _load_metadata(guard["metadata"])
@@ -3093,11 +3093,11 @@ def cs_paths(
                     reads = conn.execute(
                         "SELECT target FROM edges WHERE source=? AND relation='reads_state'",
                         (node_id,)
-                    ).fetchall()
+                    )
                     writes = conn.execute(
                         "SELECT target FROM edges WHERE source=? AND relation='writes_state'",
                         (node_id,)
-                    ).fetchall()
+                    )
                     if reads or writes:
                         result["state_access"][_label_for_node(node_id)] = {
                             "reads": [r[0].split("::")[-1] for r in reads],
