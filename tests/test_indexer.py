@@ -1,5 +1,6 @@
 import json
 import pytest
+from pathlib import Path
 from core.indexer import Indexer
 from core.indexer import classify_source_context
 from core.schema import GraphDB
@@ -505,6 +506,45 @@ class TestIndexing:
 
 
 class TestFileFiltering:
+    def test_collect_files_prioritizes_protocol_sources_for_partial_builds(self, tmp_path):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        devtools = repo / "devtools"
+        devtools.mkdir()
+        src = repo / "src"
+        src.mkdir()
+        (devtools / "config.ts").write_text("export function configure() { return 1 }\n")
+        (src / "Vault.sol").write_text("pragma solidity ^0.8.0;\ncontract Vault { function deposit() external {} }\n")
+
+        indexer = Indexer(str(repo))
+        collected = [Path(path).relative_to(repo).as_posix() for path in indexer._collect_files()]
+
+        assert collected[0] == "src/Vault.sol"
+        assert collected[-1] == "devtools/config.ts"
+
+    def test_partial_build_indexes_protocol_sources_first(self, tmp_path, tmp_db):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        devtools = repo / "devtools"
+        devtools.mkdir()
+        src = repo / "src"
+        src.mkdir()
+        (devtools / "config.ts").write_text("export function configure() { return 1 }\n")
+        (src / "Vault.sol").write_text("pragma solidity ^0.8.0;\ncontract Vault { function deposit() external {} }\n")
+
+        stats = Indexer(str(repo)).index(tmp_db, max_files=1)
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        try:
+            labels = {row["label"] for row in conn.execute("SELECT label FROM nodes").fetchall()}
+        finally:
+            conn.close()
+
+        assert stats["files_considered"] == 2
+        assert stats["files_indexed"] == 1
+        assert "deposit" in labels
+        assert "configure" not in labels
+
     def test_ignores_test_files(self, tmp_path, tmp_db):
         repo = tmp_path / "repo"
         repo.mkdir()

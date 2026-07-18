@@ -201,6 +201,11 @@ Build a graph:
 python cs_build.py /path/to/repo --db graph.db
 ```
 
+If a build is time-limited or partial, ChainScope prioritizes production
+protocol roots such as `src/`, `contracts/`, `programs/`, `pallets/`, and
+`crates/` before lower-signal operational or config code. This keeps partial
+graphs useful for agent triage.
+
 Query it:
 
 ```bash
@@ -393,4 +398,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`402 passed`
+`404 passed`

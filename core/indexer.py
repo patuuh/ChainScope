@@ -152,6 +152,44 @@ EXT_TO_CHAIN = {
 }
 
 
+PROTOCOL_SOURCE_ROOTS = {
+    "src", "source", "sources",
+    "contracts", "contract",
+    "programs", "program",
+    "pallets", "pallet",
+    "crates", "crate",
+    "modules", "module",
+    "packages", "package",
+    "cmd", "internal", "pkg",
+}
+
+LOW_SIGNAL_SOURCE_ROOTS = {
+    "devtools", "tasks", "ops", "tools", "cli", "config", "configs",
+    "deployment", "deployments", "deploy", "deploys",
+}
+
+CHAIN_PRIORITY = {
+    "solidity": 0,
+    "move": 1,
+    "clarity": 2,
+    "vyper": 3,
+    "anchor": 4,
+    "substrate": 5,
+    "soroban": 6,
+    "rust": 7,
+    "go": 8,
+    "cpp": 9,
+    "java": 10,
+    "ton": 11,
+    "cairo": 12,
+    "sway": 13,
+    "typescript": 14,
+    "python": 15,
+    "proto": 16,
+    "xdr": 17,
+}
+
+
 def should_skip_dir_name(dirname: str, include_research: bool = False) -> bool:
     """Return true when a directory is low-signal for security indexing."""
     lower = dirname.lower()
@@ -443,6 +481,30 @@ class Indexer:
         rel_path = os.path.relpath(file_path, self.repo_path)
         return should_index_source_file(rel_path, include_research=self.include_research)
 
+    def _file_priority(self, file_path: str) -> tuple:
+        """Sort indexable files so partial builds contain protocol signal first."""
+        rel_path = os.path.relpath(file_path, self.repo_path)
+        rel_norm = rel_path.replace(os.sep, "/")
+        parts = [p.lower() for p in Path(rel_norm).parts]
+        root = parts[0] if parts else ""
+        chain = EXT_TO_CHAIN.get(Path(file_path).suffix.lower(), "generic")
+
+        source_context = classify_source_context(rel_norm)
+        context_rank = 0 if source_context == "production" else 3
+        if root in PROTOCOL_SOURCE_ROOTS:
+            root_rank = 0
+        elif root in LOW_SIGNAL_SOURCE_ROOTS:
+            root_rank = 2
+        else:
+            root_rank = 1
+
+        chain_rank = CHAIN_PRIORITY.get(chain, 99)
+        if chain == self.detected_chain:
+            chain_rank = -1
+
+        depth = len(parts)
+        return (context_rank, root_rank, chain_rank, depth, rel_norm.lower())
+
     def _collect_files(self) -> list[str]:
         """Walk repo and collect indexable files."""
         files = []
@@ -452,7 +514,7 @@ class Indexer:
                 fpath = os.path.join(root, fname)
                 if self._should_index(fpath):
                     files.append(fpath)
-        return sorted(files)
+        return sorted(files, key=self._file_priority)
 
     def _annotate_source_context(self, result: ExtractResult, rel_path: str) -> None:
         """Tag nodes from research-oriented files so audits can distinguish them."""
