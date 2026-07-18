@@ -541,6 +541,98 @@ class TestIndexing:
         assert uncapped["truncated"] is False
         assert len(uncapped["calls"]) == 5
 
+    def test_sinks_caps_output_and_filters_scope_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(6):
+            source_context = "script" if i == 5 else "production"
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.transfer()",
+                label=f"transfer{i}",
+                type="function",
+                visibility="",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "is_sink": True,
+                    "sink_type": "fund_transfer",
+                    "source_context": source_context,
+                }),
+            )
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.callTransfer()",
+                label=f"callTransfer{i}",
+                type="function",
+                visibility="external" if i % 2 == 0 else "internal",
+                file=f"Vault{i}.sol",
+                line_start=20 + i,
+                metadata=json.dumps({"source_context": source_context}),
+            )
+            db.insert_edge(
+                source=f"Vault{i}.sol::Vault{i}.callTransfer()",
+                target=f"Vault{i}.sol::Vault{i}.transfer()",
+                relation="calls",
+            )
+
+        for i in range(3):
+            db.insert_node(
+                id=f"Wrapper{i}.sol::Wrapper{i}.wrap()",
+                label=f"wrap{i}",
+                type="function",
+                visibility="external",
+                file=f"Wrapper{i}.sol",
+                line_start=i + 1,
+            )
+            db.insert_edge(
+                source=f"Wrapper{i}.sol::Wrapper{i}.wrap()",
+                target="Vault0.sol::Vault0.transfer()",
+                relation="calls",
+            )
+
+        capped = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=2,
+            max_callers_per_sink=2,
+        ))
+        uncapped_production = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            exclude_research=True,
+            max_results=0,
+            max_callers_per_sink=0,
+        ))
+        external_only = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            external_only=True,
+            max_results=0,
+            max_callers_per_sink=0,
+        ))
+
+        assert capped["total"] == 6
+        assert capped["shown"] == 2
+        assert capped["truncated"] is True
+        assert capped["by_type"] == {"fund_transfer": 6}
+        assert "max_results=0" in capped["_warning"]
+        assert capped["sinks"][0]["caller_summary"] == {"total": 4, "shown": 2, "truncated": True}
+        assert len(capped["sinks"][0]["callers"]) == 2
+        assert "max_callers_per_sink=0" in capped["_warnings"][0]
+
+        assert uncapped_production["total"] == 5
+        assert uncapped_production["shown"] == 5
+        assert uncapped_production["truncated"] is False
+        assert all(sink["source_context"] == "production" for sink in uncapped_production["sinks"])
+
+        internal_labels = {
+            caller["label"]
+            for sink in external_only["sinks"]
+            for caller in sink["callers"]
+            if caller["visibility"] == "internal"
+        }
+        assert internal_labels == set()
+
     def test_hotspots_do_not_count_false_unresolved_call_edges(self, tmp_db):
         import mcp_server
 

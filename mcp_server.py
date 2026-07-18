@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """ChainScope MCP Server — exposes web3 knowledge graph tools to AI agents.
 
-Consolidated tool set (14 tools):
+Consolidated tool set (15 tools):
   Core:        cs_profile, cs_build, cs_help, cs_summary, cs_audit
   Scanners:    cs_hotspots, cs_defi, cs_unsafe
-  Exploration: cs_paths, cs_trace, cs_cross, cs_cross_summary, cs_state, cs_lookup
+  Exploration: cs_paths, cs_trace, cs_cross, cs_cross_summary, cs_sinks, cs_state, cs_lookup
 """
 
 import json
@@ -696,6 +696,7 @@ def cs_help() -> str:
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches; use max_matches=0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; use max_results=0 for exhaustive output.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
+            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
         "_tip": "All tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
@@ -2451,6 +2452,180 @@ def cs_unsafe(
 # ---------------------------------------------------------------------------
 # EXPLORATION TOOLS (drill-down, path finding, state tracing)
 # ---------------------------------------------------------------------------
+
+@mcp.tool()
+def cs_sinks(
+    db: str = "",
+    sink_type: str = "",
+    external_only: bool = False,
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+    max_results: int = 100,
+    max_callers_per_sink: int = 20,
+) -> str:
+    """List dangerous sink nodes and bounded caller reachability.
+
+    This is a drill-down companion to cs_audit's sink summary. Broad output is
+    capped for LLM context by default; set max_results=0 and/or
+    max_callers_per_sink=0 only when exhaustive output is intentional.
+
+    Args:
+        db: Database path (default: graph.db)
+        sink_type: Optional sink type filter, e.g. fund_transfer or self_destruct
+        external_only: Only include public/external callers in reachability output
+        exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+        max_results: Maximum sinks to expand (0 disables)
+        max_callers_per_sink: Maximum reachable callers per expanded sink (0 disables)
+    """
+    if max_results < 0:
+        max_results = 0
+    if max_callers_per_sink < 0:
+        max_callers_per_sink = 0
+
+    db_path = _resolve_db(db)
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_sinks", db_path, exc)
+
+    try:
+        sink_rows = conn.execute(
+            "SELECT id, label, type, visibility, file, line_start, line_end, "
+            "signature, metadata FROM nodes "
+            "WHERE metadata LIKE '%\"is_sink\"%' "
+            "ORDER BY file, line_start, id"
+        ).fetchall()
+
+        sinks = []
+        by_type: dict[str, int] = {}
+        for row in sink_rows:
+            meta = _load_metadata(row["metadata"])
+            if not meta.get("is_sink"):
+                continue
+            current_type = meta.get("sink_type", "unknown")
+            if sink_type and current_type != sink_type:
+                continue
+            if not _include_metadata(meta, exclude_research):
+                continue
+            by_type[current_type] = by_type.get(current_type, 0) + 1
+            sinks.append({
+                "id": row["id"],
+                "label": row["label"],
+                "node_type": row["type"],
+                "visibility": row["visibility"],
+                "file": row["file"],
+                "line_start": row["line_start"],
+                "line_end": row["line_end"],
+                "signature": row["signature"],
+                "sink_type": current_type,
+                "source_context": meta.get("source_context", "production"),
+                "metadata": meta,
+            })
+
+        total = len(sinks)
+        shown_sinks, sink_summary = _cap_items(sinks, max_results)
+
+        if shown_sinks:
+            node_map: dict[str, dict] = {}
+            for row in conn.execute(
+                "SELECT id, label, type, visibility, file, line_start, line_end, "
+                "signature, metadata FROM nodes"
+            ).fetchall():
+                meta = _load_metadata(row["metadata"])
+                node_map[row["id"]] = {
+                    "id": row["id"],
+                    "label": row["label"],
+                    "type": row["type"],
+                    "visibility": row["visibility"],
+                    "file": row["file"],
+                    "line_start": row["line_start"],
+                    "line_end": row["line_end"],
+                    "signature": row["signature"],
+                    "source_context": meta.get("source_context", "production"),
+                    "_metadata": meta,
+                }
+
+            rev_adj: dict[str, list[str]] = {}
+            for row in conn.execute(
+                "SELECT source, target FROM edges WHERE relation = 'calls'"
+            ).fetchall():
+                rev_adj.setdefault(row["target"], []).append(row["source"])
+            for callers in rev_adj.values():
+                callers.sort()
+
+            def _reachable_callers(sink_id: str) -> tuple[list[dict], dict]:
+                visited = {sink_id}
+                queue = [(sink_id, 0)]
+                pos = 0
+                callers = []
+                while pos < len(queue):
+                    target_id, distance = queue[pos]
+                    pos += 1
+                    for caller_id in rev_adj.get(target_id, []):
+                        if caller_id in visited:
+                            continue
+                        visited.add(caller_id)
+                        queue.append((caller_id, distance + 1))
+                        caller = node_map.get(caller_id)
+                        if not caller or caller.get("type") != "function":
+                            continue
+                        caller_meta = caller.get("_metadata", {})
+                        if not _include_metadata(caller_meta, exclude_research):
+                            continue
+                        if external_only and caller.get("visibility") not in ("public", "external"):
+                            continue
+                        callers.append({
+                            "id": caller["id"],
+                            "label": caller["label"],
+                            "file": caller["file"],
+                            "line_start": caller["line_start"],
+                            "line_end": caller["line_end"],
+                            "visibility": caller["visibility"],
+                            "signature": caller["signature"],
+                            "source_context": caller["source_context"],
+                            "distance": distance + 1,
+                        })
+
+                callers.sort(key=lambda item: (item["distance"], item["file"], item["line_start"], item["id"]))
+                return _cap_items(callers, max_callers_per_sink)
+
+            for sink in shown_sinks:
+                callers, caller_summary = _reachable_callers(sink["id"])
+                sink["callers"] = callers
+                sink["caller_summary"] = caller_summary
+
+        result = {
+            "tool": "cs_sinks",
+            "query_scope": "production_only" if exclude_research else "all_sources",
+            "sink_type": sink_type or "all",
+            "external_only": external_only,
+            "total": total,
+            "shown": sink_summary["shown"],
+            "truncated": sink_summary["truncated"],
+            "max_results": max_results,
+            "max_callers_per_sink": max_callers_per_sink,
+            "by_type": dict(sorted(by_type.items(), key=lambda item: (-item[1], item[0]))),
+            "sinks": shown_sinks,
+        }
+        if sink_summary["truncated"]:
+            result["_warning"] = "cs_sinks output capped for MCP. Set max_results=0 for exhaustive sink expansion."
+        if any(s.get("caller_summary", {}).get("truncated") for s in shown_sinks):
+            result.setdefault("_warnings", []).append(
+                "Some caller lists were capped. Set max_callers_per_sink=0 for exhaustive caller reachability."
+            )
+        return json.dumps(result, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_sinks",
+            exc,
+            timeout_seconds,
+            sink_type=sink_type or "all",
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
+    finally:
+        conn.close()
+
 
 @mcp.tool()
 def cs_paths(

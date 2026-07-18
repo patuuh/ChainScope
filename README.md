@@ -264,6 +264,10 @@ choose where to inspect without dumping every trust-boundary edge. Raw
 `cs_cross` output is capped by `max_results`; set `max_results=0` only when an
 exhaustive edge list is intentional.
 
+Broad `cs_sinks` output is capped by sink count and reachable callers per sink.
+The response still reports total sinks and type counts; set `max_results=0` or
+`max_callers_per_sink=0` only when exhaustive sink expansion is intentional.
+
 ## Query surface
 
 ### MCP tools
@@ -279,6 +283,7 @@ exhaustive edge list is intentional.
 - `cs_trace`
 - `cs_cross_summary`
 - `cs_cross`
+- `cs_sinks`
 - `cs_state`
 - `cs_lookup`
 
@@ -297,6 +302,7 @@ exhaustive edge list is intentional.
 - `python cs_state.py ...`
 - `python cs_state.py --max-entities 0 --max-transitions-per-entity 0 --max-warnings 0 ...`
 - `python cs_sinks.py ...`
+- `python cs_sinks.py --max-results 0 --max-callers-per-sink 0 ...`
 
 ## Research mode
 
@@ -440,4 +446,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`416 passed`
+`417 passed`
