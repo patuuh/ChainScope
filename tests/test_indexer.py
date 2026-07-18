@@ -3165,6 +3165,16 @@ class TestIndexing:
         assert any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
         assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
         assert any("WHERE e.target = ? AND e.relation = 'calls' LIMIT ?" in sql for sql in statements)
+        assert any(
+            "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_target_relation" in sql
+            and "WHERE e.target = ? AND e.relation = 'calls'" in sql
+            for sql in statements
+        )
+        assert not any(
+            sql.startswith("SELECT COUNT(*) FROM edges AS e JOIN")
+            or sql.startswith("SELECT COUNT(*) FROM edges e JOIN")
+            for sql in statements
+        )
 
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
