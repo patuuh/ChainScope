@@ -2060,6 +2060,70 @@ class TestIndexing:
         assert neutral_metadata not in parsed
         assert parsed == [edge_attrs] * 6
 
+    def test_cross_exclude_research_filters_before_attribute_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        prod_edge_attrs = json.dumps({"unresolved": True, "kind": "prod"})
+        script_edge_attrs = json.dumps({"unresolved": True, "kind": "script"})
+        for i in range(3):
+            source_id = f"Vault.sol::Vault.call{i}()"
+            target_id = f"External{i}.sol::External{i}.doThing()"
+            db.insert_node(
+                id=source_id,
+                label=f"call{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+            db.insert_node(
+                id=target_id,
+                label="doThing",
+                type="function",
+                visibility="external",
+                file=f"External{i}.sol",
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+            db.insert_edge(source_id, target_id, "calls", attributes=prod_edge_attrs)
+        for i in range(2):
+            source_id = f"scripts/Deploy{i}.sol::Deploy{i}.run()"
+            target_id = f"ScriptExternal{i}.sol::ScriptExternal{i}.doThing()"
+            db.insert_node(
+                id=source_id,
+                label=f"run{i}",
+                type="function",
+                visibility="external",
+                file=f"scripts/Deploy{i}.sol",
+                metadata=json.dumps({"source_context": "script", "large": ["x"] * 20}),
+            )
+            db.insert_node(
+                id=target_id,
+                label="doThing",
+                type="function",
+                visibility="external",
+                file=f"scripts/ScriptExternal{i}.sol",
+                metadata=json.dumps({"source_context": "script", "large": ["x"] * 20}),
+            )
+            db.insert_edge(source_id, target_id, "calls", attributes=script_edge_attrs)
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, exclude_research=True, max_results=0))
+        summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, exclude_research=True, top=3))
+
+        assert cross["total"] == 3
+        assert {item["source_context"] for item in cross["calls"]} == {"production"}
+        assert summary["by_source_context"] == {"production": 3}
+        assert parsed == [prod_edge_attrs] * 6
+
     def test_cross_summary_caps_counter_sections_for_llm_context(self, tmp_db):
         import mcp_server
 
