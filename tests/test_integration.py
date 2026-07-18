@@ -29,6 +29,23 @@ class TestEndToEnd:
         assert result.returncode == 0
         assert "node" in result.stdout.lower() or "function" in result.stdout.lower()
 
+    def test_build_json_output(self, tmp_path):
+        db = str(tmp_path / "json-build.db")
+        result = run_tool("cs_build.py", [self.repo, "--db", db, "--json"])
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["status"] == "success"
+        assert data["database"] == db
+        assert data["nodes"] > 0
+        assert data["files_indexed"] > 0
+        assert data["_next_steps"]
+
+    def test_build_missing_repo_returns_error(self, tmp_path):
+        missing = tmp_path / "missing"
+        result = run_tool("cs_build.py", [str(missing), "--json"])
+        assert result.returncode == 1
+        assert "not a directory" in result.stderr
+
     def test_profile_json(self):
         result = run_tool("cs_profile.py", [self.repo, "--json"])
         assert result.returncode == 0
