@@ -1216,6 +1216,57 @@ class TestIndexing:
         assert len(result["sinks"][0]["callers"]) == 2
         assert len(parsed) == 3
 
+    def test_sinks_retains_only_capped_callers(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        sink_id = "Vault.sol::Vault.transfer()"
+        db.insert_node(
+            id=sink_id,
+            label="transfer",
+            type="function",
+            visibility="public",
+            file="Vault.sol",
+            metadata=json.dumps({"is_sink": True, "sink_type": "fund_transfer"}),
+        )
+        for i in range(30):
+            caller_id = f"Caller{i:02d}.sol::Caller{i:02d}.callTransfer()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callTransfer{i:02d}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i:02d}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({"source_context": "production"}),
+            )
+            db.insert_edge(caller_id, sink_id, "calls")
+
+        real_keep_sorted = mcp_server._keep_sorted_result
+        caller_buffer_sizes = []
+
+        def tracking_keep_sorted(buffer, item, sort_key, limit):
+            real_keep_sorted(buffer, item, sort_key, limit)
+            if isinstance(item, dict) and item.get("distance") is not None:
+                caller_buffer_sizes.append(len(buffer))
+
+        monkeypatch.setattr(mcp_server, "_keep_sorted_result", tracking_keep_sorted)
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            max_callers_per_sink=3,
+        ))
+
+        assert result["sinks"][0]["caller_summary"] == {"total": 30, "shown": 3, "truncated": True}
+        assert [caller["label"] for caller in result["sinks"][0]["callers"]] == [
+            "callTransfer00",
+            "callTransfer01",
+            "callTransfer02",
+        ]
+        assert max(caller_buffer_sizes) == 3
+
     def test_hotspots_do_not_count_false_unresolved_call_edges(self, tmp_db):
         import mcp_server
 

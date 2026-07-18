@@ -2634,6 +2634,7 @@ def cs_sinks(
                 queue = [(sink_id, 0)]
                 pos = 0
                 callers = []
+                callers_total = 0
                 while pos < len(queue):
                     target_id, distance = queue[pos]
                     pos += 1
@@ -2665,10 +2666,21 @@ def cs_sinks(
                         }
                         if caller_meta is not None:
                             caller_entry["source_context"] = caller_meta.get("source_context", "production")
-                        callers.append(caller_entry)
+                        callers_total += 1
+                        _keep_sorted_result(
+                            callers,
+                            caller_entry,
+                            (
+                                caller_entry["distance"],
+                                caller_entry["file"] or "",
+                                caller_entry["line_start"] or 0,
+                                caller_entry["id"],
+                            ),
+                            max_callers_per_sink,
+                        )
 
-                callers.sort(key=lambda item: (item["distance"], item["file"], item["line_start"], item["id"]))
-                shown, summary = _cap_items(callers, max_callers_per_sink)
+                shown = _sorted_results(callers)
+                summary = _section_summary(callers_total, len(shown))
                 for caller in shown:
                     if "source_context" not in caller:
                         meta = _load_metadata(caller.pop("_metadata_raw", None))
