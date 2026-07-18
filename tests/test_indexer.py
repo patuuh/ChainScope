@@ -3630,6 +3630,7 @@ class TestIndexing:
         db.insert_edge(start_id, finish_id, "calls")
 
         real_open = mcp_server._open_query_connection
+        statements = []
 
         class StreamingRows:
             def __init__(self, rows):
@@ -3647,14 +3648,13 @@ class TestIndexing:
 
             def execute(self, sql, *args, **kwargs):
                 normalized = " ".join(sql.split())
+                statements.append(normalized)
+                if normalized == "SELECT id, label, file, metadata FROM nodes":
+                    raise AssertionError("cs_paths should not preload all nodes")
+                if "SELECT source, target FROM edges" in normalized and "relation IN" in normalized:
+                    raise AssertionError("cs_paths should not scan all traversal edges")
                 rows = self._conn.execute(sql, *args, **kwargs)
-                if (
-                    normalized == "SELECT id, label, file, metadata FROM nodes"
-                    or (
-                        "SELECT source, target FROM edges" in normalized
-                        and "relation IN" in normalized
-                    )
-                ):
+                if "INDEXED BY idx_edges_source_relation" in normalized:
                     return StreamingRows(rows)
                 return rows
 
@@ -3675,6 +3675,8 @@ class TestIndexing:
 
         assert paths["paths"] == [["start", "finish"]]
         assert paths["_summary"]["paths_found"] == 1
+        assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
+        assert any("e.source = ? AND e.relation IN" in sql for sql in statements)
 
     def test_paths_preserves_exact_match_stage_when_excluding_research(self, tmp_db):
         import mcp_server

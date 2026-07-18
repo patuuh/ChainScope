@@ -168,20 +168,36 @@ def _find_function_rows_capped(
     return [], 0, False
 
 
-def _find_nodes_bounded(conn, label: str, allowed_ids: set[str], retain_limit: int) -> tuple[list[dict], int]:
-    """Find matching nodes while retaining only the first ordered rows needed by callers."""
-    for sql, params in _node_match_queries("id, label", label):
+def _find_nodes_bounded(
+    conn,
+    label: str,
+    exclude_research: bool,
+    retain_limit: int,
+) -> tuple[list[dict], int, bool]:
+    """Find matching nodes while retaining only rows needed by path callers."""
+    for sql, params in _node_match_queries("id, label, file, metadata", label):
         rows: list[dict] = []
         total = 0
         matched_before_scope = False
         for row in conn.execute(sql, params):
             matched_before_scope = True
-            if row["id"] not in allowed_ids:
-                continue
-            total = _append_capped(rows, dict(row), total, retain_limit)
+            item = dict(row)
+            if exclude_research:
+                meta = _load_metadata(item.get("metadata"))
+                if not _include_metadata(meta, exclude_research):
+                    continue
+                item["_metadata_parsed"] = meta
+            total = _append_capped(rows, item, total, retain_limit)
         if total or matched_before_scope:
-            return rows, total
-    return [], 0
+            return rows, total, matched_before_scope
+    return [], 0, False
+
+
+def _count_label_matches(conn, label: str) -> int:
+    return conn.execute(
+        "SELECT COUNT(*) FROM nodes WHERE label = ?",
+        (label,),
+    ).fetchone()[0]
 
 
 def _find_state_vars_bounded(
@@ -3156,36 +3172,25 @@ def cs_paths(
         return _query_open_error("cs_paths", db_path, exc)
 
     try:
-        node_rows = conn.execute(
-            "SELECT id, label, file, metadata FROM nodes"
-        )
-        node_labels: dict[str, str] = {}
-        node_files: dict[str, str] = {}
-        node_metadata_raw: dict[str, str] = {}
-        label_counts: dict[str, int] = {}
+        node_by_id: dict[str, dict | None] = {}
         node_meta: dict[str, dict] = {}
-        allowed_ids: set[str] = set()
-        for row in node_rows:
-            node_id = row["id"]
-            label = row["label"]
-            node_labels[node_id] = label
-            node_files[node_id] = row["file"]
-            node_metadata_raw[node_id] = row["metadata"]
-            label_counts[label] = label_counts.get(label, 0) + 1
-            if exclude_research:
-                meta = _load_metadata(row["metadata"])
-                node_meta[node_id] = meta
-                if _include_metadata(meta, exclude_research):
-                    allowed_ids.add(node_id)
-            else:
-                allowed_ids.add(node_id)
+        label_counts: dict[str, int] = {}
 
         def _metadata_for_node(node_id: str) -> dict:
             meta = node_meta.get(node_id)
             if meta is None:
-                meta = _load_metadata(node_metadata_raw.get(node_id))
+                row = _node_for_id(conn, node_id, node_by_id)
+                meta = _load_metadata(row.get("metadata") if row else None)
                 node_meta[node_id] = meta
             return meta
+
+        def _node_allowed(node_id: str) -> bool:
+            row = _node_for_id(conn, node_id, node_by_id)
+            if not row:
+                return False
+            if not exclude_research:
+                return True
+            return _include_metadata(_metadata_for_node(node_id), exclude_research)
 
         endpoint_cap_enabled = max_endpoint_matches > 0
         if endpoint_cap_enabled and max_endpoint_candidates > 0:
@@ -3195,18 +3200,24 @@ def cs_paths(
         else:
             endpoint_retain_limit = 0
 
-        from_nodes, from_matches_total = _find_nodes_bounded(
+        from_nodes, from_matches_total, _from_matched_before_scope = _find_nodes_bounded(
             conn,
             from_label,
-            allowed_ids,
+            exclude_research,
             endpoint_retain_limit,
         )
-        to_nodes, to_matches_total = _find_nodes_bounded(
+        to_nodes, to_matches_total, _to_matched_before_scope = _find_nodes_bounded(
             conn,
             to_label,
-            allowed_ids,
+            exclude_research,
             endpoint_retain_limit,
         )
+
+        for node in from_nodes + to_nodes:
+            node_by_id[node["id"]] = node
+            parsed_meta = node.get("_metadata_parsed")
+            if parsed_meta is not None:
+                node_meta[node["id"]] = parsed_meta
 
         if not from_nodes:
             if exclude_research:
@@ -3217,24 +3228,15 @@ def cs_paths(
                 return json.dumps({"error": f"No production node found matching '{to_label}'"})
             return json.dumps({"error": f"No node found matching '{to_label}'"})
 
-        adjacency_rows = conn.execute(
-            """
-            SELECT source, target
-            FROM edges
-            WHERE relation IN (?, ?, ?)
-            """,
-            TRAVERSAL_RELATIONS,
-        )
         adjacency: dict[str, list[str]] = {}
-        for row in adjacency_rows:
-            if row["source"] not in allowed_ids or row["target"] not in allowed_ids:
-                continue
-            adjacency.setdefault(row["source"], []).append(row["target"])
 
         def _label_for_node(node_id: str) -> str:
-            label = node_labels.get(node_id)
-            if label is None:
+            node = _node_for_id(conn, node_id, node_by_id)
+            if not node:
                 return node_id
+            label = node["label"]
+            if label not in label_counts:
+                label_counts[label] = _count_label_matches(conn, label)
             if label_counts.get(label, 0) > 1:
                 return _qualified_label(node_id)
             return label
@@ -3245,9 +3247,21 @@ def cs_paths(
                 "id": node["id"],
                 "label": node["label"],
                 "qualified_label": _label_for_node(node["id"]),
-                "file": node_files.get(node["id"], ""),
+                "file": node.get("file", ""),
                 "source_context": meta.get("source_context", "production"),
             }
+
+        def _neighbors_for_node(node_id: str) -> list[str]:
+            neighbors = adjacency.get(node_id)
+            if neighbors is not None:
+                return neighbors
+            neighbors = []
+            for row in _iter_reachable_traversal_targets(conn, node_id):
+                target_id = row["target"]
+                if _node_allowed(target_id):
+                    neighbors.append(target_id)
+            adjacency[node_id] = neighbors
+            return neighbors
 
         selected_from_nodes = (
             from_nodes[:max_endpoint_matches] if endpoint_cap_enabled else from_nodes
@@ -3271,7 +3285,7 @@ def cs_paths(
                     continue
                 if len(path) > max_depth:
                     continue
-                for neighbor in adjacency.get(current, []):
+                for neighbor in _neighbors_for_node(current):
                     if neighbor not in path:
                         queue.append(path + [neighbor])
             return results
