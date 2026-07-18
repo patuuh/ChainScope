@@ -1818,7 +1818,10 @@ def _is_research_metadata_raw(raw) -> bool:
 def _metadata_has_any_key(raw, keys: tuple[str, ...]) -> bool:
     if not raw:
         return False
-    return any(f'"{key}"' in raw for key in keys)
+    return any(
+        f'"{key}"' in raw and _metadata_raw_value(raw, key) is not _MISSING_METADATA_VALUE
+        for key in keys
+    )
 
 
 def _has_access_control(meta: dict, guard_count: int) -> bool:
