@@ -805,6 +805,59 @@ class TestIndexing:
 
         assert "ext_calls(1)" not in safe_set["reasons"]
 
+    def test_hotspots_uses_bounded_queries_for_broad_scans(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(400):
+            func_id = f"Vault.sol::Vault.entry{i}()"
+            state_id = f"Vault.sol::Vault.total{i}"
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=state_id,
+                label=f"total{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+            db.insert_edge(
+                func_id,
+                f"Vault.sol::_unresolved::external{i}",
+                "calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(sql)
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        def counting_open(*args, **kwargs):
+            return CountingConnection(real_open(*args, **kwargs))
+
+        monkeypatch.setattr(mcp_server, "_open_query_connection", counting_open)
+
+        hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=25, exclude_research=True))
+
+        assert hotspots["_summary"]["total_scored"] == 400
+        assert hotspots["_summary"]["top_shown"] == 25
+        assert len(statements) == 4
+
     def test_lookup_query_connection_falls_back_to_immutable(self, tmp_db, monkeypatch):
         import mcp_server
 
@@ -1000,6 +1053,59 @@ class TestIndexing:
         assert uncapped["max_candidates"] == 50
         assert len(uncapped["writers"]) == 5
         assert "candidates" not in uncapped
+
+    def test_trace_caps_show_callers_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.total",
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.set(uint256)",
+            label="set",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+        )
+        db.insert_edge("Vault.sol::Vault.set(uint256)", "Vault.sol::Vault.total", "writes_state")
+        for i in range(5):
+            caller_id = f"Caller{i}.sol::Caller{i}.callSet()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callSet{i}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i}.sol",
+            )
+            db.insert_edge(caller_id, "Vault.sol::Vault.set(uint256)", "calls")
+
+        capped = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            show_callers=True,
+            max_callers_per_accessor=2,
+        ))
+        uncapped = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            show_callers=True,
+            max_callers_per_accessor=0,
+        ))
+
+        writer = capped["writers"][0]
+        assert len(writer["callers"]) == 2
+        assert writer["callers_summary"] == {"total": 5, "shown": 2, "truncated": True}
+        assert capped["caller_truncated"] is True
+        assert "max_callers_per_accessor=0" in capped["_warnings"][0]
+
+        uncapped_writer = uncapped["writers"][0]
+        assert len(uncapped_writer["callers"]) == 5
+        assert uncapped_writer["callers_summary"] == {"total": 5, "shown": 5, "truncated": False}
+        assert "caller_truncated" not in uncapped
 
     def test_paths_filter_research_paths(self, tmp_path, tmp_db):
         import mcp_server

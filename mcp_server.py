@@ -709,7 +709,7 @@ def cs_help() -> str:
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
-            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches and candidates by max_candidates; use 0 only when exhaustive output is intentional.",
+            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, and show_callers lists by max_callers_per_accessor.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink.",
@@ -2925,6 +2925,7 @@ def cs_trace(
     timeout_seconds: int = 0,
     max_matches: int = 20,
     max_candidates: int = 50,
+    max_callers_per_accessor: int = 20,
 ) -> str:
     """Trace all functions that read or write a state variable.
 
@@ -2939,11 +2940,14 @@ def cs_trace(
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
         max_matches: Maximum matching state variables to trace fully (0 disables)
         max_candidates: Maximum ambiguous variable candidates to return (0 disables)
+        max_callers_per_accessor: Maximum callers attached to each reader/writer when show_callers is true (0 disables)
     """
     if max_matches < 0:
         max_matches = 0
     if max_candidates < 0:
         max_candidates = 0
+    if max_callers_per_accessor < 0:
+        max_callers_per_accessor = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3046,7 +3050,9 @@ def cs_trace(
 
         if show_callers:
             for acc in writers + readers:
-                acc["callers"] = _callers(acc["id"])
+                callers, caller_summary = _cap_items(_callers(acc["id"]), max_callers_per_accessor)
+                acc["callers"] = callers
+                acc["callers_summary"] = caller_summary
 
         response = {
             "query": var,
@@ -3057,10 +3063,20 @@ def cs_trace(
             "truncated": truncated,
             "max_matches": max_matches,
             "max_candidates": max_candidates,
+            "max_callers_per_accessor": max_callers_per_accessor,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "writers": writers,
             "readers": readers,
         }
+        caller_truncated = any(
+            accessor.get("callers_summary", {}).get("truncated")
+            for accessor in writers + readers
+        )
+        if caller_truncated:
+            response["caller_truncated"] = True
+            response.setdefault("_warnings", []).append(
+                "Some cs_trace caller lists were capped. Set max_callers_per_accessor=0 for exhaustive caller output."
+            )
         if truncated:
             response["_warning"] = (
                 f"cs_trace found {total_matches} matching state variables and traced the first {len(variables)}. "

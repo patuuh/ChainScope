@@ -14,6 +14,11 @@ def trace(
     show_callers: bool = typer.Option(False, "--show-callers", help="Show one level of callers"),
     max_matches: int = typer.Option(20, "--max-matches", help="Max matching variables to trace fully (0 = all)"),
     max_candidates: int = typer.Option(50, "--max-candidates", help="Max ambiguous candidates to show (0 = all)"),
+    max_callers_per_accessor: int = typer.Option(
+        20,
+        "--max-callers-per-accessor",
+        help="Max callers per reader/writer with --show-callers (0 = all)",
+    ),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -24,6 +29,7 @@ def trace(
         exclude_research=exclude_research,
         max_matches=max_matches,
         max_candidates=max_candidates,
+        max_callers_per_accessor=max_callers_per_accessor,
     ))
 
     if "error" in data:
@@ -54,6 +60,9 @@ def trace(
             f"    {w['label']} ({w['file']}) [{w.get('visibility', '')}] <{w.get('source_context', 'production')}>"
         )
         if show_callers and w.get("callers"):
+            summary = w.get("callers_summary", {})
+            if summary.get("truncated"):
+                typer.echo(f"      callers: {summary['shown']}/{summary['total']} shown")
             for c in w["callers"]:
                 typer.echo(
                     f"      ← called by {c['label']} ({c['file']}) <{c.get('source_context', 'production')}>"
@@ -65,6 +74,9 @@ def trace(
             f"    {r['label']} ({r['file']}) [{r.get('visibility', '')}] <{r.get('source_context', 'production')}>"
         )
         if show_callers and r.get("callers"):
+            summary = r.get("callers_summary", {})
+            if summary.get("truncated"):
+                typer.echo(f"      callers: {summary['shown']}/{summary['total']} shown")
             for c in r["callers"]:
                 typer.echo(
                     f"      ← called by {c['label']} ({c['file']}) <{c.get('source_context', 'production')}>"

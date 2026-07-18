@@ -29,7 +29,7 @@ class TestSchemaCreation:
         conn.close()
         assert mode == "wal"
 
-    def test_creates_target_relation_index(self, tmp_db):
+    def test_creates_relation_indexes(self, tmp_db):
         db = GraphDB(tmp_db)
         conn = db.get_connection()
         indexes = {
@@ -39,6 +39,8 @@ class TestSchemaCreation:
         }
         conn.close()
         assert "idx_edges_target_relation" in indexes
+        assert "idx_edges_relation_source" in indexes
+        assert "idx_edges_relation_target" in indexes
 
 
 class TestNodeCRUD:

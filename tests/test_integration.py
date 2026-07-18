@@ -219,6 +219,37 @@ class TestResearchAwareCli:
         assert data["variable_matches_total"] == 3
         assert data["candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
 
+    def test_trace_cli_caps_show_callers(self, tmp_path):
+        repo = tmp_path / "trace-callers-repo"
+        repo.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0;\n"
+            "contract Vault {\n"
+            "    uint256 public total;\n"
+            "    function set(uint256 x) internal { total = x; }\n"
+            "    function a(uint256 x) external { set(x); }\n"
+            "    function b(uint256 x) external { set(x); }\n"
+            "    function c(uint256 x) external { set(x); }\n"
+            "}\n"
+        )
+        db = str(tmp_path / "trace-callers.db")
+        build = run_tool("cs_build.py", [str(repo), "--db", db])
+        assert build.returncode == 0
+
+        result = run_tool(
+            "cs_trace.py",
+            [
+                "--db", db,
+                "--var", "total",
+                "--show-callers",
+                "--max-callers-per-accessor", "2",
+                "--json",
+            ],
+        )
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["writers"][0]["callers_summary"] == {"total": 3, "shown": 2, "truncated": True}
+
     def test_paths_cli_caps_endpoint_candidates(self, tmp_path):
         repo = tmp_path / "paths-repo"
         repo.mkdir()
