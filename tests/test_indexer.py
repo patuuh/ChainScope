@@ -22,12 +22,28 @@ class TestChainDetection:
 
 
 class TestIndexing:
-    def test_mcp_build_and_profile_do_not_self_timeout_by_default(self):
+    def test_mcp_tools_do_not_self_timeout_by_default(self):
         import mcp_server
 
         assert mcp_server.DEFAULT_MCP_BUILD_TIMEOUT_SECONDS == 0
+        assert mcp_server.DEFAULT_MCP_QUERY_TIMEOUT_SECONDS == 0
         assert inspect.signature(mcp_server.cs_build).parameters["timeout_seconds"].default == 0
         assert inspect.signature(mcp_server.cs_profile).parameters["timeout_seconds"].default == 0
+        for tool in (
+            mcp_server.cs_summary,
+            mcp_server.cs_audit,
+            mcp_server.cs_hotspots,
+            mcp_server.cs_defi,
+            mcp_server.cs_unsafe,
+            mcp_server.cs_paths,
+            mcp_server.cs_trace,
+            mcp_server.cs_cross_summary,
+            mcp_server.cs_cross,
+            mcp_server.cs_sinks,
+            mcp_server.cs_state,
+            mcp_server.cs_lookup,
+        ):
+            assert inspect.signature(tool).parameters["timeout_seconds"].default == 0
 
     def test_mcp_uses_capped_node_match_helpers(self):
         import mcp_server

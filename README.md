@@ -201,9 +201,10 @@ Build a graph:
 python cs_build.py /path/to/repo --db graph.db
 ```
 
-MCP `cs_profile` and `cs_build` do not self-timeout by default. If you want a
-time-limited partial build, pass `timeout_seconds`; otherwise long workspace
-profiles and graph builds continue until the client or host stops them.
+MCP `cs_profile`, `cs_build`, and graph query tools do not self-timeout by
+default. If you want a time-limited partial build or query, pass
+`timeout_seconds`; otherwise long workspace profiles, graph builds, and broad
+graph reads continue until the client or host stops them.
 MCP `cs_profile` also caps large output sections with `max_output_items`; set
 `max_output_items=0` only when an exhaustive workspace inventory is intentional.
 

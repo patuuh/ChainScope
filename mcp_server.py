@@ -32,7 +32,7 @@ mcp = FastMCP("chainscope")
 # Default DB path — can be overridden per-call
 DEFAULT_DB = os.environ.get("CHAINSCOPE_DB", os.environ.get("CHAINSCOPE_DB", "graph.db"))
 DEFAULT_MCP_BUILD_TIMEOUT_SECONDS = int(os.environ.get("CHAINSCOPE_BUILD_TIMEOUT_SECONDS", "0"))
-DEFAULT_MCP_QUERY_TIMEOUT_SECONDS = int(os.environ.get("CHAINSCOPE_QUERY_TIMEOUT_SECONDS", "30"))
+DEFAULT_MCP_QUERY_TIMEOUT_SECONDS = int(os.environ.get("CHAINSCOPE_QUERY_TIMEOUT_SECONDS", "0"))
 
 
 def _resolve_db(db: str | None) -> str:
