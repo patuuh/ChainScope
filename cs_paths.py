@@ -14,6 +14,7 @@ def paths(
     to_label: str = typer.Option(..., "--to", help="Target function label"),
     max_depth: int = typer.Option(15, help="Maximum path depth"),
     max_paths: int = typer.Option(10, help="Maximum paths to find"),
+    max_endpoint_matches: int = typer.Option(20, "--max-endpoint-matches", help="Max matching start/end nodes to search (0 = all)"),
     show_guards: bool = typer.Option(False, "--show-guards", help="Show guards along path"),
     show_state: bool = typer.Option(False, "--show-state", help="Show state reads/writes"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
@@ -24,6 +25,8 @@ def paths(
         to_label=to_label,
         db=db,
         max_depth=max_depth,
+        max_paths=max_paths,
+        max_endpoint_matches=max_endpoint_matches,
         show_guards=show_guards,
         show_state=show_state,
         exclude_research=exclude_research,
@@ -34,12 +37,10 @@ def paths(
         raise typer.Exit(1)
 
     if json_output:
-        if max_paths and len(result.get("paths", [])) > max_paths:
-            result["paths"] = result["paths"][:max_paths]
         typer.echo(json.dumps(result, indent=2))
         return
 
-    all_paths = result.get("paths", [])[:max_paths]
+    all_paths = result.get("paths", [])
     if not all_paths:
         typer.echo(f"No path found from '{from_label}' to '{to_label}' (max_depth={max_depth})")
         return
@@ -47,6 +48,13 @@ def paths(
     typer.echo(
         f"Paths from '{from_label}' to '{to_label}' ({len(all_paths)} found, scope={result.get('query_scope', 'all_sources')}):"
     )
+    summary = result.get("_summary", {})
+    if summary.get("truncated"):
+        typer.echo(
+            f"Search capped: paths={summary.get('paths_found')}/{summary.get('max_paths') or 'all'}, "
+            f"from={summary.get('from_matches_used')}/{summary.get('from_matches_total')}, "
+            f"to={summary.get('to_matches_used')}/{summary.get('to_matches_total')}"
+        )
     for i, path in enumerate(all_paths, 1):
         typer.echo(f"  [{i}] {' → '.join(path)}")
         if show_guards:

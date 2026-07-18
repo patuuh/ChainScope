@@ -655,6 +655,63 @@ class TestIndexing:
         assert prod_paths["query_scope"] == "production_only"
         assert prod_paths["paths"] == [["Vault.start", "Vault.finish"]]
 
+    def test_paths_cap_ambiguous_endpoints_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            start_id = f"Vault{i}.sol::Vault{i}.start()"
+            finish_id = f"Vault{i}.sol::Vault{i}.finish()"
+            db.insert_node(
+                id=start_id,
+                label="start",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+            )
+            db.insert_node(
+                id=finish_id,
+                label="finish",
+                type="function",
+                visibility="internal",
+                file=f"Vault{i}.sol",
+                line_start=i + 10,
+            )
+            db.insert_edge(start_id, finish_id, "calls")
+
+        capped = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            max_paths=2,
+            max_endpoint_matches=2,
+        ))
+        uncapped = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            max_paths=0,
+            max_endpoint_matches=0,
+        ))
+
+        assert len(capped["paths"]) == 2
+        assert capped["_summary"]["paths_found"] == 2
+        assert capped["_summary"]["path_limit_reached"] is True
+        assert capped["_summary"]["from_matches_total"] == 5
+        assert capped["_summary"]["from_matches_used"] == 2
+        assert capped["_summary"]["to_matches_total"] == 5
+        assert capped["_summary"]["to_matches_used"] == 2
+        assert capped["_summary"]["endpoint_matches_truncated"] is True
+        assert capped["_summary"]["truncated"] is True
+        assert len(capped["from_candidates"]) == 5
+        assert len(capped["to_candidates"]) == 5
+
+        assert len(uncapped["paths"]) == 5
+        assert uncapped["_summary"]["path_limit_reached"] is False
+        assert uncapped["_summary"]["endpoint_matches_truncated"] is False
+        assert uncapped["_summary"]["truncated"] is False
+
     def test_state_filters_research_transitions(self, tmp_path, tmp_db):
         import mcp_server
 

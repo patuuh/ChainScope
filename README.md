@@ -230,6 +230,10 @@ For common function names, prefer qualified `cs_lookup` queries such as
 so agents get candidates instead of an oversized response; set `max_matches=0`
 only when exhaustive output is intentional.
 
+`cs_paths` also caps ambiguous endpoint matches and returned paths. Use
+qualified endpoint names first; set `max_endpoint_matches=0` or `max_paths=0`
+only when exhaustive path search is intentional.
+
 The same rule applies to broad `cs_trace` variable queries. Names like
 `total`, `owner`, or `balance` are capped by default and return compact
 candidates when ambiguous; set `max_matches=0` only for an exhaustive trace.
@@ -270,6 +274,7 @@ choose where to inspect without dumping every trust-boundary edge.
 - `python cs_build.py ...`
 - `python cs_summary.py ...`
 - `python cs_paths.py ...`
+- `python cs_paths.py --max-paths 0 --max-endpoint-matches 0 ...`
 - `python cs_trace.py ...`
 - `python cs_trace.py --max-matches 0 ...`
 - `python cs_cross.py --summary ...`
@@ -420,4 +425,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`409 passed`
+`410 passed`

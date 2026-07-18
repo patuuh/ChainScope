@@ -587,7 +587,7 @@ def cs_help() -> str:
         },
         "exploration_tools": {
             "cs_lookup": "Complete function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; use qualified names or max_matches=0 for exhaustive output.",
-            "cs_paths": "Find call paths between two functions (from_label → to_label)",
+            "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches; use max_matches=0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls (trust boundary crossings)",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
@@ -2318,6 +2318,8 @@ def cs_paths(
     to_label: str,
     db: str = "",
     max_depth: int = 15,
+    max_paths: int = 10,
+    max_endpoint_matches: int = 20,
     show_guards: bool = False,
     show_state: bool = False,
     exclude_research: bool = False,
@@ -2333,12 +2335,19 @@ def cs_paths(
         to_label: Target function name (e.g. "withdraw")
         db: Database path (default: graph.db)
         max_depth: Maximum path depth to search
+        max_paths: Maximum paths to return (0 disables)
+        max_endpoint_matches: Maximum matching start/end nodes to search (0 disables)
         show_guards: Annotate each hop with its modifier/guard protections
         show_state: Annotate each hop with state variable reads/writes
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
     from collections import deque
+
+    if max_paths < 0:
+        max_paths = 0
+    if max_endpoint_matches < 0:
+        max_endpoint_matches = 0
 
     db_path = _resolve_db(db)
     try:
@@ -2348,9 +2357,10 @@ def cs_paths(
 
     try:
         all_nodes = conn.execute(
-            "SELECT id, label, metadata FROM nodes"
+            "SELECT id, label, file, metadata FROM nodes"
         ).fetchall()
         node_labels = {row["id"]: row["label"] for row in all_nodes}
+        node_files = {row["id"]: row["file"] for row in all_nodes}
         label_counts: dict[str, int] = {}
         for label in node_labels.values():
             label_counts[label] = label_counts.get(label, 0) + 1
@@ -2360,8 +2370,14 @@ def cs_paths(
             if _include_metadata(node_meta[row["id"]], exclude_research)
         }
 
-        from_nodes = [n for n in _find_nodes(conn, from_label) if n["id"] in allowed_ids]
-        to_nodes = [n for n in _find_nodes(conn, to_label) if n["id"] in allowed_ids]
+        from_nodes = sorted(
+            [n for n in _find_nodes(conn, from_label) if n["id"] in allowed_ids],
+            key=lambda n: n["id"],
+        )
+        to_nodes = sorted(
+            [n for n in _find_nodes(conn, to_label) if n["id"] in allowed_ids],
+            key=lambda n: n["id"],
+        )
 
         if not from_nodes:
             if exclude_research:
@@ -2394,10 +2410,34 @@ def cs_paths(
                 return _qualified_label(node_id)
             return label
 
-        def _find_paths(start_id: str, end_id: str, path_limit: int) -> list[list[str]]:
+        def _candidate_for_node(node: dict) -> dict:
+            meta = node_meta.get(node["id"], {})
+            return {
+                "id": node["id"],
+                "label": node["label"],
+                "qualified_label": _label_for_node(node["id"]),
+                "file": node_files.get(node["id"], ""),
+                "source_context": meta.get("source_context", "production"),
+            }
+
+        from_matches_total = len(from_nodes)
+        to_matches_total = len(to_nodes)
+        endpoint_cap_enabled = max_endpoint_matches > 0
+        selected_from_nodes = (
+            from_nodes[:max_endpoint_matches] if endpoint_cap_enabled else from_nodes
+        )
+        selected_to_nodes = (
+            to_nodes[:max_endpoint_matches] if endpoint_cap_enabled else to_nodes
+        )
+        endpoint_truncated = (
+            len(selected_from_nodes) < from_matches_total
+            or len(selected_to_nodes) < to_matches_total
+        )
+
+        def _find_paths(start_id: str, end_id: str, path_limit: int | None) -> list[list[str]]:
             results: list[list[str]] = []
             queue = deque([[start_id]])
-            while queue and len(results) < path_limit:
+            while queue and (path_limit is None or len(results) < path_limit):
                 path = queue.popleft()
                 current = path[-1]
                 if current == end_id and len(path) > 1:
@@ -2413,10 +2453,13 @@ def cs_paths(
         # Try all from/to combinations to find paths (handles ambiguous labels)
         all_path_ids: list[list[str]] = []
         seen_paths: set[tuple[str, ...]] = set()
-        for fn in from_nodes:
-            for tn in to_nodes:
-                remaining = 10 - len(all_path_ids)
-                if remaining <= 0:
+        path_limit = None if max_paths == 0 else max_paths
+        path_limit_reached = False
+        for fn in selected_from_nodes:
+            for tn in selected_to_nodes:
+                remaining = None if path_limit is None else path_limit - len(all_path_ids)
+                if remaining is not None and remaining <= 0:
+                    path_limit_reached = True
                     break
                 for path in _find_paths(fn["id"], tn["id"], remaining):
                     key = tuple(path)
@@ -2424,9 +2467,10 @@ def cs_paths(
                         continue
                     seen_paths.add(key)
                     all_path_ids.append(path)
-                if len(all_path_ids) >= 10:
+                if path_limit is not None and len(all_path_ids) >= path_limit:
+                    path_limit_reached = True
                     break
-            if len(all_path_ids) >= 10:
+            if path_limit_reached:
                 break
 
         all_paths = [[_label_for_node(node_id) for node_id in path] for path in all_path_ids]
@@ -2435,7 +2479,23 @@ def cs_paths(
             "to": to_label,
             "paths": all_paths,
             "query_scope": "production_only" if exclude_research else "all_sources",
+            "_summary": {
+                "paths_found": len(all_paths),
+                "path_limit_reached": path_limit_reached,
+                "max_paths": max_paths,
+                "max_depth": max_depth,
+                "max_endpoint_matches": max_endpoint_matches,
+                "from_matches_total": from_matches_total,
+                "from_matches_used": len(selected_from_nodes),
+                "to_matches_total": to_matches_total,
+                "to_matches_used": len(selected_to_nodes),
+                "endpoint_matches_truncated": endpoint_truncated,
+                "truncated": path_limit_reached or endpoint_truncated,
+            },
         }
+        if endpoint_truncated:
+            result["from_candidates"] = [_candidate_for_node(n) for n in from_nodes[:50]]
+            result["to_candidates"] = [_candidate_for_node(n) for n in to_nodes[:50]]
 
         if show_guards:
             result["guards"] = {}
