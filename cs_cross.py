@@ -13,6 +13,7 @@ def cross(
     external_calls: bool = typer.Option(False, "--external-calls", help="List all cross-contract calls"),
     from_func: str = typer.Option(None, "--from", help="Trace from a specific function"),
     max_depth: int = typer.Option(10, help="Max depth for tracing"),
+    max_results: int = typer.Option(500, "--max-results", help="Max raw calls for cs_cross output (0 = all)"),
     summary: bool = typer.Option(False, "--summary", help="Show bounded cross-boundary summary"),
     top: int = typer.Option(50, "--top", help="Max sample calls for --summary"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
@@ -33,6 +34,7 @@ def cross(
         result = json.loads(mcp_server.cs_cross(
             db=db,
             from_func=from_func or "",
+            max_results=max_results,
             exclude_research=exclude_research,
         ))
 
@@ -68,11 +70,17 @@ def cross(
         return
 
     if external_calls:
-        cross_calls = result
+        cross_calls = result.get("calls", []) if isinstance(result, dict) else result
         if not cross_calls:
             typer.echo("No cross-contract calls found")
             return
-        typer.echo(f"Cross-contract calls ({len(cross_calls)}):")
+        if isinstance(result, dict) and result.get("truncated"):
+            typer.echo(
+                f"Cross-contract calls ({result['shown']}/{result['total']} shown, "
+                "use --max-results 0 for all):"
+            )
+        else:
+            typer.echo(f"Cross-contract calls ({len(cross_calls)}):")
         for call in cross_calls:
             attrs = json.loads(call.get("attributes", "{}"))
             interface = attrs.get("interface", "unknown")
@@ -83,8 +91,10 @@ def cross(
             )
         return
 
-    cross_boundary = result
+    cross_boundary = result.get("calls", []) if isinstance(result, dict) else result
     typer.echo(f"Cross-contract calls reachable from '{from_func}':")
+    if isinstance(result, dict) and result.get("truncated"):
+        typer.echo(f"Showing {result['shown']}/{result['total']} calls; use --max-results 0 for all")
     for cb in cross_boundary:
         typer.echo(
             f"  {cb['source']['label']} → {cb['target']['label']} "

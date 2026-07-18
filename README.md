@@ -256,7 +256,9 @@ state caps to `0` when you intentionally need every transition.
 
 For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
-choose where to inspect without dumping every trust-boundary edge.
+choose where to inspect without dumping every trust-boundary edge. Raw
+`cs_cross` output is capped by `max_results`; set `max_results=0` only when an
+exhaustive edge list is intentional.
 
 ## Query surface
 
@@ -287,6 +289,7 @@ choose where to inspect without dumping every trust-boundary edge.
 - `python cs_trace.py --max-matches 0 ...`
 - `python cs_cross.py --summary ...`
 - `python cs_cross.py ...`
+- `python cs_cross.py --max-results 0 ...`
 - `python cs_state.py ...`
 - `python cs_state.py --max-entities 0 --max-transitions-per-entity 0 --max-warnings 0 ...`
 - `python cs_sinks.py ...`
@@ -433,4 +436,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`413 passed`
+`414 passed`

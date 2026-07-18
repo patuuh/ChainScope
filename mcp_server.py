@@ -597,7 +597,7 @@ def cs_help() -> str:
             "cs_lookup": "Complete function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; use qualified names or max_matches=0 for exhaustive output.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches; use max_matches=0 only when exhaustive output is intentional.",
-            "cs_cross": "Cross-contract/module boundary calls (trust boundary crossings)",
+            "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; use max_results=0 for exhaustive output.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
@@ -2761,6 +2761,7 @@ def cs_trace(
 def cs_cross(
     db: str = "",
     from_func: str = "",
+    max_results: int = 500,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
 ) -> str:
@@ -2772,9 +2773,13 @@ def cs_cross(
     Args:
         db: Database path (default: graph.db)
         from_func: Trace from a specific function (empty = list all cross-contract calls)
+        max_results: Maximum raw calls returned (0 disables)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
+    if max_results < 0:
+        max_results = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
@@ -2858,9 +2863,29 @@ def cs_cross(
                             "attributes": attrs,
                         })
 
-            return json.dumps(cross_boundary, indent=2)
+            calls = cross_boundary
         else:
-            return json.dumps(_cross_call_rows(conn, exclude_research), indent=2, default=str)
+            calls = _cross_call_rows(conn, exclude_research)
+
+        total = len(calls)
+        shown_calls = calls[:max_results] if max_results > 0 else calls
+        truncated = len(shown_calls) < total
+        response = {
+            "tool": "cs_cross",
+            "query_scope": "production_only" if exclude_research else "all_sources",
+            "from_func": from_func or None,
+            "total": total,
+            "shown": len(shown_calls),
+            "truncated": truncated,
+            "max_results": max_results,
+            "calls": shown_calls,
+        }
+        if truncated:
+            response["_warning"] = (
+                f"cs_cross found {total} trust-boundary calls and returned {len(shown_calls)}. "
+                "Use cs_cross_summary first on large graphs or set max_results=0 for exhaustive raw output."
+            )
+        return json.dumps(response, indent=2, default=str)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_cross",
@@ -2900,13 +2925,15 @@ def cs_cross_summary(
             cross_result = json.loads(cs_cross(
                 db=db_path,
                 from_func=from_func,
+                max_results=0,
                 exclude_research=exclude_research,
                 timeout_seconds=timeout_seconds,
             ))
             if isinstance(cross_result, dict) and "error" in cross_result:
                 cross_result["tool"] = "cs_cross_summary"
                 return json.dumps(cross_result, indent=2)
-            summary = _summarize_cross_entries(cross_result, top)
+            entries = cross_result.get("calls", []) if isinstance(cross_result, dict) else cross_result
+            summary = _summarize_cross_entries(entries, top)
         else:
             conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
             try:

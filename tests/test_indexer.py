@@ -407,12 +407,12 @@ class TestIndexing:
         assert prod_lookup["query_scope"] == "production_only"
 
         cross = json.loads(mcp_server.cs_cross(db=tmp_db))
-        cross_sources = {(item["source_file"], item["source_context"]) for item in cross if item["source_label"] == "ping"}
+        cross_sources = {(item["source_file"], item["source_context"]) for item in cross["calls"] if item["source_label"] == "ping"}
         assert ("Vault.sol", "production") in cross_sources
         assert ("scripts/Deploy.s.sol", "script") in cross_sources
 
         prod_cross = json.loads(mcp_server.cs_cross(db=tmp_db, exclude_research=True))
-        prod_cross_sources = {(item["source_file"], item["source_context"]) for item in prod_cross if item["source_label"] == "ping"}
+        prod_cross_sources = {(item["source_file"], item["source_context"]) for item in prod_cross["calls"] if item["source_label"] == "ping"}
         assert prod_cross_sources == {("Vault.sol", "production")}
 
     def test_cross_summary_caps_output_and_filters_false_attributes(self, tmp_db):
@@ -478,7 +478,41 @@ class TestIndexing:
         assert prod_summary["by_source_context"] == {"production": 5}
 
         raw_cross = json.loads(mcp_server.cs_cross(db=tmp_db))
-        assert {item["source_label"] for item in raw_cross} == {"call0", "call1", "call2", "call3", "call4", "run"}
+        assert {item["source_label"] for item in raw_cross["calls"]} == {"call0", "call1", "call2", "call3", "call4", "run"}
+
+    def test_cross_caps_raw_output_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            db.insert_node(
+                id=f"Vault.sol::Vault.call{i}()",
+                label=f"call{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+            )
+            db.insert_edge(
+                source=f"Vault.sol::Vault.call{i}()",
+                target=f"External{i}.doThing()",
+                relation="calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+
+        capped = json.loads(mcp_server.cs_cross(db=tmp_db, max_results=2))
+        uncapped = json.loads(mcp_server.cs_cross(db=tmp_db, max_results=0))
+
+        assert capped["total"] == 5
+        assert capped["shown"] == 2
+        assert capped["truncated"] is True
+        assert capped["max_results"] == 2
+        assert len(capped["calls"]) == 2
+        assert "max_results=0" in capped["_warning"]
+
+        assert uncapped["total"] == 5
+        assert uncapped["shown"] == 5
+        assert uncapped["truncated"] is False
+        assert len(uncapped["calls"]) == 5
 
     def test_hotspots_do_not_count_false_unresolved_call_edges(self, tmp_db):
         import mcp_server
