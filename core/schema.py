@@ -42,6 +42,9 @@ CREATE TABLE IF NOT EXISTS graph_metadata (
 CREATE INDEX IF NOT EXISTS idx_nodes_file ON nodes(file);
 CREATE INDEX IF NOT EXISTS idx_nodes_type ON nodes(type);
 CREATE INDEX IF NOT EXISTS idx_nodes_label ON nodes(label);
+CREATE INDEX IF NOT EXISTS idx_nodes_type_label ON nodes(type, label);
+CREATE INDEX IF NOT EXISTS idx_nodes_type_visibility ON nodes(type, visibility);
+CREATE INDEX IF NOT EXISTS idx_nodes_type_file_line ON nodes(type, file, line_start, id);
 CREATE INDEX IF NOT EXISTS idx_edges_source ON edges(source);
 CREATE INDEX IF NOT EXISTS idx_edges_target ON edges(target);
 CREATE INDEX IF NOT EXISTS idx_edges_relation ON edges(relation);
@@ -50,6 +53,7 @@ CREATE INDEX IF NOT EXISTS idx_edges_target_relation ON edges(target, relation);
 CREATE INDEX IF NOT EXISTS idx_edges_relation_source ON edges(relation, source);
 CREATE INDEX IF NOT EXISTS idx_edges_relation_target ON edges(relation, target);
 CREATE INDEX IF NOT EXISTS idx_transitions_entity ON state_transitions(entity);
+CREATE INDEX IF NOT EXISTS idx_transitions_function ON state_transitions(function_id);
 """
 
 

@@ -36,6 +36,26 @@ class TestIndexing:
         assert hasattr(mcp_server, "_find_node_ids_capped")
         assert hasattr(mcp_server, "_find_function_rows_capped")
 
+    def test_schema_creates_mcp_query_indexes(self, tmp_db):
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        try:
+            indexes = {
+                row["name"]
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'index'"
+                )
+            }
+        finally:
+            conn.close()
+
+        assert {
+            "idx_nodes_type_label",
+            "idx_nodes_type_visibility",
+            "idx_nodes_type_file_line",
+            "idx_transitions_function",
+        } <= indexes
+
     def test_build_missing_repo_returns_json_error(self):
         import mcp_server
 
