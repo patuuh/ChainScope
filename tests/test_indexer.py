@@ -610,6 +610,44 @@ class TestIndexing:
         assert uncapped["truncated"] is False
         assert "candidates" not in uncapped
 
+    def test_lookup_caps_relation_lists_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.ping()",
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        for i in range(5):
+            caller_id = f"Caller{i}.sol::Caller{i}.callPing()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callPing{i}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i}.sol",
+            )
+            db.insert_edge(caller_id, "Vault.sol::Vault.ping()", "calls")
+
+        capped = json.loads(mcp_server.cs_lookup(name="ping", db=tmp_db, max_relation_items=2))
+        uncapped = json.loads(mcp_server.cs_lookup(name="ping", db=tmp_db, max_relation_items=0))
+
+        capped_fn = capped["functions"][0]
+        uncapped_fn = uncapped["functions"][0]
+
+        assert len(capped_fn["callers"]) == 2
+        assert capped_fn["_relation_summary"]["callers"] == {"total": 5, "shown": 2, "truncated": True}
+        assert capped["relation_truncated"] is True
+        assert capped["max_relation_items"] == 2
+        assert "max_relation_items=0" in capped["_warnings"][0]
+
+        assert len(uncapped_fn["callers"]) == 5
+        assert uncapped_fn["_relation_summary"]["callers"] == {"total": 5, "shown": 5, "truncated": False}
+        assert "relation_truncated" not in uncapped
+
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
 

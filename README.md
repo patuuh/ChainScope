@@ -232,7 +232,9 @@ For agents, the usual loop is:
 For common function names, prefer qualified `cs_lookup` queries such as
 `Vault.deposit` or `TokenMessaging.send`. Broad lookups are capped by default
 so agents get candidates instead of an oversized response; set `max_matches=0`
-only when exhaustive output is intentional.
+only when exhaustive output is intentional. Individual lookup relation lists
+such as callers, callees, state reads/writes, and other edges are capped by
+`max_relation_items`; set `max_relation_items=0` only for exhaustive profiles.
 
 `cs_paths` also caps ambiguous endpoint matches and returned paths. Use
 qualified endpoint names first; set `max_endpoint_matches=0` or `max_paths=0`
@@ -436,4 +438,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`414 passed`
+`415 passed`

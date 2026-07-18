@@ -300,6 +300,20 @@ def _section_summary(total: int, shown: int) -> dict:
     }
 
 
+def _cap_items(items: list, max_items: int) -> tuple[list, dict]:
+    if max_items > 0 and len(items) > max_items:
+        return items[:max_items], {
+            "total": len(items),
+            "shown": max_items,
+            "truncated": True,
+        }
+    return items, {
+        "total": len(items),
+        "shown": len(items),
+        "truncated": False,
+    }
+
+
 def _summarize_cross_entries(entries, top: int) -> dict:
     top = max(top, 0)
     total = 0
@@ -594,7 +608,7 @@ def cs_help() -> str:
             "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output is capped by max_per_category.",
         },
         "exploration_tools": {
-            "cs_lookup": "Complete function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; use qualified names or max_matches=0 for exhaustive output.",
+            "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; relation lists are capped by max_relation_items.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches; use max_matches=0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; use max_results=0 for exhaustive output.",
@@ -3196,13 +3210,14 @@ def cs_lookup(
     exclude_research: bool = False,
     timeout_seconds: int = DEFAULT_MCP_QUERY_TIMEOUT_SECONDS,
     max_matches: int = 20,
+    max_relation_items: int = 100,
 ) -> str:
     """Look up a function by name and return its complete profile.
 
     Returns every occurrence of the function in the graph with:
       - File, line range, signature, visibility, metadata
-      - All direct callers (who calls this function)
-      - All direct callees (what this function calls)
+      - Direct callers (who calls this function)
+      - Direct callees (what this function calls)
       - State variables it reads and writes
       - Guards/modifiers protecting it
       - Edges with attributes (e.g. call-site details)
@@ -3217,9 +3232,12 @@ def cs_lookup(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: SQLite query budget before returning an error
         max_matches: Maximum matching functions to fully profile (0 disables)
+        max_relation_items: Maximum rows per relation list in each function profile (0 disables)
     """
     if max_matches < 0:
         max_matches = 0
+    if max_relation_items < 0:
+        max_relation_items = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3275,6 +3293,12 @@ def cs_lookup(
             if not full:
                 continue
             info = dict(full)
+            relation_summary: dict[str, dict] = {}
+
+            def _set_relation(name: str, items: list):
+                shown, summary = _cap_items(items, max_relation_items)
+                info[name] = shown
+                relation_summary[name] = summary
 
             # Callers (who calls this)
             callers = conn.execute("""
@@ -3291,10 +3315,10 @@ def cs_lookup(
                     continue
                 caller["source_context"] = meta.get("source_context", "production")
                 filtered_callers.append(caller)
-            info["callers"] = filtered_callers
+            _set_relation("callers", filtered_callers)
 
             # Depth-2 callers
-            if depth >= 2 and filtered_callers:
+            if depth >= 2 and info["callers"]:
                 for caller in info["callers"]:
                     c2 = conn.execute("""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
@@ -3309,6 +3333,10 @@ def cs_lookup(
                             continue
                         nested["source_context"] = meta.get("source_context", "production")
                         caller["callers"].append(nested)
+                    caller["callers"], caller["callers_summary"] = _cap_items(
+                        caller["callers"],
+                        max_relation_items,
+                    )
 
             # Callees (what this calls)
             callees = conn.execute("""
@@ -3325,10 +3353,10 @@ def cs_lookup(
                     continue
                 callee["source_context"] = meta.get("source_context", "production")
                 filtered_callees.append(callee)
-            info["callees"] = filtered_callees
+            _set_relation("callees", filtered_callees)
 
             # Depth-2 callees
-            if depth >= 2 and filtered_callees:
+            if depth >= 2 and info["callees"]:
                 for callee in info["callees"]:
                     c2 = conn.execute("""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
@@ -3343,6 +3371,10 @@ def cs_lookup(
                             continue
                         nested["source_context"] = meta.get("source_context", "production")
                         callee["callees"].append(nested)
+                    callee["callees"], callee["callees_summary"] = _cap_items(
+                        callee["callees"],
+                        max_relation_items,
+                    )
 
             # State reads
             reads = conn.execute("""
@@ -3350,14 +3382,15 @@ def cs_lookup(
                 FROM edges e JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'reads_state'
             """, (node_id,)).fetchall()
-            info["state_reads"] = []
+            state_reads = []
             for row in reads:
                 state = dict(row)
                 meta = _load_metadata(state.pop("metadata", None))
                 if not _include_metadata(meta, exclude_research):
                     continue
                 state["source_context"] = meta.get("source_context", "production")
-                info["state_reads"].append(state)
+                state_reads.append(state)
+            _set_relation("state_reads", state_reads)
 
             # State writes
             writes = conn.execute("""
@@ -3365,14 +3398,15 @@ def cs_lookup(
                 FROM edges e JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'writes_state'
             """, (node_id,)).fetchall()
-            info["state_writes"] = []
+            state_writes = []
             for row in writes:
                 state = dict(row)
                 meta = _load_metadata(state.pop("metadata", None))
                 if not _include_metadata(meta, exclude_research):
                     continue
                 state["source_context"] = meta.get("source_context", "production")
-                info["state_writes"].append(state)
+                state_writes.append(state)
+            _set_relation("state_writes", state_writes)
 
             # Guards/modifiers
             guard_rows = conn.execute("""
@@ -3388,7 +3422,7 @@ def cs_lookup(
                     continue
                 guard["source_context"] = guard_meta.get("source_context", "production")
                 guards.append(guard)
-            info["guards"] = guards
+            _set_relation("guards", guards)
 
             # All other edges (flows_to, inherits, emits_event, etc.)
             other_out = conn.execute("""
@@ -3398,14 +3432,15 @@ def cs_lookup(
                       ('calls', 'reads_state', 'writes_state')
             """, (node_id,)).fetchall()
             if other_out:
-                info["other_edges_out"] = []
+                other_edges_out = []
                 for row in other_out:
                     edge = dict(row)
                     meta = _load_metadata(edge.pop("metadata", None))
                     if not _include_metadata(meta, exclude_research):
                         continue
                     edge["source_context"] = meta.get("source_context", "production")
-                    info["other_edges_out"].append(edge)
+                    other_edges_out.append(edge)
+                _set_relation("other_edges_out", other_edges_out)
 
             other_in = conn.execute("""
                 SELECT e.relation, n.id, n.label, n.file, n.metadata, e.attributes
@@ -3413,14 +3448,17 @@ def cs_lookup(
                 WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')
             """, (node_id,)).fetchall()
             if other_in:
-                info["other_edges_in"] = []
+                other_edges_in = []
                 for row in other_in:
                     edge = dict(row)
                     meta = _load_metadata(edge.pop("metadata", None))
                     if not _include_metadata(meta, exclude_research):
                         continue
                     edge["source_context"] = meta.get("source_context", "production")
-                    info["other_edges_in"].append(edge)
+                    other_edges_in.append(edge)
+                _set_relation("other_edges_in", other_edges_in)
+
+            info["_relation_summary"] = relation_summary
 
             results.append(info)
 
@@ -3430,9 +3468,20 @@ def cs_lookup(
             "matches_total": total_matches,
             "truncated": truncated,
             "max_matches": max_matches,
+            "max_relation_items": max_relation_items,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "functions": results,
         }
+        relation_truncated = any(
+            summary.get("truncated")
+            for fn in results
+            for summary in fn.get("_relation_summary", {}).values()
+        )
+        if relation_truncated:
+            response["relation_truncated"] = True
+            response.setdefault("_warnings", []).append(
+                "Some cs_lookup relation lists were capped. Set max_relation_items=0 for exhaustive relation output."
+            )
         if truncated:
             response["_warning"] = (
                 f"cs_lookup found {total_matches} matches and returned the first {len(results)} full profiles. "
