@@ -1216,6 +1216,7 @@ class TestIndexing:
         def tracking_index(rows, keys, exclude_research, max_per_key=0):
             indexed, totals = real_index(rows, keys, exclude_research, max_per_key)
             snapshots.append({
+                "keys": keys,
                 "max_per_key": max_per_key,
                 "sizes": {key: len(values) for key, values in indexed.items() if values},
                 "totals": {key: total for key, total in totals.items() if total},
@@ -1229,9 +1230,11 @@ class TestIndexing:
 
         assert defi["_summary"]["category_totals"] == {"timestamp_dependence": 12}
         assert unsafe["_summary"]["category_totals"] == {"command_execution": 12}
+        assert snapshots[0]["keys"] == ["timestamp_dependence"]
         assert snapshots[0]["max_per_key"] == 3
         assert snapshots[0]["sizes"] == {"timestamp_dependence": 3}
         assert snapshots[0]["totals"] == {"timestamp_dependence": 12}
+        assert snapshots[1]["keys"] == ["command_injection_risk"]
         assert snapshots[1]["max_per_key"] == 3
         assert snapshots[1]["sizes"] == {"command_injection_risk": 3}
         assert snapshots[1]["totals"] == {"command_injection_risk": 12}
@@ -1324,7 +1327,7 @@ class TestIndexing:
         class FakeConn:
             def execute(self, sql, params=()):
                 if "FROM nodes WHERE type = 'function'" in sql:
-                    return StreamingRows([])
+                    raise AssertionError("ffi-only scan should skip function metadata rows")
                 if "unsafe_ffi" in sql:
                     return StreamingRows(ffi_rows)
                 raise AssertionError(f"unexpected query: {sql}")

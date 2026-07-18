@@ -527,6 +527,16 @@ def _metadata_rows_by_key(
     return indexed, totals
 
 
+def _selected_metadata_keys(
+    category: str,
+    all_keys: list[str],
+    category_keys: dict[str, list[str]],
+) -> list[str]:
+    if category == "all":
+        return all_keys
+    return category_keys.get(category, [])
+
+
 def _section_summary(total: int, shown: int) -> dict:
     return {
         "total": total,
@@ -2356,11 +2366,7 @@ def cs_defi(
     try:
         cat = category.lower() if category else "all"
         results: dict = {}
-        function_rows = conn.execute(
-            "SELECT id, label, file, line_start, visibility, signature, metadata "
-            "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
-        )
-        metadata_rows, metadata_totals = _metadata_rows_by_key(function_rows, [
+        metadata_keys = [
             "timestamp_dependence",
             "unchecked_erc20",
             "oracle_risk",
@@ -2376,7 +2382,37 @@ def cs_defi(
             "cpi_reentrancy_risk",
             "transfer_sinks",
             "cross_contract_calls",
-        ], exclude_research, max_per_category)
+        ]
+        selected_keys = _selected_metadata_keys(cat, metadata_keys, {
+            "timestamp": ["timestamp_dependence"],
+            "erc20": ["unchecked_erc20"],
+            "oracle": ["oracle_risk"],
+            "signature": ["signature_risk"],
+            "precision": ["precision_risk"],
+            "dos": ["dos_risk"],
+            "frontrun": ["frontrun_risk"],
+            "downcast": ["unsafe_downcast"],
+            "flashloan": ["flash_loan_risk"],
+            "slippage": ["slippage_risk"],
+            "callback": ["erc_callback_risk"],
+            "anchor": ["anchor_risks"],
+            "cpi_reentrancy": ["cpi_reentrancy_risk"],
+            "transfer": ["transfer_sinks"],
+            "crosscontract": ["cross_contract_calls"],
+        })
+        if selected_keys:
+            function_rows = conn.execute(
+                "SELECT id, label, file, line_start, visibility, signature, metadata "
+                "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
+            )
+            metadata_rows, metadata_totals = _metadata_rows_by_key(
+                function_rows,
+                selected_keys,
+                exclude_research,
+                max_per_category,
+            )
+        else:
+            metadata_rows, metadata_totals = {}, {}
         category_totals: dict[str, int] = {}
 
         def _function_rows_with(metadata_key: str) -> list[tuple]:
@@ -2636,11 +2672,7 @@ def cs_unsafe(
     try:
         cat = category.lower() if category else "all"
         results: dict = {}
-        function_rows = conn.execute(
-            "SELECT id, label, file, line_start, visibility, signature, metadata "
-            "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
-        )
-        metadata_rows, metadata_totals = _metadata_rows_by_key(function_rows, [
+        metadata_keys = [
             "unsafe_blocks",
             "panic_paths",
             "potential_race",
@@ -2658,7 +2690,57 @@ def cs_unsafe(
             "resource_leaks",
             "unsafe_downcast",
             "dead_params",
-        ], exclude_research, max_per_category)
+        ]
+        selected_keys = _selected_metadata_keys(cat, metadata_keys, {
+            "unsafe": ["unsafe_blocks", "wrapping_arithmetic"],
+            "panic": ["panic_paths"],
+            "race": ["potential_race"],
+            "ffi": [],
+            "validation": ["no_input_validation"],
+            "go": ["unsafe_type_assertions", "sql_injection_risk"],
+            "type_assert": ["unsafe_type_assertions"],
+            "sql": ["sql_injection_risk"],
+            "java": [
+                "deserialization_sinks",
+                "reflection_usage",
+                "injection_sinks",
+                "weak_crypto",
+                "swallowed_exceptions",
+                "resource_leaks",
+            ],
+            "python": [
+                "deserialization_sinks",
+                "weak_crypto",
+                "command_injection_risk",
+                "private_key_material",
+            ],
+            "js": [
+                "deserialization_sinks",
+                "weak_crypto",
+                "private_key_material",
+            ],
+            "command": ["command_injection_risk"],
+            "keys": ["private_key_material"],
+            "deser": ["deserialization_sinks"],
+            "reflection": ["reflection_usage"],
+            "injection": ["injection_sinks"],
+            "crypto": ["weak_crypto"],
+            "downcast": ["unsafe_downcast"],
+            "dead_params": ["dead_params"],
+        })
+        if selected_keys:
+            function_rows = conn.execute(
+                "SELECT id, label, file, line_start, visibility, signature, metadata "
+                "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
+            )
+            metadata_rows, metadata_totals = _metadata_rows_by_key(
+                function_rows,
+                selected_keys,
+                exclude_research,
+                max_per_category,
+            )
+        else:
+            metadata_rows, metadata_totals = {}, {}
         category_totals: dict[str, int] = {}
 
         def _function_rows_with(metadata_key: str) -> list[tuple]:
