@@ -1542,8 +1542,8 @@ def cs_help() -> str:
             "5. Drill into specific areas with specialized tools below.",
         ],
         "core_tools": {
-            "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths.",
-            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata is opt-in with include_metadata.",
+            "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths; timeout_seconds is opt-in.",
+            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata and timeout_seconds are opt-in.",
             "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build.",
             "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
         },
@@ -1561,7 +1561,8 @@ def cs_help() -> str:
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink; full sink metadata is opt-in with include_metadata.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
-        "_tip": "All tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
+        "timeout_policy": "MCP tools do not self-timeout by default. Pass timeout_seconds only when a time-limited query or partial build is intentional.",
+        "_tip": "All graph query tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
     }, indent=2)
 
 

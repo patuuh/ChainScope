@@ -45,6 +45,11 @@ class TestIndexing:
         ):
             assert inspect.signature(tool).parameters["timeout_seconds"].default == 0
 
+        help_payload = json.loads(mcp_server.cs_help())
+        assert "do not self-timeout by default" in help_payload["timeout_policy"]
+        assert "timeout_seconds is opt-in" in help_payload["core_tools"]["cs_summary"]
+        assert "timeout_seconds are opt-in" in help_payload["core_tools"]["cs_audit"]
+
     def test_mcp_uses_capped_node_match_helpers(self):
         import mcp_server
 
