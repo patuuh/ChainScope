@@ -246,6 +246,53 @@ class TestIndexing:
         assert any("GROUP BY type" in sql for sql in statements)
         assert any("GROUP BY e.relation" in sql for sql in statements)
 
+    def test_summary_default_parses_only_tagged_source_context_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.entry()",
+            label="entry",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id="scripts/Deploy.sol::Deploy.run()",
+            label="run",
+            type="function",
+            visibility="external",
+            file="scripts/Deploy.sol",
+            metadata=json.dumps({"source_context": "script"}),
+        )
+        for i in range(40):
+            db.insert_node(
+                id=f"Vault.sol::Vault.helper{i}()",
+                label=f"helper{i}",
+                type="function",
+                file="Vault.sol",
+                metadata=json.dumps({"large": ["x"] * 20}),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        summary = json.loads(mcp_server.cs_summary(db=tmp_db))
+
+        assert summary["nodes"] == 42
+        assert summary["source_context_summary"] == {
+            "production": 41,
+            "script": 1,
+        }
+        assert len(parsed) == 2
+
     def test_summary_reports_attack_surface_truncation(self, tmp_db):
         import mcp_server
 

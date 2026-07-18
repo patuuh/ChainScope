@@ -536,12 +536,19 @@ def _sorted_count_mapping(counter: dict[str, int]) -> dict[str, int]:
     return dict(sorted(counter.items(), key=lambda item: (-item[1], item[0])))
 
 
-def _source_context_counts(conn) -> dict[str, int]:
+def _source_context_counts(conn, total_nodes: int) -> dict[str, int]:
     counts: dict[str, int] = {}
-    for row in conn.execute("SELECT metadata FROM nodes"):
+    explicit_total = 0
+    for row in conn.execute(
+        "SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'"
+    ):
+        explicit_total += 1
         meta = _load_metadata(row["metadata"])
         source_context = meta.get("source_context", "production")
         counts[source_context] = counts.get(source_context, 0) + 1
+    implicit_production = total_nodes - explicit_total
+    if implicit_production > 0:
+        counts["production"] = counts.get("production", 0) + implicit_production
     return counts
 
 
@@ -1117,10 +1124,11 @@ def cs_summary(
                 GROUP BY e.relation
                 """,
             )
+            node_count = _single_count(conn, "SELECT COUNT(*) FROM nodes")
             data = {
                 "database": db_path,
                 "query_scope": "all_sources",
-                "nodes": _single_count(conn, "SELECT COUNT(*) FROM nodes"),
+                "nodes": node_count,
                 "edges": _single_count(
                     conn,
                     """
@@ -1140,7 +1148,7 @@ def cs_summary(
                 ),
                 "node_types": _sorted_count_mapping(type_counts),
                 "edge_relations": _sorted_count_mapping(rel_counts),
-                "source_context_summary": _sorted_count_mapping(_source_context_counts(conn)),
+                "source_context_summary": _sorted_count_mapping(_source_context_counts(conn, node_count)),
                 "build_info": build_info,
             }
 
