@@ -4918,33 +4918,44 @@ def cs_lookup(
             full_by_id[full_dict["id"]] = full_dict
             return full_dict
 
-        for full_dict in _fetch_nodes_by_ids(conn, matched_node_ids):
+        profile_ids = matched_node_ids[:max_matches or total_matches]
+        for full_dict in _fetch_nodes_by_ids(conn, profile_ids):
             _parse_full_node(full_dict)
+
+        candidate_preview_by_id: dict[str, dict] = {}
+
+        def _load_candidate_previews(node_ids: list[str]) -> None:
+            missing_ids = [node_id for node_id in node_ids if node_id not in full_by_id]
+            for item in _fetch_nodes_by_ids(conn, missing_ids):
+                candidate_preview_by_id[item["id"]] = {
+                    "id": item["id"],
+                    "label": item["label"],
+                    "type": item["type"],
+                    "visibility": item["visibility"],
+                    "file": item["file"],
+                    "line": item["line_start"],
+                    "source_context": _metadata_source_context(item.get("metadata")),
+                }
 
         def _candidate_for_id(node_id: str) -> dict:
             full_dict = full_by_id.get(node_id)
-            if full_dict is None:
-                fetched = _fetch_nodes_by_ids(conn, [node_id])
-                if fetched:
-                    full_dict = _parse_full_node(fetched[0])
-            if full_dict is None:
-                return {"id": node_id}
-            meta = full_dict["metadata"]
-            return {
-                "id": full_dict["id"],
-                "label": full_dict["label"],
-                "type": full_dict["type"],
-                "visibility": full_dict["visibility"],
-                "file": full_dict["file"],
-                "line": full_dict["line_start"],
-                "source_context": meta.get("source_context", "production"),
-            }
+            if full_dict is not None:
+                meta = full_dict["metadata"]
+                return {
+                    "id": full_dict["id"],
+                    "label": full_dict["label"],
+                    "type": full_dict["type"],
+                    "visibility": full_dict["visibility"],
+                    "file": full_dict["file"],
+                    "line": full_dict["line_start"],
+                    "source_context": meta.get("source_context", "production"),
+                }
+            return candidate_preview_by_id.get(node_id, {"id": node_id})
 
         truncated = max_matches > 0 and total_matches > max_matches
-        candidate_ids = matched_node_ids[:max_matches or total_matches]
 
         results = []
-        for node_id in candidate_ids:
+        for node_id in profile_ids:
 
             # Full node details
             full = full_by_id.get(node_id)
@@ -5149,6 +5160,7 @@ def cs_lookup(
                 if max_candidates == 0
                 else matched_node_ids[:max_candidates]
             )
+            _load_candidate_previews(shown_candidate_ids)
             shown_candidates = [_candidate_for_id(node_id) for node_id in shown_candidate_ids]
             candidate_summary = _section_summary(total_matches, len(shown_candidates))
             response["candidates"] = shown_candidates

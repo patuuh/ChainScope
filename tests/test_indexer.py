@@ -3617,7 +3617,7 @@ class TestIndexing:
         assert lookup["functions"][0]["type"] == "function"
         assert lookup["functions"][0]["signature"] == "function transfer(address to, uint256 amount) external"
 
-    def test_lookup_formats_only_capped_candidates(self, tmp_db, monkeypatch):
+    def test_lookup_parses_only_full_profiles_for_known_candidates(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
@@ -3653,7 +3653,7 @@ class TestIndexing:
         assert lookup["matches_total"] == 12
         assert lookup["candidate_summary"] == {"total": 12, "shown": 4, "truncated": True}
         assert len(lookup["candidates"]) == 4
-        assert len(parsed) == 4
+        assert len(parsed) == 2
 
     def test_lookup_exclude_research_retains_only_capped_matches(self, tmp_db, monkeypatch):
         import mcp_server
@@ -3723,13 +3723,17 @@ class TestIndexing:
 
         real_open = mcp_server._open_query_connection
         statements = []
+        id_batch_sizes = []
 
         class CountingConnection:
             def __init__(self, conn):
                 self._conn = conn
 
             def execute(self, sql, *args, **kwargs):
-                statements.append(" ".join(sql.split()))
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                if "FROM nodes WHERE id IN" in normalized:
+                    id_batch_sizes.append(len(args[0]))
                 return self._conn.execute(sql, *args, **kwargs)
 
             def close(self):
@@ -3750,6 +3754,7 @@ class TestIndexing:
         assert lookup["matches_total"] == 80
         assert lookup["matches"] == 2
         assert len(lookup["candidates"]) == 3
+        assert id_batch_sizes == [2, 1]
         assert len(statements) <= 20
         assert not any("FROM nodes WHERE id = ?" in sql for sql in statements)
 
