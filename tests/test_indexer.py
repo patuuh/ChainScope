@@ -947,6 +947,61 @@ class TestIndexing:
         assert unsafe["_summary"]["category_totals"] == {"command_execution": 1}
         assert unsafe["command_execution"][0]["function"] == "run_cmd"
 
+    def test_unsafe_scanner_streams_ffi_sink_rows(self, monkeypatch):
+        import mcp_server
+
+        ffi_rows = [
+            {
+                "label": f"transmute_{i}",
+                "file": f"src/lib{i}.rs",
+                "metadata": json.dumps({
+                    "sink_type": "unsafe_ffi",
+                    "source_context": "production",
+                }),
+            }
+            for i in range(8)
+        ]
+
+        class StreamingRows:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchall(self):
+                raise AssertionError("unsafe ffi sink rows should stream")
+
+        class FakeConn:
+            def execute(self, sql, params=()):
+                if "FROM nodes WHERE type = 'function'" in sql:
+                    return StreamingRows([])
+                if "unsafe_ffi" in sql:
+                    return StreamingRows(ffi_rows)
+                raise AssertionError(f"unexpected query: {sql}")
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda db_path, timeout_seconds: FakeConn(),
+        )
+
+        result = json.loads(mcp_server.cs_unsafe(db="stream.db", category="ffi", max_per_category=3))
+
+        assert len(result["ffi_risks"]) == 3
+        assert result["ffi_risks"][0]["operation"] == "transmute_0"
+        assert result["_summary"]["total_findings"] == 8
+        assert result["_summary"]["shown_findings"] == 3
+        assert result["_summary"]["category_totals"] == {"ffi_risks": 8}
+        assert result["_summary"]["truncated_categories"]["ffi_risks"] == {
+            "shown": 3,
+            "total": 8,
+            "hidden": 5,
+        }
+
     def test_scanners_parse_matching_metadata_once_per_function(self, tmp_db, monkeypatch):
         import mcp_server
 

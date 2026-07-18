@@ -2404,7 +2404,7 @@ def cs_unsafe(
             sink_rows = conn.execute(
                 "SELECT label, file, metadata FROM nodes "
                 "WHERE metadata LIKE '%\"sink_type\": \"unsafe_ffi\"%'"
-            ).fetchall()
+            )
             ffi_sinks = []
             ffi_total = 0
             for r in sink_rows:
