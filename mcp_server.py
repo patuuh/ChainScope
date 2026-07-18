@@ -3765,16 +3765,7 @@ def cs_paths(
 
     try:
         node_by_id: dict[str, dict | None] = {}
-        node_meta: dict[str, dict] = {}
         label_counts: dict[str, int] = {}
-
-        def _metadata_for_node(node_id: str) -> dict:
-            meta = node_meta.get(node_id)
-            if meta is None:
-                row = _node_for_id(conn, node_id, node_by_id)
-                meta = _load_metadata(row.get("metadata") if row else None)
-                node_meta[node_id] = meta
-            return meta
 
         def _node_allowed(node_id: str) -> bool:
             row = _node_for_id(conn, node_id, node_by_id)
@@ -3782,7 +3773,7 @@ def cs_paths(
                 return False
             if not exclude_research:
                 return True
-            return _include_metadata(_metadata_for_node(node_id), exclude_research)
+            return not _is_research_metadata_raw(row.get("metadata"))
 
         endpoint_cap_enabled = max_endpoint_matches > 0
         if endpoint_cap_enabled and max_endpoint_candidates > 0:
@@ -3807,9 +3798,6 @@ def cs_paths(
 
         for node in from_nodes + to_nodes:
             node_by_id[node["id"]] = node
-            parsed_meta = node.get("_metadata_parsed")
-            if parsed_meta is not None:
-                node_meta[node["id"]] = parsed_meta
 
         if not from_nodes:
             if exclude_research:
@@ -3834,13 +3822,12 @@ def cs_paths(
             return label
 
         def _candidate_for_node(node: dict) -> dict:
-            meta = _metadata_for_node(node["id"])
             return {
                 "id": node["id"],
                 "label": node["label"],
                 "qualified_label": _label_for_node(node["id"]),
                 "file": node.get("file", ""),
-                "source_context": meta.get("source_context", "production"),
+                "source_context": _metadata_source_context(node.get("metadata")),
             }
 
         def _neighbors_for_node(node_id: str) -> list[str]:
@@ -3972,8 +3959,7 @@ def cs_paths(
                     labels = []
                     for guard in guards:
                         if exclude_research:
-                            meta = _load_metadata(guard["metadata"])
-                            if not _include_metadata(meta, exclude_research):
+                            if _is_research_metadata_raw(guard["metadata"]):
                                 continue
                         labels.append(guard["label"])
                     if labels:

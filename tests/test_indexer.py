@@ -5432,7 +5432,60 @@ class TestIndexing:
         assert paths["_summary"]["to_candidates"] == {"total": 8, "shown": 2, "truncated": True}
         assert len(paths["from_candidates"]) == 2
         assert len(paths["to_candidates"]) == 2
-        assert len(parsed) == 4
+        assert parsed == []
+
+    def test_paths_exclude_research_filters_graph_without_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        prod_metadata = json.dumps({"source_context": "production", "large": ["x"] * 20})
+        script_metadata = json.dumps({"source_context": "script", "large": ["x"] * 20})
+        start_id = "Vault.sol::Vault.start()"
+        finish_id = "Vault.sol::Vault.finish()"
+        script_helper_id = "scripts/Deploy.sol::Deploy.helper()"
+        prod_guard_id = "Vault.sol::Vault.onlyOwner"
+        script_guard_id = "scripts/Deploy.sol::Deploy.onlyScript"
+        for node_id, label, metadata in (
+            (start_id, "start", prod_metadata),
+            (finish_id, "finish", prod_metadata),
+            (script_helper_id, "helper", script_metadata),
+            (prod_guard_id, "onlyOwner", prod_metadata),
+            (script_guard_id, "onlyScript", script_metadata),
+        ):
+            db.insert_node(
+                id=node_id,
+                label=label,
+                type="function",
+                visibility="external",
+                file=node_id.split("::", 1)[0],
+                metadata=metadata,
+            )
+        db.insert_edge(start_id, finish_id, "calls")
+        db.insert_edge(start_id, script_helper_id, "calls")
+        db.insert_edge(script_helper_id, finish_id, "calls")
+        db.insert_edge(prod_guard_id, start_id, "guards")
+        db.insert_edge(script_guard_id, start_id, "guards")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            exclude_research=True,
+            show_guards=True,
+        ))
+
+        assert paths["paths"] == [["start", "finish"]]
+        assert paths["guards"] == {"start": ["onlyOwner"]}
+        assert parsed == []
 
     def test_paths_retains_only_capped_endpoint_rows(self, tmp_db, monkeypatch):
         import mcp_server
