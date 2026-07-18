@@ -755,19 +755,23 @@ class TestIndexing:
                 signature="function transfer(address to, uint256 amount) external",
             )
 
-        capped = json.loads(mcp_server.cs_lookup(name="transfer", db=tmp_db, max_matches=2))
+        capped = json.loads(mcp_server.cs_lookup(name="transfer", db=tmp_db, max_matches=2, max_candidates=3))
         uncapped = json.loads(mcp_server.cs_lookup(name="transfer", db=tmp_db, max_matches=0))
 
         assert capped["matches"] == 2
         assert capped["matches_total"] == 5
         assert capped["truncated"] is True
         assert "candidates" in capped
-        assert len(capped["candidates"]) == 5
+        assert len(capped["candidates"]) == 3
+        assert capped["candidate_summary"] == {"total": 5, "shown": 3, "truncated": True}
+        assert capped["max_candidates"] == 3
+        assert "max_candidates=0" in capped["_warnings"][0]
         assert "max_matches=0" in capped["_warning"]
 
         assert uncapped["matches"] == 5
         assert uncapped["matches_total"] == 5
         assert uncapped["truncated"] is False
+        assert uncapped["max_candidates"] == 50
         assert "candidates" not in uncapped
 
     def test_lookup_caps_relation_lists_for_llm_context(self, tmp_db):

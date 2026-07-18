@@ -691,7 +691,7 @@ def cs_help() -> str:
             "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output is capped by max_per_category.",
         },
         "exploration_tools": {
-            "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; relation lists are capped by max_relation_items.",
+            "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches; use max_matches=0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; use max_results=0 for exhaustive output.",
@@ -3482,6 +3482,7 @@ def cs_lookup(
     timeout_seconds: int = DEFAULT_MCP_QUERY_TIMEOUT_SECONDS,
     max_matches: int = 20,
     max_relation_items: int = 100,
+    max_candidates: int = 50,
 ) -> str:
     """Look up a function by name and return its complete profile.
 
@@ -3504,11 +3505,14 @@ def cs_lookup(
         timeout_seconds: SQLite query budget before returning an error
         max_matches: Maximum matching functions to fully profile (0 disables)
         max_relation_items: Maximum rows per relation list in each function profile (0 disables)
+        max_candidates: Maximum ambiguous match candidates to return (0 disables)
     """
     if max_matches < 0:
         max_matches = 0
     if max_relation_items < 0:
         max_relation_items = 0
+    if max_candidates < 0:
+        max_candidates = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3740,6 +3744,7 @@ def cs_lookup(
             "truncated": truncated,
             "max_matches": max_matches,
             "max_relation_items": max_relation_items,
+            "max_candidates": max_candidates,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "functions": results,
         }
@@ -3758,7 +3763,13 @@ def cs_lookup(
                 f"cs_lookup found {total_matches} matches and returned the first {len(results)} full profiles. "
                 "Use a more qualified name, inspect candidates, or set max_matches=0 for all profiles."
             )
-            response["candidates"] = candidates[:50]
+            shown_candidates, candidate_summary = _cap_items(candidates, max_candidates)
+            response["candidates"] = shown_candidates
+            response["candidate_summary"] = candidate_summary
+            if candidate_summary["truncated"]:
+                response.setdefault("_warnings", []).append(
+                    "cs_lookup candidate list was capped. Increase max_candidates or set max_candidates=0 for all candidates."
+                )
         return json.dumps(response, indent=2)
     except sqlite3.OperationalError as exc:
         if "interrupted" in str(exc).lower():
