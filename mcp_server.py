@@ -2664,7 +2664,7 @@ def cs_sinks(
             "signature, metadata FROM nodes "
             "WHERE metadata LIKE '%\"is_sink\"%' "
             "ORDER BY file, line_start, id"
-        ).fetchall()
+        )
 
         sinks = []
         total = 0
@@ -2701,7 +2701,7 @@ def cs_sinks(
             for row in conn.execute(
                 "SELECT id, label, type, visibility, file, line_start, line_end, "
                 "signature, metadata FROM nodes"
-            ).fetchall():
+            ):
                 node_map[row["id"]] = {
                     "id": row["id"],
                     "label": row["label"],
@@ -2717,7 +2717,7 @@ def cs_sinks(
             rev_adj: dict[str, list[str]] = {}
             for row in conn.execute(
                 "SELECT source, target FROM edges WHERE relation = 'calls'"
-            ).fetchall():
+            ):
                 rev_adj.setdefault(row["target"], []).append(row["source"])
             for callers in rev_adj.values():
                 callers.sort()
@@ -2760,17 +2760,21 @@ def cs_sinks(
                         if caller_meta is not None:
                             caller_entry["source_context"] = caller_meta.get("source_context", "production")
                         callers_total += 1
-                        _keep_sorted_result(
-                            callers,
-                            caller_entry,
-                            (
-                                caller_entry["distance"],
-                                caller_entry["file"] or "",
-                                caller_entry["line_start"] or 0,
-                                caller_entry["id"],
-                            ),
-                            max_callers_per_sink,
+                        sort_key = (
+                            caller_entry["distance"],
+                            caller_entry["file"] or "",
+                            caller_entry["line_start"] or 0,
+                            caller_entry["id"],
                         )
+                        if max_callers_per_sink == 0:
+                            callers.append((sort_key, caller_entry))
+                        else:
+                            _keep_sorted_result(
+                                callers,
+                                caller_entry,
+                                sort_key,
+                                max_callers_per_sink,
+                            )
 
                 shown = _sorted_results(callers)
                 summary = _section_summary(callers_total, len(shown))

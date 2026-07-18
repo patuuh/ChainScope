@@ -1561,6 +1561,75 @@ class TestIndexing:
         ]
         assert max(sink_buffer_sizes) == 3
 
+    def test_sinks_streams_rows_and_uncaps_callers_with_zero(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        sink_id = "Vault.sol::Vault.transfer()"
+        db.insert_node(
+            id=sink_id,
+            label="transfer",
+            type="function",
+            visibility="public",
+            file="Vault.sol",
+            metadata=json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+            }),
+        )
+        for i in range(5):
+            caller_id = f"Caller{i}.sol::Caller{i}.callTransfer()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callTransfer{i}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({"source_context": "production"}),
+            )
+            db.insert_edge(caller_id, sink_id, "calls")
+
+        real_open = mcp_server._open_query_connection
+
+        class StreamingRows:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchall(self):
+                raise AssertionError("cs_sinks rows should stream")
+
+        class StreamingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                return StreamingRows(self._conn.execute(sql, *args, **kwargs))
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: StreamingConnection(real_open(*args, **kwargs)),
+        )
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            max_callers_per_sink=0,
+        ))
+
+        assert result["total"] == 1
+        assert result["sinks"][0]["caller_summary"] == {"total": 5, "shown": 5, "truncated": False}
+        assert len(result["sinks"][0]["callers"]) == 5
+
     def test_sinks_caps_callers_before_metadata_formatting(self, tmp_db, monkeypatch):
         import mcp_server
 
