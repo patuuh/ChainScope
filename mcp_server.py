@@ -4193,12 +4193,33 @@ def cs_trace(
             return _finalize_accessor_items(shown), _section_summary(total, len(shown))
 
         def _callers(node_id: str) -> tuple[list[dict], dict]:
-            rows = conn.execute("""
+            sql = """
                 SELECT n.id, n.label, n.file, n.visibility, n.metadata
                 FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
                 ORDER BY n.file, n.id
-            """, (node_id,))
+            """
+            params = (node_id,)
+            if max_callers_per_accessor > 0 and not exclude_research:
+                callers_total = conn.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                    WHERE e.target = ? AND e.relation = 'calls'
+                    """,
+                    params,
+                ).fetchone()[0]
+                if callers_total == 0:
+                    return [], _section_summary(0, 0)
+                callers = []
+                for row in conn.execute(f"{sql} LIMIT ?", params + (max_callers_per_accessor,)):
+                    item = dict(row)
+                    item["_metadata_raw"] = item.pop("metadata", None)
+                    callers.append(item)
+                shown = _finalize_accessor_items(callers)
+                return shown, _section_summary(callers_total, len(shown))
+
+            rows = conn.execute(sql, params)
             callers = []
             callers_total = 0
             for row in rows:

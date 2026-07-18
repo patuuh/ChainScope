@@ -4624,7 +4624,10 @@ class TestIndexing:
                 self._conn = conn
 
             def execute(self, sql, *args, **kwargs):
-                return StreamingRows(self._conn.execute(sql, *args, **kwargs))
+                cursor = self._conn.execute(sql, *args, **kwargs)
+                if "COUNT(*)" in " ".join(sql.split()):
+                    return cursor
+                return StreamingRows(cursor)
 
             def close(self):
                 self._conn.close()
@@ -4678,22 +4681,46 @@ class TestIndexing:
             )
             db.insert_edge(caller_id, "Vault.sol::Vault.set(uint256)", "calls")
 
+        real_open = mcp_server._open_query_connection
         real_load = mcp_server._load_metadata
-        real_keep_sorted = mcp_server._keep_sorted_result
+        statements = []
         parsed = []
-        caller_buffer_sizes = []
+
+        class StreamingCursor:
+            def __init__(self, cursor):
+                self._cursor = cursor
+
+            def __iter__(self):
+                return iter(self._cursor)
+
+            def fetchall(self):
+                raise AssertionError("limited trace caller rows should stream")
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                cursor = self._conn.execute(sql, *args, **kwargs)
+                if "ORDER BY n.file, n.id LIMIT ?" in normalized:
+                    return StreamingCursor(cursor)
+                return cursor
+
+            def close(self):
+                self._conn.close()
 
         def counting_load(raw):
             parsed.append(raw)
             return real_load(raw)
 
-        def tracking_keep_sorted(buffer, item, sort_key, limit):
-            real_keep_sorted(buffer, item, sort_key, limit)
-            if isinstance(item, dict) and item.get("_metadata_raw") is not None:
-                caller_buffer_sizes.append(len(buffer))
-
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
         monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
-        monkeypatch.setattr(mcp_server, "_keep_sorted_result", tracking_keep_sorted)
 
         trace = json.loads(mcp_server.cs_trace(
             var="total",
@@ -4705,7 +4732,8 @@ class TestIndexing:
         writer = trace["writers"][0]
         assert writer["callers_summary"] == {"total": 40, "shown": 3, "truncated": True}
         assert [caller["label"] for caller in writer["callers"]] == ["callSet00", "callSet01", "callSet02"]
-        assert max(caller_buffer_sizes) == 3
+        assert any("SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_target_relation" in sql for sql in statements)
+        assert any("ORDER BY n.file, n.id LIMIT ?" in sql for sql in statements)
         assert len(parsed) == 3
 
     def test_trace_skips_untagged_source_context_parses(self, tmp_db, monkeypatch):
