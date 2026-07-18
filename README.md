@@ -230,6 +230,10 @@ For common function names, prefer qualified `cs_lookup` queries such as
 so agents get candidates instead of an oversized response; set `max_matches=0`
 only when exhaustive output is intentional.
 
+The same rule applies to broad `cs_trace` variable queries. Names like
+`total`, `owner`, or `balance` are capped by default and return compact
+candidates when ambiguous; set `max_matches=0` only for an exhaustive trace.
+
 For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
 choose where to inspect without dumping every trust-boundary edge.
@@ -259,6 +263,7 @@ choose where to inspect without dumping every trust-boundary edge.
 - `python cs_summary.py ...`
 - `python cs_paths.py ...`
 - `python cs_trace.py ...`
+- `python cs_trace.py --max-matches 0 ...`
 - `python cs_cross.py --summary ...`
 - `python cs_cross.py ...`
 - `python cs_state.py ...`
@@ -406,4 +411,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`406 passed`
+`407 passed`

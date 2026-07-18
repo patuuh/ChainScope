@@ -515,6 +515,49 @@ class TestIndexing:
         assert prod_trace["query_scope"] == "production_only"
         assert prod_writer_contexts == {"set": "production"}
 
+    def test_trace_caps_ambiguous_variables_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.total",
+                label="total",
+                type="state_var",
+                file=f"Vault{i}.sol",
+                signature="uint256 public total",
+            )
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.set(uint256)",
+                label=f"set{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+            )
+            db.insert_edge(
+                source=f"Vault{i}.sol::Vault{i}.set(uint256)",
+                target=f"Vault{i}.sol::Vault{i}.total",
+                relation="writes_state",
+            )
+
+        capped = json.loads(mcp_server.cs_trace(var="total", db=tmp_db, max_matches=2))
+        uncapped = json.loads(mcp_server.cs_trace(var="total", db=tmp_db, max_matches=0))
+
+        assert capped["variable_matches"] == 2
+        assert capped["variable_matches_total"] == 5
+        assert capped["truncated"] is True
+        assert capped["max_matches"] == 2
+        assert len(capped["candidates"]) == 5
+        assert len(capped["writers"]) == 2
+        assert "max_matches=0" in capped["_warning"]
+
+        assert uncapped["variable_matches"] == 5
+        assert uncapped["variable_matches_total"] == 5
+        assert uncapped["truncated"] is False
+        assert len(uncapped["writers"]) == 5
+        assert "candidates" not in uncapped
+
     def test_paths_filter_research_paths(self, tmp_path, tmp_db):
         import mcp_server
 

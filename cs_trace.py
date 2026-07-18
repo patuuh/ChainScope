@@ -12,6 +12,7 @@ def trace(
     db: str = typer.Option("graph.db", help="Database path"),
     var: str = typer.Option(..., "--var", help="State variable label to trace"),
     show_callers: bool = typer.Option(False, "--show-callers", help="Show one level of callers"),
+    max_matches: int = typer.Option(20, "--max-matches", help="Max matching variables to trace fully (0 = all)"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -20,6 +21,7 @@ def trace(
         db=db,
         show_callers=show_callers,
         exclude_research=exclude_research,
+        max_matches=max_matches,
     ))
 
     if "error" in data:
@@ -37,6 +39,11 @@ def trace(
     typer.echo(
         f"State Variable: {var_node['label']} ({var_node['file']}) [scope={data.get('query_scope', 'all_sources')}]"
     )
+    if data.get("truncated"):
+        typer.echo(
+            f"  Matches: {data.get('variable_matches')}/{data.get('variable_matches_total')} "
+            f"(use --max-matches 0 for all)"
+        )
     typer.echo(f"  Type: {var_node.get('signature', 'unknown')}")
 
     typer.echo(f"\n  Writers ({len(writers)}):")

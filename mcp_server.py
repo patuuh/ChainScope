@@ -565,7 +565,7 @@ def cs_help() -> str:
         "exploration_tools": {
             "cs_lookup": "Complete function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; use qualified names or max_matches=0 for exhaustive output.",
             "cs_paths": "Find call paths between two functions (from_label → to_label)",
-            "cs_trace": "Trace all readers/writers of a state variable",
+            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches; use max_matches=0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls (trust boundary crossings)",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
             "cs_state": "State machine transitions and lifecycle analysis",
@@ -2453,6 +2453,7 @@ def cs_trace(
     show_callers: bool = False,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
+    max_matches: int = 20,
 ) -> str:
     """Trace all functions that read or write a state variable.
 
@@ -2465,7 +2466,11 @@ def cs_trace(
         show_callers: Include one level of callers for each accessor
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+        max_matches: Maximum matching state variables to trace fully (0 disables)
     """
+    if max_matches < 0:
+        max_matches = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
@@ -2474,34 +2479,58 @@ def cs_trace(
 
     try:
         rows = conn.execute(
-            "SELECT id, label, file, signature, metadata FROM nodes WHERE label = ? AND type = 'state_var'",
+            """
+            SELECT id, label, file, signature, metadata
+            FROM nodes
+            WHERE label = ? AND type = 'state_var'
+            ORDER BY file, id
+            """,
             (var,)
         ).fetchall()
         if not rows:
             rows = conn.execute(
-                "SELECT id, label, file, signature, metadata FROM nodes WHERE label LIKE ? AND type = 'state_var'",
+                """
+                SELECT id, label, file, signature, metadata
+                FROM nodes
+                WHERE label LIKE ? AND type = 'state_var'
+                ORDER BY file, id
+                """,
                 (f"%{var}%",)
             ).fetchall()
         if not rows:
             return json.dumps({"error": f"No state variable found matching '{var}'"})
 
-        variables = []
+        candidates = []
+        full_by_id: dict[str, dict] = {}
         for row in rows:
             item = dict(row)
             item["metadata"] = _load_metadata(item.get("metadata"))
             if not _include_metadata(item["metadata"], exclude_research):
                 continue
             item["source_context"] = item["metadata"].get("source_context", "production")
-            variables.append(item)
+            full_by_id[item["id"]] = item
+            candidates.append({
+                "id": item["id"],
+                "label": item["label"],
+                "file": item["file"],
+                "signature": item.get("signature", ""),
+                "source_context": item["source_context"],
+            })
 
-        if not variables:
+        if not candidates:
             return json.dumps({"error": f"No production state variable found matching '{var}'"})
+
+        total_matches = len(candidates)
+        truncated = max_matches > 0 and total_matches > max_matches
+        variable_ids = [c["id"] for c in candidates[:max_matches or total_matches]]
+        variables = [full_by_id[var_id] for var_id in variable_ids if var_id in full_by_id]
 
         def _accessors(var_id: str, relation: str) -> list[dict]:
             accessors = conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start, n.line_end, n.metadata
                 FROM edges e JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = ?
+                ORDER BY n.file, n.line_start, n.id
             """, (var_id, relation)).fetchall()
             results = []
             for row in accessors:
@@ -2518,6 +2547,7 @@ def cs_trace(
                 SELECT n.id, n.label, n.file, n.visibility, n.metadata
                 FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
+                ORDER BY n.file, n.id
             """, (node_id,)).fetchall()
             callers = []
             for row in rows:
@@ -2544,14 +2574,25 @@ def cs_trace(
             for acc in writers + readers:
                 acc["callers"] = _callers(acc["id"])
 
-        return json.dumps({
+        response = {
+            "query": var,
             "variable": variables[0],
             "variables": variables,
             "variable_matches": len(variables),
+            "variable_matches_total": total_matches,
+            "truncated": truncated,
+            "max_matches": max_matches,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "writers": writers,
             "readers": readers,
-        }, indent=2)
+        }
+        if truncated:
+            response["_warning"] = (
+                f"cs_trace found {total_matches} matching state variables and traced the first {len(variables)}. "
+                "Use a more qualified variable name or set max_matches=0 for all matches."
+            )
+            response["candidates"] = candidates[:50]
+        return json.dumps(response, indent=2)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_trace",
