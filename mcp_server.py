@@ -3802,15 +3802,48 @@ def cs_lookup(
         if not nodes:
             return json.dumps({"error": f"No function found matching '{name}'"})
 
-        candidates = []
         full_by_id: dict[str, dict] = {}
-        for full_dict in _fetch_nodes_by_ids(conn, [row["id"] for row in nodes]):
+        matched_node_ids = [row["id"] for row in nodes]
+
+        def _parse_full_node(full_dict: dict) -> dict | None:
+            cached = full_by_id.get(full_dict["id"])
+            if cached is not None:
+                return cached
             meta = _load_metadata(full_dict.get("metadata"))
             if not _include_metadata(meta, exclude_research):
-                continue
+                return None
             full_dict["metadata"] = meta
             full_by_id[full_dict["id"]] = full_dict
-            candidates.append({
+            return full_dict
+
+        if exclude_research:
+            filtered_ids = []
+            fetched_rows = _fetch_nodes_by_ids(conn, matched_node_ids)
+            for full_dict in fetched_rows:
+                parsed = _parse_full_node(full_dict)
+                if parsed is not None:
+                    filtered_ids.append(parsed["id"])
+            matched_node_ids = filtered_ids
+        else:
+            total_unfiltered = len(matched_node_ids)
+            profile_count = total_unfiltered if max_matches == 0 else min(max_matches, total_unfiltered)
+            candidate_count = 0
+            if max_matches > 0 and total_unfiltered > max_matches:
+                candidate_count = total_unfiltered if max_candidates == 0 else min(max_candidates, total_unfiltered)
+            needed_count = max(profile_count, candidate_count)
+            for full_dict in _fetch_nodes_by_ids(conn, matched_node_ids[:needed_count]):
+                _parse_full_node(full_dict)
+
+        def _candidate_for_id(node_id: str) -> dict:
+            full_dict = full_by_id.get(node_id)
+            if full_dict is None:
+                fetched = _fetch_nodes_by_ids(conn, [node_id])
+                if fetched:
+                    full_dict = _parse_full_node(fetched[0])
+            if full_dict is None:
+                return {"id": node_id}
+            meta = full_dict["metadata"]
+            return {
                 "id": full_dict["id"],
                 "label": full_dict["label"],
                 "type": full_dict["type"],
@@ -3818,16 +3851,16 @@ def cs_lookup(
                 "file": full_dict["file"],
                 "line": full_dict["line_start"],
                 "source_context": meta.get("source_context", "production"),
-            })
+            }
 
-        if not candidates:
+        if not matched_node_ids:
             if exclude_research:
                 return json.dumps({"error": f"No production function found matching '{name}'"})
             return json.dumps({"error": f"No function found matching '{name}'"})
 
-        total_matches = len(candidates)
+        total_matches = len(matched_node_ids)
         truncated = max_matches > 0 and total_matches > max_matches
-        candidate_ids = [c["id"] for c in candidates[:max_matches or total_matches]]
+        candidate_ids = matched_node_ids[:max_matches or total_matches]
 
         results = []
         for node_id in candidate_ids:
@@ -4024,7 +4057,11 @@ def cs_lookup(
                 f"cs_lookup found {total_matches} matches and returned the first {len(results)} full profiles. "
                 "Use a more qualified name, inspect candidates, or set max_matches=0 for all profiles."
             )
-            shown_candidates, candidate_summary = _cap_items(candidates, max_candidates)
+            shown_candidates, candidate_summary = _collect_mapped_items(
+                matched_node_ids,
+                _candidate_for_id,
+                max_candidates,
+            )
             response["candidates"] = shown_candidates
             response["candidate_summary"] = candidate_summary
             if candidate_summary["truncated"]:

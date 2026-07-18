@@ -1471,6 +1471,44 @@ class TestIndexing:
         assert uncapped["max_candidates"] == 50
         assert "candidates" not in uncapped
 
+    def test_lookup_formats_only_capped_candidates(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(12):
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.transfer(address,uint256)",
+                label="transfer",
+                type="function",
+                visibility="external",
+                file=f"Vault{i:02d}.sol",
+                line_start=i + 1,
+                signature="function transfer(address to, uint256 amount) external",
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        lookup = json.loads(mcp_server.cs_lookup(
+            name="transfer",
+            db=tmp_db,
+            max_matches=2,
+            max_candidates=4,
+        ))
+
+        assert lookup["matches"] == 2
+        assert lookup["matches_total"] == 12
+        assert lookup["candidate_summary"] == {"total": 12, "shown": 4, "truncated": True}
+        assert len(lookup["candidates"]) == 4
+        assert len(parsed) == 4
+
     def test_lookup_batches_ambiguous_candidate_loads(self, tmp_db, monkeypatch):
         import mcp_server
 
