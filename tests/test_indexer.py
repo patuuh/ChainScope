@@ -337,14 +337,23 @@ class TestIndexing:
         custom = json.dumps({"source_context": "custom", "large": ["x"] * 20})
         research_kind = json.dumps({"source_kind": "research", "large": ["x"] * 20})
         prod_kind = json.dumps({"source_kind": "source", "source_context": "production", "large": ["x"] * 20})
+        nested_context = json.dumps({"nested": {"source_context": "script"}, "source_context": "production"})
+        nested_context_only = json.dumps({"nested": {"source_context": "script"}, "large": ["x"] * 20})
+        nested_sink = json.dumps({"nested": {"is_sink": True}, "is_sink": False})
+        top_level_sink = json.dumps({"nested": {"is_sink": False}, "is_sink": True})
 
         assert mcp_server._metadata_source_context(production) == "production"
         assert mcp_server._metadata_source_context(script) == "script"
         assert mcp_server._metadata_source_context(custom) == "custom"
+        assert mcp_server._metadata_source_context(nested_context) == "production"
+        assert mcp_server._metadata_source_context(nested_context_only) == "production"
         assert mcp_server._is_research_metadata_raw(production) is False
         assert mcp_server._is_research_metadata_raw(script) is True
         assert mcp_server._is_research_metadata_raw(research_kind) is True
         assert mcp_server._is_research_metadata_raw(prod_kind) is False
+        assert mcp_server._is_research_metadata_raw(nested_context_only) is False
+        assert mcp_server._metadata_raw_value_truthy(nested_sink, "is_sink") is False
+        assert mcp_server._metadata_raw_value_truthy(top_level_sink, "is_sink") is True
 
     def test_summary_exclude_research_uses_raw_metadata_filters(self, tmp_db, monkeypatch):
         import mcp_server

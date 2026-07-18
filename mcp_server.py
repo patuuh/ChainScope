@@ -311,41 +311,64 @@ _KNOWN_SOURCE_CONTEXTS = (
     "echidna",
 )
 
-_KNOWN_SOURCE_CONTEXT_FRAGMENTS = tuple(
-    (context, *_metadata_string_fragments("source_context", context))
-    for context in _KNOWN_SOURCE_CONTEXTS
-)
-
-
 _JSON_DECODER = json.JSONDecoder()
 _MISSING_METADATA_VALUE = object()
+
+
+def _skip_json_string(raw: str, pos: int) -> int:
+    pos += 1
+    escaped = False
+    while pos < len(raw):
+        ch = raw[pos]
+        if escaped:
+            escaped = False
+        elif ch == "\\":
+            escaped = True
+        elif ch == '"':
+            return pos + 1
+        pos += 1
+    return len(raw)
 
 
 def _metadata_raw_value(raw, key: str):
     if not isinstance(raw, str) or not key:
         return _MISSING_METADATA_VALUE
     needle = json.dumps(key)
-    pos = raw.find(needle)
-    while pos >= 0:
-        colon = raw.find(":", pos + len(needle))
-        if colon < 0:
-            return _MISSING_METADATA_VALUE
-        value_pos = colon + 1
-        while value_pos < len(raw) and raw[value_pos] in " \t\r\n":
-            value_pos += 1
-        try:
-            value, _end = _JSON_DECODER.raw_decode(raw[value_pos:])
-        except ValueError:
-            return _MISSING_METADATA_VALUE
-        return value
-        pos = raw.find(needle, pos + len(needle))
+    depth = 0
+    pos = 0
+    while pos < len(raw):
+        ch = raw[pos]
+        if ch == '"':
+            end = _skip_json_string(raw, pos)
+            if depth == 1 and raw.startswith(needle, pos) and end == pos + len(needle):
+                colon = end
+                while colon < len(raw) and raw[colon] in " \t\r\n":
+                    colon += 1
+                if colon >= len(raw) or raw[colon] != ":":
+                    pos = end
+                    continue
+                value_pos = colon + 1
+                while value_pos < len(raw) and raw[value_pos] in " \t\r\n":
+                    value_pos += 1
+                try:
+                    value, _end = _JSON_DECODER.raw_decode(raw[value_pos:])
+                except ValueError:
+                    return _MISSING_METADATA_VALUE
+                return value
+            pos = end
+            continue
+        if ch in "{[":
+            depth += 1
+        elif ch in "}]":
+            depth = max(depth - 1, 0)
+        pos += 1
     return _MISSING_METADATA_VALUE
 
 
 def _metadata_raw_value_truthy(raw, key: str) -> bool:
     value = _metadata_raw_value(raw, key)
     if value is _MISSING_METADATA_VALUE:
-        return _attr_enabled(_load_metadata(raw).get(key))
+        return False
     return _attr_enabled(value)
 
 
@@ -368,13 +391,10 @@ def _metadata_source_context(raw) -> str:
         return raw.get("source_context", "production")
     if not raw or '"source_context"' not in raw:
         return "production"
-    for context, compact, spaced in _KNOWN_SOURCE_CONTEXT_FRAGMENTS:
-        if compact in raw or spaced in raw:
-            return context
     source_context = _metadata_string_value(raw, "source_context")
     if source_context is not None:
         return source_context
-    return _load_metadata(raw).get("source_context", "production")
+    return "production"
 
 
 TRAVERSAL_RELATIONS = ("calls", "flows_to", "inherits")
