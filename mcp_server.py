@@ -3064,30 +3064,44 @@ def cs_trace(
         if not rows:
             return json.dumps({"error": f"No state variable found matching '{var}'"})
 
-        candidates = []
         full_by_id: dict[str, dict] = {}
-        for row in rows:
+
+        def _state_var_for_row(row) -> dict:
+            cached = full_by_id.get(row["id"])
+            if cached is not None:
+                return cached
             item = dict(row)
             item["metadata"] = _load_metadata(item.get("metadata"))
-            if not _include_metadata(item["metadata"], exclude_research):
-                continue
             item["source_context"] = item["metadata"].get("source_context", "production")
             full_by_id[item["id"]] = item
-            candidates.append({
+            return item
+
+        if exclude_research:
+            matched_rows = []
+            for row in rows:
+                item = _state_var_for_row(row)
+                if _include_metadata(item["metadata"], exclude_research):
+                    matched_rows.append(row)
+        else:
+            matched_rows = rows
+
+        if not matched_rows:
+            return json.dumps({"error": f"No production state variable found matching '{var}'"})
+
+        total_matches = len(matched_rows)
+        truncated = max_matches > 0 and total_matches > max_matches
+        variable_rows = matched_rows[:max_matches or total_matches]
+        variables = [_state_var_for_row(row) for row in variable_rows]
+
+        def _candidate_for_row(row) -> dict:
+            item = _state_var_for_row(row)
+            return {
                 "id": item["id"],
                 "label": item["label"],
                 "file": item["file"],
                 "signature": item.get("signature", ""),
                 "source_context": item["source_context"],
-            })
-
-        if not candidates:
-            return json.dumps({"error": f"No production state variable found matching '{var}'"})
-
-        total_matches = len(candidates)
-        truncated = max_matches > 0 and total_matches > max_matches
-        variable_ids = [c["id"] for c in candidates[:max_matches or total_matches]]
-        variables = [full_by_id[var_id] for var_id in variable_ids if var_id in full_by_id]
+            }
 
         def _accessors(var_id: str, relation: str) -> list[dict]:
             accessors = conn.execute("""
@@ -3191,7 +3205,11 @@ def cs_trace(
                 f"cs_trace found {total_matches} matching state variables and traced the first {len(variables)}. "
                 "Use a more qualified variable name or set max_matches=0 for all matches."
             )
-            shown_candidates, candidate_summary = _cap_items(candidates, max_candidates)
+            shown_candidates, candidate_summary = _collect_mapped_items(
+                matched_rows,
+                _candidate_for_row,
+                max_candidates,
+            )
             response["candidates"] = shown_candidates
             response["candidate_summary"] = candidate_summary
             if candidate_summary["truncated"]:

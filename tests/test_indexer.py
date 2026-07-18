@@ -1708,6 +1708,42 @@ class TestIndexing:
         assert len(uncapped["writers"]) == 5
         assert "candidates" not in uncapped
 
+    def test_trace_formats_only_capped_variable_candidates(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(12):
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.total",
+                label="total",
+                type="state_var",
+                file=f"Vault{i:02d}.sol",
+                signature="uint256 public total",
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        trace = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            max_matches=2,
+            max_candidates=4,
+        ))
+
+        assert trace["variable_matches"] == 2
+        assert trace["variable_matches_total"] == 12
+        assert trace["candidate_summary"] == {"total": 12, "shown": 4, "truncated": True}
+        assert len(trace["candidates"]) == 4
+        assert len(parsed) == 4
+
     def test_trace_caps_show_callers_for_llm_context(self, tmp_db):
         import mcp_server
 
