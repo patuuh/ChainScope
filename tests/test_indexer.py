@@ -1144,7 +1144,7 @@ class TestIndexing:
         assert any("e.target IN" in sql and params == (prod_id,) for sql, params in scoped_preloads)
         assert all(script_id not in params for _, params in scoped_preloads)
 
-    def test_audit_reuses_production_function_metadata_from_stats(self, tmp_db, monkeypatch):
+    def test_audit_filters_research_before_preload_parse(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
@@ -1186,7 +1186,7 @@ class TestIndexing:
 
         assert audit["source_context_summary"] == {"production": 1}
         assert parsed.count(prod_meta) == 1
-        assert parsed.count(script_meta) == 1
+        assert parsed.count(script_meta) == 0
 
     def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
         import mcp_server

@@ -2038,6 +2038,25 @@ def cs_audit(
         scoped_node_ids: set[str] | None = None
         preloaded_function_rows: list[dict] | None = None
         preloaded_function_meta: dict[str, dict] = {}
+        DETECTION_KEYS = [
+            "reentrancy_risk", "cross_reentrancy", "unchecked_calls",
+            "no_input_validation", "proxy_risk", "unchecked_arithmetic",
+            "upgrade_surface", "privileged_operations", "unguarded_privileged_operation",
+            "timestamp_dependence", "unchecked_erc20", "oracle_risk",
+            "signature_risk", "dos_risk", "precision_risk", "frontrun_risk",
+            "unsafe_downcast", "flash_loan_risk", "slippage_risk",
+            "dead_params", "erc_callback_risk", "anchor_risks",
+            "cpi_reentrancy_risk", "unsafe_type_assertions",
+            "sql_injection_risk", "unsafe_blocks", "panic_paths",
+            "uses_tx_origin", "has_assembly", "potential_race",
+            "no_error_check", "unchecked_errors", "transfer_sinks",
+            "cross_contract_calls", "private_key_material",
+            "command_injection_risk", "deserialization_sinks",
+            "injection_sinks", "weak_crypto", "move_entry",
+            "ton_accept_message", "ton_validation", "ignored_bounce",
+            "streaming_rpc", "auth_boundary",
+        ]
+        detection_key_tuple = tuple(DETECTION_KEYS)
 
         # --- 1. Stats (formerly cs_summary) ---
         if exclude_research:
@@ -2052,8 +2071,8 @@ def cs_audit(
             for row in conn.execute(
                 "SELECT id, label, type, visibility, file, line_start, signature, metadata FROM nodes"
             ):
-                meta = _load_metadata(row["metadata"])
-                if _is_research_meta(meta):
+                raw_meta = row["metadata"]
+                if _is_research_metadata_raw(raw_meta):
                     continue
                 allowed_node_ids.add(row["id"])
                 node_count += 1
@@ -2064,12 +2083,13 @@ def cs_audit(
                     if preloaded_function_rows is None:
                         preloaded_function_rows = []
                     preloaded_function_rows.append(row)
-                    preloaded_function_meta[row["id"]] = meta
+                    if _metadata_has_any_key(raw_meta, detection_key_tuple):
+                        preloaded_function_meta[row["id"]] = _load_metadata(raw_meta)
                     if row["visibility"] in ("external", "public"):
                         entry_count += 1
                 elif row["type"] == "state_var":
                     state_var_count += 1
-                if meta.get("is_sink"):
+                if raw_meta and '"is_sink"' in raw_meta and _load_metadata(raw_meta).get("is_sink"):
                     sink_count += 1
             file_count = len(files)
 
@@ -2140,25 +2160,6 @@ def cs_audit(
         report["stats"]["edge_relations"] = dict(sorted(edge_relation_counts.items(), key=lambda item: (-item[1], item[0])))
 
         # --- 2. Detection tallies (single metadata pass) ---
-        DETECTION_KEYS = [
-            "reentrancy_risk", "cross_reentrancy", "unchecked_calls",
-            "no_input_validation", "proxy_risk", "unchecked_arithmetic",
-            "upgrade_surface", "privileged_operations", "unguarded_privileged_operation",
-            "timestamp_dependence", "unchecked_erc20", "oracle_risk",
-            "signature_risk", "dos_risk", "precision_risk", "frontrun_risk",
-            "unsafe_downcast", "flash_loan_risk", "slippage_risk",
-            "dead_params", "erc_callback_risk", "anchor_risks",
-            "cpi_reentrancy_risk", "unsafe_type_assertions",
-            "sql_injection_risk", "unsafe_blocks", "panic_paths",
-            "uses_tx_origin", "has_assembly", "potential_race",
-            "no_error_check", "unchecked_errors", "transfer_sinks",
-            "cross_contract_calls", "private_key_material",
-            "command_injection_risk", "deserialization_sinks",
-            "injection_sinks", "weak_crypto", "move_entry",
-            "ton_accept_message", "ton_validation", "ignored_bounce",
-            "streaming_rpc", "auth_boundary",
-        ]
-        detection_key_tuple = tuple(DETECTION_KEYS)
         detection_counts: dict[str, int] = {}
         source_context_counts: dict[str, int] = {}
         all_funcs = []
