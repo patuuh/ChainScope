@@ -5269,17 +5269,13 @@ def cs_lookup(
                 )
         return json.dumps(response, indent=2)
     except sqlite3.OperationalError as exc:
-        if "interrupted" in str(exc).lower():
-            return json.dumps({
-                "error": f"cs_lookup timed out after {timeout_seconds}s",
-                "query": name,
-                "query_scope": "production_only" if exclude_research else "all_sources",
-            }, indent=2)
-        return json.dumps({
-            "error": f"SQLite error while running cs_lookup: {exc}",
-            "query": name,
-            "query_scope": "production_only" if exclude_research else "all_sources",
-        }, indent=2)
+        return _query_sqlite_error(
+            "cs_lookup",
+            exc,
+            timeout_seconds,
+            query=name,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 

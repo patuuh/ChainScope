@@ -4329,6 +4329,39 @@ class TestIndexing:
         assert any("mode=ro" in uri and "immutable=1" not in uri for uri in attempts)
         assert any("mode=ro&immutable=1" in uri for uri in attempts)
 
+    def test_lookup_timeout_uses_shared_sqlite_error_shape(self, monkeypatch):
+        import mcp_server
+
+        closed = []
+
+        class TimeoutConnection:
+            def execute(self, *args, **kwargs):
+                raise mcp_server.sqlite3.OperationalError("interrupted")
+
+            def close(self):
+                closed.append(True)
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda db_path, timeout_seconds: TimeoutConnection(),
+        )
+
+        result = json.loads(mcp_server.cs_lookup(
+            name="transfer",
+            db="timeout.db",
+            timeout_seconds=7,
+            exclude_research=True,
+        ))
+
+        assert result == {
+            "query": "transfer",
+            "query_scope": "production_only",
+            "error": "cs_lookup timed out after 7s",
+            "timed_out": True,
+        }
+        assert closed == [True]
+
     def test_lookup_caps_ambiguous_matches_for_llm_context(self, tmp_db):
         import mcp_server
 
