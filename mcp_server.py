@@ -3332,9 +3332,6 @@ def cs_unsafe(
                 results[result_key] = values
                 category_totals[result_key] = total
 
-        def _include(meta: dict) -> bool:
-            return not (exclude_research and _is_research_meta(meta))
-
         def _ctx(meta: dict) -> str:
             return meta.get("source_context", "production")
 
@@ -3380,19 +3377,28 @@ def cs_unsafe(
 
         # --- FFI/transmute (Rust) ---
         if cat in ("all", "ffi"):
+            sink_type_filter, sink_type_params = _metadata_string_value_filter("sink_type", "unsafe_ffi")
             sink_rows = conn.execute(
                 "SELECT label, file, metadata FROM nodes "
-                "WHERE metadata LIKE '%\"sink_type\": \"unsafe_ffi\"%'"
+                f"WHERE 1=1{sink_type_filter}"
+                " ORDER BY file, label",
+                sink_type_params,
             )
             ffi_sinks = []
             ffi_total = 0
             for r in sink_rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
+                raw_meta = r["metadata"]
+                if exclude_research and _is_research_metadata_raw(raw_meta):
+                    continue
+                if _metadata_string_value(raw_meta, "sink_type") != "unsafe_ffi":
                     continue
                 ffi_total += 1
                 if max_per_category == 0 or len(ffi_sinks) < max_per_category:
-                    ffi_sinks.append({"operation": r["label"], "file": r["file"], "source_context": _ctx(meta)})
+                    ffi_sinks.append({
+                        "operation": r["label"],
+                        "file": r["file"],
+                        "source_context": _metadata_source_context(raw_meta),
+                    })
             if ffi_total:
                 results["ffi_risks"] = ffi_sinks
                 category_totals["ffi_risks"] = ffi_total

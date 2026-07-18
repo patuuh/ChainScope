@@ -2087,7 +2087,11 @@ class TestIndexing:
             def execute(self, sql, params=()):
                 if "FROM nodes WHERE type = 'function'" in sql:
                     raise AssertionError("ffi-only scan should skip function metadata rows")
-                if "unsafe_ffi" in sql:
+                expected_params = (
+                    '%"sink_type":"unsafe_ffi"%',
+                    '%"sink_type": "unsafe_ffi"%',
+                )
+                if params == expected_params:
                     return StreamingRows(ffi_rows)
                 raise AssertionError(f"unexpected query: {sql}")
 
@@ -2112,6 +2116,65 @@ class TestIndexing:
             "total": 8,
             "hidden": 5,
         }
+
+    def test_unsafe_scanner_ffi_uses_top_level_compact_sink_type(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        compact_ffi = json.dumps({
+            "sink_type": "unsafe_ffi",
+            "source_context": "production",
+            "large": ["x"] * 20,
+        }, separators=(",", ":"))
+        nested_ffi = json.dumps({
+            "nested": {"sink_type": "unsafe_ffi"},
+            "source_context": "production",
+            "large": ["x"] * 20,
+        })
+        script_ffi = json.dumps({
+            "sink_type": "unsafe_ffi",
+            "source_context": "script",
+            "large": ["x"] * 20,
+        })
+        for label, raw in (
+            ("transmute_compact", compact_ffi),
+            ("transmute_nested", nested_ffi),
+            ("transmute_script", script_ffi),
+        ):
+            db.insert_node(
+                id=f"src/lib.rs::{label}",
+                label=label,
+                type="function",
+                file="src/lib.rs",
+                metadata=raw,
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        all_result = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="ffi", max_per_category=10))
+        prod_result = json.loads(mcp_server.cs_unsafe(
+            db=tmp_db,
+            category="ffi",
+            exclude_research=True,
+            max_per_category=10,
+        ))
+
+        assert [item["operation"] for item in all_result["ffi_risks"]] == [
+            "transmute_compact",
+            "transmute_script",
+        ]
+        assert all_result["_summary"]["category_totals"] == {"ffi_risks": 2}
+        assert [item["operation"] for item in prod_result["ffi_risks"]] == ["transmute_compact"]
+        assert prod_result["_summary"]["category_totals"] == {"ffi_risks": 1}
+        assert nested_ffi not in parsed
+        assert parsed == []
 
     def test_scanners_parse_matching_metadata_once_per_function(self, tmp_db, monkeypatch):
         import mcp_server
