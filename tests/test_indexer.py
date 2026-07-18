@@ -2205,6 +2205,41 @@ class TestIndexing:
         assert paths["paths"] == [["start", "finish"]]
         assert parsed == []
 
+    def test_paths_preserves_exact_match_stage_when_excluding_research(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="scripts/Deploy.sol::Deploy.start()",
+            label="start",
+            type="function",
+            file="scripts/Deploy.sol",
+            metadata=json.dumps({"source_context": "script"}),
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.startProduction()",
+            label="startProduction",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.finish()",
+            label="finish",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            exclude_research=True,
+        ))
+
+        assert paths == {"error": "No production node found matching 'start'"}
+
     def test_paths_cap_ambiguous_endpoints_for_llm_context(self, tmp_db):
         import mcp_server
 
@@ -2318,6 +2353,59 @@ class TestIndexing:
         assert len(paths["from_candidates"]) == 2
         assert len(paths["to_candidates"]) == 2
         assert len(parsed) == 4
+
+    def test_paths_retains_only_capped_endpoint_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(40):
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.start()",
+                label="start",
+                type="function",
+                visibility="external",
+                file=f"Vault{i:02d}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({"source_context": "production"}),
+            )
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.finish()",
+                label="finish",
+                type="function",
+                visibility="internal",
+                file=f"Vault{i:02d}.sol",
+                line_start=i + 100,
+                metadata=json.dumps({"source_context": "production"}),
+            )
+
+        real_append = mcp_server._append_capped
+        endpoint_buffer_sizes = {"start": [], "finish": []}
+
+        def tracking_append(items, item, total, limit):
+            updated = real_append(items, item, total, limit)
+            if isinstance(item, dict) and item.get("label") in endpoint_buffer_sizes:
+                endpoint_buffer_sizes[item["label"]].append(len(items))
+            return updated
+
+        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            max_paths=1,
+            max_endpoint_matches=2,
+            max_endpoint_candidates=3,
+        ))
+
+        assert paths["_summary"]["from_matches_total"] == 40
+        assert paths["_summary"]["from_matches_used"] == 2
+        assert paths["_summary"]["to_matches_total"] == 40
+        assert paths["_summary"]["to_matches_used"] == 2
+        assert paths["_summary"]["from_candidates"] == {"total": 40, "shown": 3, "truncated": True}
+        assert paths["_summary"]["to_candidates"] == {"total": 40, "shown": 3, "truncated": True}
+        assert max(endpoint_buffer_sizes["start"]) == 3
+        assert max(endpoint_buffer_sizes["finish"]) == 3
 
     def test_state_filters_research_transitions(self, tmp_path, tmp_db):
         import mcp_server

@@ -105,6 +105,27 @@ def _find_nodes(conn, label: str) -> list:
     return rows
 
 
+def _find_nodes_bounded(conn, label: str, allowed_ids: set[str], retain_limit: int) -> tuple[list[dict], int]:
+    """Find matching nodes while retaining only the first ordered rows needed by callers."""
+    queries = (
+        ("SELECT id, label FROM nodes WHERE label = ? ORDER BY id", (label,)),
+        ("SELECT id, label FROM nodes WHERE id LIKE ? ORDER BY id", (f"%{label}%",)),
+        ("SELECT id, label FROM nodes WHERE label LIKE ? ORDER BY id", (f"%{label}%",)),
+    )
+    for sql, params in queries:
+        rows: list[dict] = []
+        total = 0
+        matched_before_scope = False
+        for row in conn.execute(sql, params):
+            matched_before_scope = True
+            if row["id"] not in allowed_ids:
+                continue
+            total = _append_capped(rows, dict(row), total, retain_limit)
+        if total or matched_before_scope:
+            return rows, total
+    return [], 0
+
+
 def _fetch_nodes_by_ids(conn, node_ids: list[str]) -> list[dict]:
     """Fetch full node rows in batches while preserving input order."""
     if not node_ids:
@@ -2829,13 +2850,25 @@ def cs_paths(
                 node_meta[node_id] = meta
             return meta
 
-        from_nodes = sorted(
-            [n for n in _find_nodes(conn, from_label) if n["id"] in allowed_ids],
-            key=lambda n: n["id"],
+        endpoint_cap_enabled = max_endpoint_matches > 0
+        if endpoint_cap_enabled and max_endpoint_candidates > 0:
+            endpoint_retain_limit = max(max_endpoint_matches, max_endpoint_candidates)
+        elif endpoint_cap_enabled:
+            endpoint_retain_limit = max_endpoint_candidates
+        else:
+            endpoint_retain_limit = 0
+
+        from_nodes, from_matches_total = _find_nodes_bounded(
+            conn,
+            from_label,
+            allowed_ids,
+            endpoint_retain_limit,
         )
-        to_nodes = sorted(
-            [n for n in _find_nodes(conn, to_label) if n["id"] in allowed_ids],
-            key=lambda n: n["id"],
+        to_nodes, to_matches_total = _find_nodes_bounded(
+            conn,
+            to_label,
+            allowed_ids,
+            endpoint_retain_limit,
         )
 
         if not from_nodes:
@@ -2879,9 +2912,6 @@ def cs_paths(
                 "source_context": meta.get("source_context", "production"),
             }
 
-        from_matches_total = len(from_nodes)
-        to_matches_total = len(to_nodes)
-        endpoint_cap_enabled = max_endpoint_matches > 0
         selected_from_nodes = (
             from_nodes[:max_endpoint_matches] if endpoint_cap_enabled else from_nodes
         )
@@ -2954,15 +2984,25 @@ def cs_paths(
             },
         }
         if endpoint_truncated:
-            from_candidates, from_candidate_summary = _collect_mapped_items(
-                from_nodes,
-                _candidate_for_node,
-                max_endpoint_candidates,
+            shown_from_candidates = (
+                from_nodes
+                if max_endpoint_candidates == 0
+                else from_nodes[:max_endpoint_candidates]
             )
-            to_candidates, to_candidate_summary = _collect_mapped_items(
-                to_nodes,
-                _candidate_for_node,
-                max_endpoint_candidates,
+            shown_to_candidates = (
+                to_nodes
+                if max_endpoint_candidates == 0
+                else to_nodes[:max_endpoint_candidates]
+            )
+            from_candidates = [_candidate_for_node(node) for node in shown_from_candidates]
+            to_candidates = [_candidate_for_node(node) for node in shown_to_candidates]
+            from_candidate_summary = _section_summary(
+                from_matches_total,
+                len(from_candidates),
+            )
+            to_candidate_summary = _section_summary(
+                to_matches_total,
+                len(to_candidates),
             )
             result["from_candidates"] = from_candidates
             result["to_candidates"] = to_candidates
