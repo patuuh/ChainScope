@@ -410,13 +410,6 @@ class TestIndexing:
                 "relation": "writes_state",
             }
         ]
-        transition_rows = [
-            {
-                "function_id": "Vault.sol::Vault.entry()",
-                "metadata": json.dumps({"source_context": "production"}),
-            }
-        ]
-
         class StreamingRows:
             def __init__(self, rows):
                 self.rows = rows
@@ -428,8 +421,11 @@ class TestIndexing:
                 raise AssertionError("cs_summary rows should stream")
 
         class SingleRow:
+            def __init__(self, row=None):
+                self.row = row
+
             def fetchone(self):
-                return None
+                return self.row
 
         class FakeConn:
             def execute(self, sql, params=()):
@@ -439,7 +435,8 @@ class TestIndexing:
                 if "FROM edges" in normalized:
                     return StreamingRows(edge_rows)
                 if "FROM state_transitions" in normalized:
-                    return StreamingRows(transition_rows)
+                    assert normalized == "SELECT COUNT(*) FROM state_transitions"
+                    return SingleRow((1,))
                 if "FROM graph_metadata" in normalized:
                     return SingleRow()
                 raise AssertionError(normalized)

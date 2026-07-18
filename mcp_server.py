@@ -1333,15 +1333,18 @@ def cs_summary(
                 if row["relation"] == "writes_state":
                     write_map[row["source"]] = write_map.get(row["source"], 0) + 1
 
-        transitions = 0
-        for row in conn.execute("""
-            SELECT st.function_id, n.metadata
-            FROM state_transitions st
-            LEFT JOIN nodes n ON st.function_id = n.id
-        """):
-            meta = _load_metadata(row["metadata"])
-            if _include_metadata(meta, exclude_research):
-                transitions += 1
+        if exclude_research:
+            transitions = 0
+            for row in conn.execute("""
+                SELECT st.function_id, n.metadata
+                FROM state_transitions st
+                LEFT JOIN nodes n ON st.function_id = n.id
+            """):
+                meta = _load_metadata(row["metadata"])
+                if _include_metadata(meta, exclude_research):
+                    transitions += 1
+        else:
+            transitions = _single_count(conn, "SELECT COUNT(*) FROM state_transitions")
 
         build_info = _load_build_info(conn)
         data = {
