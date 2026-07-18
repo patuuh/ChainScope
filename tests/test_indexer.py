@@ -1059,6 +1059,53 @@ class TestIndexing:
         assert uncapped["max_candidates"] == 50
         assert "candidates" not in uncapped
 
+    def test_lookup_batches_ambiguous_candidate_loads(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(80):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.transfer(address,uint256)",
+                label="transfer",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                signature="function transfer(address to, uint256 amount) external",
+            )
+
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        def counting_open(*args, **kwargs):
+            return CountingConnection(real_open(*args, **kwargs))
+
+        monkeypatch.setattr(mcp_server, "_open_query_connection", counting_open)
+
+        lookup = json.loads(mcp_server.cs_lookup(
+            name="transfer",
+            db=tmp_db,
+            max_matches=2,
+            max_candidates=3,
+        ))
+
+        assert lookup["matches_total"] == 80
+        assert lookup["matches"] == 2
+        assert len(lookup["candidates"]) == 3
+        assert len(statements) <= 20
+        assert not any("FROM nodes WHERE id = ?" in sql for sql in statements)
+
     def test_lookup_caps_relation_lists_for_llm_context(self, tmp_db):
         import mcp_server
 

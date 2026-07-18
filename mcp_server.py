@@ -103,6 +103,27 @@ def _find_nodes(conn, label: str) -> list:
     return rows
 
 
+def _fetch_nodes_by_ids(conn, node_ids: list[str]) -> list[dict]:
+    """Fetch full node rows in batches while preserving input order."""
+    if not node_ids:
+        return []
+    rows_by_id: dict[str, dict] = {}
+    columns = (
+        "id, label, type, visibility, file, line_start, line_end, "
+        "signature, metadata"
+    )
+    for start in range(0, len(node_ids), 500):
+        batch = node_ids[start:start + 500]
+        placeholders = ",".join("?" for _ in batch)
+        rows = conn.execute(
+            f"SELECT {columns} FROM nodes WHERE id IN ({placeholders})",
+            batch,
+        ).fetchall()
+        for row in rows:
+            rows_by_id[row["id"]] = dict(row)
+    return [rows_by_id[node_id] for node_id in node_ids if node_id in rows_by_id]
+
+
 def _qualified_label(node_id: str) -> str:
     """Extract a human-readable qualified label from a node ID.
 
@@ -3593,15 +3614,7 @@ def cs_lookup(
 
         candidates = []
         full_by_id: dict[str, dict] = {}
-        for node_row in nodes:
-            full = conn.execute(
-                "SELECT id, label, type, visibility, file, line_start, line_end, "
-                "signature, metadata FROM nodes WHERE id = ?",
-                (node_row["id"],)
-            ).fetchone()
-            if not full:
-                continue
-            full_dict = dict(full)
+        for full_dict in _fetch_nodes_by_ids(conn, [row["id"] for row in nodes]):
             meta = _load_metadata(full_dict.get("metadata"))
             if not _include_metadata(meta, exclude_research):
                 continue
