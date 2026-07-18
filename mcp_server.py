@@ -355,6 +355,37 @@ def _metadata_raw_value(raw, key: str):
     return _MISSING_METADATA_VALUE
 
 
+def _metadata_top_level_keys(raw) -> set[str]:
+    if not isinstance(raw, str):
+        return set()
+    keys: set[str] = set()
+    depth = 0
+    pos = 0
+    while pos < len(raw):
+        ch = raw[pos]
+        if ch == '"':
+            end = _skip_json_string(raw, pos)
+            if depth == 1:
+                colon = end
+                while colon < len(raw) and raw[colon] in " \t\r\n":
+                    colon += 1
+                if colon < len(raw) and raw[colon] == ":":
+                    try:
+                        key = json.loads(raw[pos:end])
+                    except ValueError:
+                        return keys
+                    if isinstance(key, str):
+                        keys.add(key)
+            pos = end
+            continue
+        if ch in "{[":
+            depth += 1
+        elif ch in "}]":
+            depth = max(depth - 1, 0)
+        pos += 1
+    return keys
+
+
 def _metadata_raw_value_truthy(raw, key: str) -> bool:
     value = _metadata_raw_value(raw, key)
     if value is _MISSING_METADATA_VALUE:
@@ -872,7 +903,11 @@ def _metadata_rows_by_key(
     totals: dict[str, int] = {key: 0 for key in keys}
     for row in rows:
         raw = row["metadata"] or ""
-        matched = [key for key, needle in needles.items() if needle in raw]
+        possible_keys = [key for key, needle in needles.items() if needle in raw]
+        if not possible_keys:
+            continue
+        top_level_keys = _metadata_top_level_keys(raw)
+        matched = [key for key in possible_keys if key in top_level_keys]
         if not matched:
             continue
         if exclude_research and _is_research_metadata_raw(raw):
@@ -1818,10 +1853,8 @@ def _is_research_metadata_raw(raw) -> bool:
 def _metadata_has_any_key(raw, keys: tuple[str, ...]) -> bool:
     if not raw:
         return False
-    return any(
-        f'"{key}"' in raw and _metadata_raw_value(raw, key) is not _MISSING_METADATA_VALUE
-        for key in keys
-    )
+    top_level_keys = _metadata_top_level_keys(raw)
+    return any(key in top_level_keys for key in keys)
 
 
 def _has_access_control(meta: dict, guard_count: int) -> bool:

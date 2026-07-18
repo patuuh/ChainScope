@@ -349,6 +349,7 @@ class TestIndexing:
         nested_context_only = json.dumps({"nested": {"source_context": "script"}, "large": ["x"] * 20})
         nested_sink = json.dumps({"nested": {"is_sink": True}, "is_sink": False})
         top_level_sink = json.dumps({"nested": {"is_sink": False}, "is_sink": True})
+        escaped_key = r'{"source\u005fcontext":"script","nested":{"is_sink":true},"is_sink":false}'
 
         assert mcp_server._metadata_source_context(production) == "production"
         assert mcp_server._metadata_source_context(script) == "script"
@@ -362,6 +363,10 @@ class TestIndexing:
         assert mcp_server._is_research_metadata_raw(nested_context_only) is False
         assert mcp_server._metadata_raw_value_truthy(nested_sink, "is_sink") is False
         assert mcp_server._metadata_raw_value_truthy(top_level_sink, "is_sink") is True
+        assert mcp_server._metadata_top_level_keys(nested_sink) == {"nested", "is_sink"}
+        assert mcp_server._metadata_top_level_keys(escaped_key) == {"source_context", "nested", "is_sink"}
+        assert mcp_server._metadata_has_any_key(nested_context_only, ("source_context",)) is False
+        assert mcp_server._metadata_has_any_key(nested_sink, ("is_sink",)) is True
 
     def test_summary_exclude_research_uses_raw_metadata_filters(self, tmp_db, monkeypatch):
         import mcp_server
