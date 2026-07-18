@@ -710,7 +710,7 @@ def cs_help() -> str:
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches and candidates by max_candidates; use 0 only when exhaustive output is intentional.",
-            "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; use max_results=0 for exhaustive output.",
+            "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
@@ -3093,6 +3093,7 @@ def cs_cross(
     db: str = "",
     from_func: str = "",
     max_results: int = 500,
+    max_start_candidates: int = 20,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
 ) -> str:
@@ -3105,11 +3106,14 @@ def cs_cross(
         db: Database path (default: graph.db)
         from_func: Trace from a specific function (empty = list all cross-contract calls)
         max_results: Maximum raw calls returned (0 disables)
+        max_start_candidates: Maximum ambiguous from_func candidates to return (0 disables)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
     if max_results < 0:
         max_results = 0
+    if max_start_candidates < 0:
+        max_start_candidates = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3133,13 +3137,44 @@ def cs_cross(
                 if _include_metadata(node_meta[row["id"]], exclude_research)
             }
 
-            start_id = None
-            for node in nodes:
-                if node["id"] in allowed_ids:
-                    start_id = node["id"]
-                    break
-            if start_id is None:
+            matching_starts = [
+                node_by_id[node["id"]]
+                for node in nodes
+                if node["id"] in allowed_ids and node["id"] in node_by_id
+            ]
+            if not matching_starts:
                 return json.dumps({"error": f"No production function found matching '{from_func}'"})
+            if len(matching_starts) > 1:
+                candidates = []
+                for node in matching_starts:
+                    meta = node_meta.get(node["id"], {})
+                    candidates.append({
+                        "id": node["id"],
+                        "label": node["label"],
+                        "file": node["file"],
+                        "source_context": meta.get("source_context", "production"),
+                    })
+                shown_candidates, candidate_summary = _cap_items(candidates, max_start_candidates)
+                response = {
+                    "error": (
+                        f"Ambiguous from_func '{from_func}' matched {len(matching_starts)} functions. "
+                        "Use a more qualified function name."
+                    ),
+                    "tool": "cs_cross",
+                    "from_func": from_func,
+                    "query_scope": "production_only" if exclude_research else "all_sources",
+                    "max_start_candidates": max_start_candidates,
+                    "start_candidates": shown_candidates,
+                    "start_candidate_summary": candidate_summary,
+                }
+                if candidate_summary["truncated"]:
+                    response["_warning"] = (
+                        "cs_cross start candidate list was capped. Increase max_start_candidates "
+                        "or set max_start_candidates=0 for all candidates."
+                    )
+                return json.dumps(response, indent=2)
+
+            start_id = matching_starts[0]["id"]
 
             adjacency: dict[str, list[str]] = {}
             for row in conn.execute(
@@ -3209,6 +3244,7 @@ def cs_cross(
             "shown": len(shown_calls),
             "truncated": truncated,
             "max_results": max_results,
+            "max_start_candidates": max_start_candidates,
             "calls": shown_calls,
         }
         if truncated:
@@ -3235,6 +3271,7 @@ def cs_cross_summary(
     from_func: str = "",
     top: int = 50,
     max_counter_items: int = 10,
+    max_start_candidates: int = 20,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
 ) -> str:
@@ -3249,11 +3286,14 @@ def cs_cross_summary(
         from_func: Optional function to trace before summarizing trust-boundary calls
         top: Maximum sample calls to include
         max_counter_items: Maximum top source files/targets to include (0 disables)
+        max_start_candidates: Maximum ambiguous from_func candidates to return (0 disables)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
     if max_counter_items < 0:
         max_counter_items = 0
+    if max_start_candidates < 0:
+        max_start_candidates = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3262,6 +3302,7 @@ def cs_cross_summary(
                 db=db_path,
                 from_func=from_func,
                 max_results=0,
+                max_start_candidates=max_start_candidates,
                 exclude_research=exclude_research,
                 timeout_seconds=timeout_seconds,
             ))

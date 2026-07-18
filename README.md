@@ -271,7 +271,9 @@ For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
 choose where to inspect without dumping every trust-boundary edge. Sample calls
 are capped by `top`; source/target counters are capped by `max_counter_items`.
-Raw `cs_cross` output is capped by `max_results`; set `max_results=0` only when
+Raw `cs_cross` output is capped by `max_results`; ambiguous `from_func`
+candidates are capped by `max_start_candidates` and require a more qualified
+name instead of silently picking the first match. Set `max_results=0` only when
 an exhaustive edge list is intentional.
 
 Broad `cs_sinks` output is capped by sink count and reachable callers per sink.
@@ -315,6 +317,7 @@ The response still reports total sinks and type counts; set `max_results=0` or
 - `python cs_cross.py --summary --max-counter-items 0 ...`
 - `python cs_cross.py ...`
 - `python cs_cross.py --max-results 0 ...`
+- `python cs_cross.py --max-start-candidates 0 ...`
 - `python cs_state.py ...`
 - `python cs_state.py --max-entities 0 --max-transitions-per-entity 0 --max-warnings 0 ...`
 - `python cs_sinks.py ...`
@@ -462,4 +465,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`429 passed`
+`431 passed`

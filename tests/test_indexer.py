@@ -581,6 +581,37 @@ class TestIndexing:
         assert len(uncapped["top_targets"]) == 5
         assert uncapped["counter_summary"]["truncated"] is False
 
+    def test_cross_from_func_reports_ambiguous_start_candidates(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(3):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.ping(address)",
+                label="ping",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+            )
+            db.insert_edge(
+                source=f"Vault{i}.sol::Vault{i}.ping(address)",
+                target=f"External{i}.doThing()",
+                relation="calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, from_func="ping", max_start_candidates=2))
+        summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, from_func="ping", max_start_candidates=2))
+
+        assert "Ambiguous from_func" in cross["error"]
+        assert cross["start_candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
+        assert len(cross["start_candidates"]) == 2
+        assert "max_start_candidates=0" in cross["_warning"]
+
+        assert summary["tool"] == "cs_cross_summary"
+        assert "Ambiguous from_func" in summary["error"]
+        assert summary["start_candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
+
     def test_cross_caps_raw_output_for_llm_context(self, tmp_db):
         import mcp_server
 

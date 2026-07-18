@@ -274,6 +274,27 @@ class TestResearchAwareCli:
         assert data["counter_summary"]["top_source_files"]["shown"] <= 1
         assert data["counter_summary"]["top_targets"]["shown"] <= 1
 
+    def test_cross_cli_reports_ambiguous_from(self, tmp_path):
+        repo = tmp_path / "cross-ambiguous-repo"
+        repo.mkdir()
+        for i in range(3):
+            (repo / f"Caller{i}.sol").write_text(
+                "pragma solidity ^0.8.0;\n"
+                f"contract Caller{i} {{\n"
+                "    function ping(address target) external { target.call(\"\"); }\n"
+                "}\n"
+            )
+        db = str(tmp_path / "cross-ambiguous.db")
+        build = run_tool("cs_build.py", [str(repo), "--db", db])
+        assert build.returncode == 0
+
+        result = run_tool(
+            "cs_cross.py",
+            ["--db", db, "--from", "ping", "--max-start-candidates", "2", "--json"],
+        )
+        assert result.returncode == 1
+        assert "Ambiguous from_func" in result.stderr
+
     def test_cli_exclude_research_flags(self, tmp_path):
         repo = tmp_path / "repo"
         repo.mkdir()

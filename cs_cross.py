@@ -14,6 +14,7 @@ def cross(
     from_func: str = typer.Option(None, "--from", help="Trace from a specific function"),
     max_depth: int = typer.Option(10, help="Max depth for tracing"),
     max_results: int = typer.Option(500, "--max-results", help="Max raw calls for cs_cross output (0 = all)"),
+    max_start_candidates: int = typer.Option(20, "--max-start-candidates", help="Max ambiguous --from candidates to show (0 = all)"),
     summary: bool = typer.Option(False, "--summary", help="Show bounded cross-boundary summary"),
     top: int = typer.Option(50, "--top", help="Max sample calls for --summary"),
     max_counter_items: int = typer.Option(10, "--max-counter-items", help="Max source/target counters for --summary (0 = all)"),
@@ -30,6 +31,7 @@ def cross(
             from_func=from_func or "",
             top=top,
             max_counter_items=max_counter_items,
+            max_start_candidates=max_start_candidates,
             exclude_research=exclude_research,
         ))
     else:
@@ -37,6 +39,7 @@ def cross(
             db=db,
             from_func=from_func or "",
             max_results=max_results,
+            max_start_candidates=max_start_candidates,
             exclude_research=exclude_research,
         ))
 
