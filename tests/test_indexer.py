@@ -2423,6 +2423,79 @@ class TestIndexing:
         assert uncapped_writer["callers_summary"] == {"total": 5, "shown": 5, "truncated": False}
         assert "caller_truncated" not in uncapped
 
+    def test_trace_streams_accessor_and_caller_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        state_id = "Vault.sol::Vault.total"
+        writer_id = "Vault.sol::Vault.set(uint256)"
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id=writer_id,
+            label="set",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge(writer_id, state_id, "writes_state")
+        for i in range(3):
+            caller_id = f"Caller{i}.sol::Caller{i}.callSet()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callSet{i}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i}.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+            db.insert_edge(caller_id, writer_id, "calls")
+
+        real_open = mcp_server._open_query_connection
+
+        class StreamingRows:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchall(self):
+                raise AssertionError("cs_trace rows should stream")
+
+        class StreamingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                return StreamingRows(self._conn.execute(sql, *args, **kwargs))
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: StreamingConnection(real_open(*args, **kwargs)),
+        )
+
+        trace = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            show_callers=True,
+            max_callers_per_accessor=2,
+        ))
+
+        assert trace["writers"][0]["label"] == "set"
+        assert trace["writers"][0]["callers_summary"] == {"total": 3, "shown": 2, "truncated": True}
+        assert len(trace["writers"][0]["callers"]) == 2
+
     def test_trace_retains_only_capped_callers(self, tmp_db, monkeypatch):
         import mcp_server
 

@@ -3214,7 +3214,7 @@ def cs_trace(
                 FROM edges e JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = ?
                 ORDER BY n.file, n.line_start, n.id
-            """, (var_id, relation)).fetchall()
+            """, (var_id, relation))
             results = []
             for row in accessors:
                 item = dict(row)
@@ -3231,7 +3231,7 @@ def cs_trace(
                 FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
                 ORDER BY n.file, n.id
-            """, (node_id,)).fetchall()
+            """, (node_id,))
             callers = []
             callers_total = 0
             for row in rows:
