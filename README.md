@@ -201,6 +201,10 @@ Build a graph:
 python cs_build.py /path/to/repo --db graph.db
 ```
 
+MCP `cs_profile` and `cs_build` do not self-timeout by default. If you want a
+time-limited partial build, pass `timeout_seconds`; otherwise long workspace
+profiles and graph builds continue until the client or host stops them.
+
 If a build is time-limited or partial, ChainScope prioritizes production
 protocol roots such as `src/`, `contracts/`, `programs/`, `pallets/`, and
 `crates/` before lower-signal operational or config code. This keeps partial
@@ -429,4 +433,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`411 passed`
+`413 passed`

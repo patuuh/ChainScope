@@ -28,12 +28,7 @@ mcp = FastMCP("chainscope")
 
 # Default DB path — can be overridden per-call
 DEFAULT_DB = os.environ.get("CHAINSCOPE_DB", os.environ.get("CHAINSCOPE_DB", "graph.db"))
-DEFAULT_MCP_BUILD_TIMEOUT_SECONDS = int(
-    os.environ.get(
-        "CHAINSCOPE_BUILD_TIMEOUT_SECONDS",
-        os.environ.get("CHAINSCOPE_BUILD_TIMEOUT_SECONDS", "105"),
-    )
-)
+DEFAULT_MCP_BUILD_TIMEOUT_SECONDS = int(os.environ.get("CHAINSCOPE_BUILD_TIMEOUT_SECONDS", "0"))
 DEFAULT_MCP_QUERY_TIMEOUT_SECONDS = int(os.environ.get("CHAINSCOPE_QUERY_TIMEOUT_SECONDS", "30"))
 
 
@@ -439,7 +434,7 @@ def cs_profile(
         top: Number of top projects/extensions to return
         strategy: balanced (default) or bounty for exploit-surface-first ranking
         include_research: Include scripts/poc/fuzz/invariant/certora-style research artifacts
-        timeout_seconds: Hard MCP-side wall-clock budget. Returns an error instead of leaving a wedged server.
+        timeout_seconds: Optional MCP-side wall-clock budget (0 disables)
     """
     repo = Path(repo_path)
     if not repo.is_dir():
@@ -525,13 +520,17 @@ def cs_build(
         db: Output database path (default: graph.db in current directory)
         lang: Override chain detection — one of: solidity, vyper, move, clarity, cairo, sway, ton, proto, xdr, anchor, substrate, soroban, cpp, rust, go, java, typescript, python
         include_research: Include scripts/poc/fuzz/invariant/certora-style research artifacts
-        timeout_seconds: MCP-side build budget. Default returns before client 120s timeout; set <=0 to disable.
+        timeout_seconds: Optional MCP-side build budget. Set >0 to write a partial graph on timeout; 0 disables.
     """
     from core.indexer import Indexer
 
     repo = Path(repo_path)
     if not repo.is_dir():
-        return f"Error: {repo_path} is not a directory"
+        return json.dumps({
+            "error": f"Error: {repo_path} is not a directory",
+            "repo_path": repo_path,
+            "tool": "cs_build",
+        }, indent=2)
 
     db_path = db or DEFAULT_DB
     lang_override = lang or None
@@ -579,7 +578,7 @@ def cs_help() -> str:
     return json.dumps({
         "workflow": [
             "1. cs_profile(repo_path) — optional but recommended for large/mixed workspaces.",
-            "2. cs_build(repo_path) — REQUIRED before graph queries. Builds the knowledge graph.",
+            "2. cs_build(repo_path) — REQUIRED before graph queries. Builds the knowledge graph; timeout_seconds is opt-in.",
             "3. cs_summary() — Cheap graph health/stats check before broad scanning.",
             "4. cs_audit() — Full security report: stats, hotspots, reentrancy, taint, sinks, events, deadcode, access gaps.",
             "5. Drill into specific areas with specialized tools below.",
@@ -587,6 +586,7 @@ def cs_help() -> str:
         "core_tools": {
             "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths.",
             "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections.",
+            "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build.",
         },
         "scanner_tools": {
             "cs_hotspots": "Composite risk scorer — all functions ranked with detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",

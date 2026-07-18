@@ -1,4 +1,5 @@
 import json
+import inspect
 import pytest
 from pathlib import Path
 from core.indexer import Indexer
@@ -21,6 +22,22 @@ class TestChainDetection:
 
 
 class TestIndexing:
+    def test_mcp_build_and_profile_do_not_self_timeout_by_default(self):
+        import mcp_server
+
+        assert mcp_server.DEFAULT_MCP_BUILD_TIMEOUT_SECONDS == 0
+        assert inspect.signature(mcp_server.cs_build).parameters["timeout_seconds"].default == 0
+        assert inspect.signature(mcp_server.cs_profile).parameters["timeout_seconds"].default == 0
+
+    def test_build_missing_repo_returns_json_error(self):
+        import mcp_server
+
+        result = json.loads(mcp_server.cs_build(repo_path="/not/a/dir"))
+
+        assert result["tool"] == "cs_build"
+        assert result["repo_path"] == "/not/a/dir"
+        assert "not a directory" in result["error"]
+
     def test_source_context_classifies_deploy_dirs_as_script(self):
         assert classify_source_context("contracts/deploy/Foo.s.sol") == "script"
         assert classify_source_context("contracts/deployments/mainnet/Foo.sol") == "script"
