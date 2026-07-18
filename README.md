@@ -246,6 +246,10 @@ The same rule applies to broad `cs_trace` variable queries. Names like
 `total`, `owner`, or `balance` are capped by default and return compact
 candidates when ambiguous; set `max_matches=0` only for an exhaustive trace.
 
+`cs_summary --attack-surface` is also a bounded overview. Its `_summary`
+reports the total entry points, how many were shown, and whether the list was
+truncated; increase `top` when you need a broader entry-point inventory.
+
 Scanner category output from `cs_defi` and `cs_unsafe` is capped by
 `max_per_category` by default. The summary still reports full category totals;
 set `max_per_category=0` only when an exhaustive category dump is intentional.
@@ -447,4 +451,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`419 passed`
+`421 passed`

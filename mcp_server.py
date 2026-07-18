@@ -724,6 +724,9 @@ def cs_summary(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
+    if top < 0:
+        top = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
@@ -841,6 +844,16 @@ def cs_summary(
                 })
             surface.sort(key=lambda item: (-item["state_writes"], item["file"], item["label"]))
             data["attack_surface"] = surface[:top]
+            attack_surface_summary = _section_summary(len(surface), len(data["attack_surface"]))
+            attack_surface_summary["top"] = top
+            data["_summary"] = {
+                "attack_surface": attack_surface_summary,
+                "truncated": attack_surface_summary["truncated"],
+            }
+            if attack_surface_summary["truncated"]:
+                data["_warning"] = (
+                    "cs_summary attack_surface output was capped. Increase top for more entries."
+                )
 
         return json.dumps(data, indent=2)
     except sqlite3.OperationalError as exc:

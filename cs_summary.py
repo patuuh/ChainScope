@@ -56,7 +56,12 @@ def summary(
     typer.echo(f"  State transitions: {data['transitions']}")
 
     if attack_surface and data.get("attack_surface"):
-        typer.echo(f"\nAttack Surface ({len(data['attack_surface'])} entry points shown):")
+        summary = data.get("_summary", {}).get("attack_surface", {})
+        total = summary.get("total", len(data["attack_surface"]))
+        shown = summary.get("shown", len(data["attack_surface"]))
+        typer.echo(f"\nAttack Surface ({shown}/{total} entry points shown):")
+        if summary.get("truncated"):
+            typer.echo("  Increase --top to show more entry points.")
         for entry in data["attack_surface"]:
             typer.echo(
                 f"  {entry['label']} ({entry['file']}) - "

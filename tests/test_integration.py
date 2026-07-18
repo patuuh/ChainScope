@@ -46,6 +46,12 @@ class TestEndToEnd:
         assert result.returncode == 0
         data = json.loads(result.stdout)
         assert len(data["attack_surface"]) <= 1
+        assert data["_summary"]["attack_surface"]["shown"] <= 1
+
+    def test_summary_attack_surface_prints_cap_status(self):
+        result = run_tool("cs_summary.py", ["--db", self.db, "--attack-surface", "--top", "1"])
+        assert result.returncode == 0
+        assert "entry points shown" in result.stdout
 
     def test_summary_missing_db_does_not_create_empty_graph(self, tmp_path):
         missing_db = tmp_path / "missing.db"

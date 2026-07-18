@@ -159,6 +159,47 @@ class TestIndexing:
         assert summary["source_context_summary"]
         assert len(summary["attack_surface"]) <= 3
 
+    def test_summary_reports_attack_surface_truncation(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(4):
+            func_id = f"Vault.sol::Vault.entry{i}()"
+            state_id = f"Vault.sol::Vault.total{i}"
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=state_id,
+                label=f"total{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+
+        capped = json.loads(mcp_server.cs_summary(db=tmp_db, attack_surface=True, top=2))
+        hidden_all = json.loads(mcp_server.cs_summary(db=tmp_db, attack_surface=True, top=0))
+
+        assert capped["_summary"]["attack_surface"] == {
+            "total": 4,
+            "shown": 2,
+            "truncated": True,
+            "top": 2,
+        }
+        assert capped["_summary"]["truncated"] is True
+        assert "Increase top" in capped["_warning"]
+
+        assert hidden_all["_summary"]["attack_surface"] == {
+            "total": 4,
+            "shown": 0,
+            "truncated": True,
+            "top": 0,
+        }
+
     def test_summary_warns_on_empty_unbuilt_graph(self, tmp_path):
         import mcp_server
 
