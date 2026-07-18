@@ -126,6 +126,44 @@ def _find_nodes_bounded(conn, label: str, allowed_ids: set[str], retain_limit: i
     return [], 0
 
 
+def _find_state_vars_bounded(
+    conn,
+    var: str,
+    exclude_research: bool,
+    retain_limit: int,
+) -> tuple[list[dict], int, bool]:
+    """Find matching state variables while retaining only rows needed by callers."""
+    columns = "id, label, file, signature, metadata"
+    queries = (
+        (
+            f"SELECT {columns} FROM nodes "
+            "WHERE label = ? AND type = 'state_var' ORDER BY file, id",
+            (var,),
+        ),
+        (
+            f"SELECT {columns} FROM nodes "
+            "WHERE label LIKE ? AND type = 'state_var' ORDER BY file, id",
+            (f"%{var}%",),
+        ),
+    )
+    for sql, params in queries:
+        rows: list[dict] = []
+        total = 0
+        matched_before_scope = False
+        for row in conn.execute(sql, params):
+            matched_before_scope = True
+            item = dict(row)
+            if exclude_research:
+                meta = _load_metadata(item.get("metadata"))
+                if not _include_metadata(meta, exclude_research):
+                    continue
+                item["_metadata_parsed"] = meta
+            total = _append_capped(rows, item, total, retain_limit)
+        if total or matched_before_scope:
+            return rows, total, matched_before_scope
+    return [], 0, False
+
+
 def _fetch_nodes_by_ids(conn, node_ids: list[str]) -> list[dict]:
     """Fetch full node rows in batches while preserving input order."""
     if not node_ids:
@@ -3111,26 +3149,20 @@ def cs_trace(
         return _query_open_error("cs_trace", db_path, exc)
 
     try:
-        rows = conn.execute(
-            """
-            SELECT id, label, file, signature, metadata
-            FROM nodes
-            WHERE label = ? AND type = 'state_var'
-            ORDER BY file, id
-            """,
-            (var,)
-        ).fetchall()
-        if not rows:
-            rows = conn.execute(
-                """
-                SELECT id, label, file, signature, metadata
-                FROM nodes
-                WHERE label LIKE ? AND type = 'state_var'
-                ORDER BY file, id
-                """,
-                (f"%{var}%",)
-            ).fetchall()
-        if not rows:
+        if max_matches > 0 and max_candidates > 0:
+            variable_retain_limit = max(max_matches, max_candidates)
+        elif max_matches > 0:
+            variable_retain_limit = max_candidates
+        else:
+            variable_retain_limit = 0
+
+        matched_rows, total_matches, matched_before_scope = _find_state_vars_bounded(
+            conn,
+            var,
+            exclude_research,
+            variable_retain_limit,
+        )
+        if not matched_before_scope:
             return json.dumps({"error": f"No state variable found matching '{var}'"})
 
         full_by_id: dict[str, dict] = {}
@@ -3140,24 +3172,19 @@ def cs_trace(
             if cached is not None:
                 return cached
             item = dict(row)
-            item["metadata"] = _load_metadata(item.get("metadata"))
+            parsed_meta = item.pop("_metadata_parsed", None)
+            item["metadata"] = (
+                parsed_meta
+                if parsed_meta is not None
+                else _load_metadata(item.get("metadata"))
+            )
             item["source_context"] = item["metadata"].get("source_context", "production")
             full_by_id[item["id"]] = item
             return item
 
-        if exclude_research:
-            matched_rows = []
-            for row in rows:
-                item = _state_var_for_row(row)
-                if _include_metadata(item["metadata"], exclude_research):
-                    matched_rows.append(row)
-        else:
-            matched_rows = rows
-
         if not matched_rows:
             return json.dumps({"error": f"No production state variable found matching '{var}'"})
 
-        total_matches = len(matched_rows)
         truncated = max_matches > 0 and total_matches > max_matches
         variable_rows = matched_rows[:max_matches or total_matches]
         variables = [_state_var_for_row(row) for row in variable_rows]
@@ -3274,11 +3301,13 @@ def cs_trace(
                 f"cs_trace found {total_matches} matching state variables and traced the first {len(variables)}. "
                 "Use a more qualified variable name or set max_matches=0 for all matches."
             )
-            shown_candidates, candidate_summary = _collect_mapped_items(
-                matched_rows,
-                _candidate_for_row,
-                max_candidates,
+            shown_candidate_rows = (
+                matched_rows
+                if max_candidates == 0
+                else matched_rows[:max_candidates]
             )
+            shown_candidates = [_candidate_for_row(row) for row in shown_candidate_rows]
+            candidate_summary = _section_summary(total_matches, len(shown_candidates))
             response["candidates"] = shown_candidates
             response["candidate_summary"] = candidate_summary
             if candidate_summary["truncated"]:
