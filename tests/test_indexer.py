@@ -978,6 +978,7 @@ class TestIndexing:
             db=tmp_db,
             max_paths=2,
             max_endpoint_matches=2,
+            max_endpoint_candidates=3,
         ))
         uncapped = json.loads(mcp_server.cs_paths(
             from_label="start",
@@ -996,8 +997,12 @@ class TestIndexing:
         assert capped["_summary"]["to_matches_used"] == 2
         assert capped["_summary"]["endpoint_matches_truncated"] is True
         assert capped["_summary"]["truncated"] is True
-        assert len(capped["from_candidates"]) == 5
-        assert len(capped["to_candidates"]) == 5
+        assert capped["_summary"]["max_endpoint_candidates"] == 3
+        assert len(capped["from_candidates"]) == 3
+        assert len(capped["to_candidates"]) == 3
+        assert capped["_summary"]["from_candidates"] == {"total": 5, "shown": 3, "truncated": True}
+        assert capped["_summary"]["to_candidates"] == {"total": 5, "shown": 3, "truncated": True}
+        assert "max_endpoint_candidates=0" in capped["_warnings"][0]
 
         assert len(uncapped["paths"]) == 5
         assert uncapped["_summary"]["path_limit_reached"] is False

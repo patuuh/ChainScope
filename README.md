@@ -240,9 +240,10 @@ lookup relation lists such as callers, callees, state reads/writes, and other
 edges are capped by `max_relation_items`; set `max_relation_items=0` only for
 exhaustive profiles.
 
-`cs_paths` also caps ambiguous endpoint matches and returned paths. Use
-qualified endpoint names first; set `max_endpoint_matches=0` or `max_paths=0`
-only when exhaustive path search is intentional.
+`cs_paths` also caps ambiguous endpoint matches, endpoint candidate lists, and
+returned paths. Use qualified endpoint names first; set
+`max_endpoint_matches=0`, `max_endpoint_candidates=0`, or `max_paths=0` only
+when exhaustive path search is intentional.
 
 The same rule applies to broad `cs_trace` variable queries. Names like
 `total`, `owner`, or `balance` are capped by default and return compact
@@ -305,6 +306,7 @@ The response still reports total sinks and type counts; set `max_results=0` or
 - `python cs_summary.py --attack-surface --top 10 ...`
 - `python cs_paths.py ...`
 - `python cs_paths.py --max-paths 0 --max-endpoint-matches 0 ...`
+- `python cs_paths.py --max-endpoint-candidates 0 ...`
 - `python cs_trace.py ...`
 - `python cs_trace.py --max-matches 0 ...`
 - `python cs_trace.py --max-candidates 0 ...`
@@ -458,4 +460,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`426 passed`
+`427 passed`

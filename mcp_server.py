@@ -692,7 +692,7 @@ def cs_help() -> str:
         },
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items.",
-            "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches and paths by max_paths.",
+            "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches and candidates by max_candidates; use 0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; use max_results=0 for exhaustive output.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
@@ -2648,6 +2648,7 @@ def cs_paths(
     max_depth: int = 15,
     max_paths: int = 10,
     max_endpoint_matches: int = 20,
+    max_endpoint_candidates: int = 50,
     show_guards: bool = False,
     show_state: bool = False,
     exclude_research: bool = False,
@@ -2665,6 +2666,7 @@ def cs_paths(
         max_depth: Maximum path depth to search
         max_paths: Maximum paths to return (0 disables)
         max_endpoint_matches: Maximum matching start/end nodes to search (0 disables)
+        max_endpoint_candidates: Maximum ambiguous endpoint candidates to return (0 disables)
         show_guards: Annotate each hop with its modifier/guard protections
         show_state: Annotate each hop with state variable reads/writes
         exclude_research: Exclude nodes originating from research-mode files
@@ -2676,6 +2678,8 @@ def cs_paths(
         max_paths = 0
     if max_endpoint_matches < 0:
         max_endpoint_matches = 0
+    if max_endpoint_candidates < 0:
+        max_endpoint_candidates = 0
 
     db_path = _resolve_db(db)
     try:
@@ -2813,6 +2817,7 @@ def cs_paths(
                 "max_paths": max_paths,
                 "max_depth": max_depth,
                 "max_endpoint_matches": max_endpoint_matches,
+                "max_endpoint_candidates": max_endpoint_candidates,
                 "from_matches_total": from_matches_total,
                 "from_matches_used": len(selected_from_nodes),
                 "to_matches_total": to_matches_total,
@@ -2822,8 +2827,22 @@ def cs_paths(
             },
         }
         if endpoint_truncated:
-            result["from_candidates"] = [_candidate_for_node(n) for n in from_nodes[:50]]
-            result["to_candidates"] = [_candidate_for_node(n) for n in to_nodes[:50]]
+            from_candidates, from_candidate_summary = _cap_items(
+                [_candidate_for_node(n) for n in from_nodes],
+                max_endpoint_candidates,
+            )
+            to_candidates, to_candidate_summary = _cap_items(
+                [_candidate_for_node(n) for n in to_nodes],
+                max_endpoint_candidates,
+            )
+            result["from_candidates"] = from_candidates
+            result["to_candidates"] = to_candidates
+            result["_summary"]["from_candidates"] = from_candidate_summary
+            result["_summary"]["to_candidates"] = to_candidate_summary
+            if from_candidate_summary["truncated"] or to_candidate_summary["truncated"]:
+                result.setdefault("_warnings", []).append(
+                    "cs_paths endpoint candidate lists were capped. Increase max_endpoint_candidates or set max_endpoint_candidates=0 for all candidates."
+                )
 
         if show_guards:
             result["guards"] = {}

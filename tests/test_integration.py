@@ -219,6 +219,38 @@ class TestResearchAwareCli:
         assert data["variable_matches_total"] == 3
         assert data["candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
 
+    def test_paths_cli_caps_endpoint_candidates(self, tmp_path):
+        repo = tmp_path / "paths-repo"
+        repo.mkdir()
+        for i in range(3):
+            (repo / f"Vault{i}.sol").write_text(
+                "pragma solidity ^0.8.0;\n"
+                f"contract Vault{i} {{\n"
+                "    function start() external { finish(); }\n"
+                "    function finish() internal {}\n"
+                "}\n"
+            )
+        db = str(tmp_path / "paths.db")
+        build = run_tool("cs_build.py", [str(repo), "--db", db])
+        assert build.returncode == 0
+
+        result = run_tool(
+            "cs_paths.py",
+            [
+                "--db", db,
+                "--from", "start",
+                "--to", "finish",
+                "--max-paths", "1",
+                "--max-endpoint-matches", "1",
+                "--max-endpoint-candidates", "2",
+                "--json",
+            ],
+        )
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["_summary"]["from_candidates"] == {"total": 3, "shown": 2, "truncated": True}
+        assert data["_summary"]["to_candidates"] == {"total": 3, "shown": 2, "truncated": True}
+
     def test_cli_exclude_research_flags(self, tmp_path):
         repo = tmp_path / "repo"
         repo.mkdir()
