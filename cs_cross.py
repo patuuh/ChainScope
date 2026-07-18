@@ -90,7 +90,9 @@ def cross(
         else:
             typer.echo(f"Cross-contract calls ({len(cross_calls)}):")
         for call in cross_calls:
-            attrs = json.loads(call.get("attributes", "{}"))
+            attrs = call.get("attributes", {})
+            if not isinstance(attrs, dict):
+                attrs = json.loads(attrs or "{}")
             interface = attrs.get("interface", "unknown")
             ctx = call.get("source_context", "production")
             typer.echo(

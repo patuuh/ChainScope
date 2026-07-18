@@ -560,15 +560,23 @@ def _iter_cross_call_rows(conn, exclude_research: bool):
         attrs = _load_metadata(entry.get("attributes"))
         if not _is_trust_boundary_call(attrs):
             continue
-        source_meta = _load_metadata(entry.pop("source_metadata", None))
-        target_meta = _load_metadata(entry.pop("target_metadata", None))
-        if not _include_metadata(source_meta, exclude_research):
-            continue
-        if entry.get("target_label") and not _include_metadata(target_meta, exclude_research):
-            continue
-        entry["source_context"] = source_meta.get("source_context", "production")
-        if entry.get("target_label"):
-            entry["target_source_context"] = target_meta.get("source_context", "production")
+        entry["attributes"] = attrs
+        source_raw = entry.pop("source_metadata", None)
+        target_raw = entry.pop("target_metadata", None)
+        if exclude_research:
+            source_meta = _load_metadata(source_raw)
+            target_meta = _load_metadata(target_raw)
+            if not _include_metadata(source_meta, exclude_research):
+                continue
+            if entry.get("target_label") and not _include_metadata(target_meta, exclude_research):
+                continue
+            entry["source_context"] = source_meta.get("source_context", "production")
+            if entry.get("target_label"):
+                entry["target_source_context"] = target_meta.get("source_context", "production")
+        else:
+            entry["source_context"] = _metadata_source_context(source_raw)
+            if entry.get("target_label"):
+                entry["target_source_context"] = _metadata_source_context(target_raw)
         yield entry
 
 
@@ -4285,13 +4293,15 @@ def cs_cross(
                 candidates = []
                 for node in matching_starts:
                     meta = node.pop("_metadata_parsed", None)
-                    if meta is None:
-                        meta = _load_metadata(node.get("metadata"))
                     candidates.append({
                         "id": node["id"],
                         "label": node["label"],
                         "file": node["file"],
-                        "source_context": meta.get("source_context", "production"),
+                        "source_context": (
+                            meta.get("source_context", "production")
+                            if meta is not None
+                            else _metadata_source_context(node.get("metadata"))
+                        ),
                     })
                 candidate_summary = _section_summary(matching_starts_total, len(candidates))
                 response = {
@@ -4412,13 +4422,15 @@ def cs_cross_summary(
                     candidates = []
                     for node in matching_starts:
                         meta = node.pop("_metadata_parsed", None)
-                        if meta is None:
-                            meta = _load_metadata(node.get("metadata"))
                         candidates.append({
                             "id": node["id"],
                             "label": node["label"],
                             "file": node["file"],
-                            "source_context": meta.get("source_context", "production"),
+                            "source_context": (
+                                meta.get("source_context", "production")
+                                if meta is not None
+                                else _metadata_source_context(node.get("metadata"))
+                            ),
                         })
                     candidate_summary = _section_summary(matching_starts_total, len(candidates))
                     response = {

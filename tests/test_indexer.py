@@ -1818,6 +1818,52 @@ class TestIndexing:
         raw_cross = json.loads(mcp_server.cs_cross(db=tmp_db))
         assert {item["source_label"] for item in raw_cross["calls"]} == {"call0", "call1", "call2", "call3", "call4", "run"}
 
+    def test_cross_broad_scan_skips_untagged_context_parses(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        neutral_metadata = json.dumps({"large": ["x"] * 20})
+        edge_attrs = json.dumps({"unresolved": True})
+        for i in range(3):
+            source_id = f"Vault.sol::Vault.call{i}()"
+            target_id = f"External{i}.sol::External{i}.doThing()"
+            db.insert_node(
+                id=source_id,
+                label=f"call{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+                metadata=neutral_metadata,
+            )
+            db.insert_node(
+                id=target_id,
+                label="doThing",
+                type="function",
+                visibility="external",
+                file=f"External{i}.sol",
+                metadata=neutral_metadata,
+            )
+            db.insert_edge(source_id, target_id, "calls", attributes=edge_attrs)
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, max_results=0))
+        summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, top=3))
+
+        assert cross["total"] == 3
+        assert all(item["source_context"] == "production" for item in cross["calls"])
+        assert all(item["target_source_context"] == "production" for item in cross["calls"])
+        assert summary["by_source_context"] == {"production": 3}
+        assert neutral_metadata not in parsed
+        assert parsed == [edge_attrs] * 6
+
     def test_cross_summary_caps_counter_sections_for_llm_context(self, tmp_db):
         import mcp_server
 
@@ -1925,6 +1971,39 @@ class TestIndexing:
         assert summary["tool"] == "cs_cross_summary"
         assert "Ambiguous from_func" in summary["error"]
         assert summary["start_candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
+
+    def test_cross_ambiguous_candidates_skip_untagged_context_parses(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        neutral_metadata = json.dumps({"large": ["x"] * 20})
+        for i in range(3):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.ping(address)",
+                label="ping",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                metadata=neutral_metadata,
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, from_func="ping", max_start_candidates=2))
+        summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, from_func="ping", max_start_candidates=2))
+
+        assert cross["start_candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
+        assert summary["start_candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
+        assert all(item["source_context"] == "production" for item in cross["start_candidates"])
+        assert all(item["source_context"] == "production" for item in summary["start_candidates"])
+        assert parsed == []
 
     def test_cross_summary_from_func_streams_without_raw_cross(self, tmp_db, monkeypatch):
         import mcp_server
