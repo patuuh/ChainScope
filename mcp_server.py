@@ -483,6 +483,23 @@ def _summarize_cross_entries(entries, top: int, max_counter_items: int = 10) -> 
     }
 
 
+def _collect_cross_entries(entries, max_results: int) -> tuple[list[dict], dict]:
+    max_results = max(max_results, 0)
+    total = 0
+    calls = []
+
+    for entry in entries:
+        total += 1
+        if max_results == 0 or len(calls) < max_results:
+            calls.append(entry)
+
+    return calls, {
+        "total": total,
+        "shown": len(calls),
+        "truncated": len(calls) < total,
+    }
+
+
 def _load_build_info(conn) -> object | None:
     """Load persisted build metadata without constructing a write-capable GraphDB."""
     row = conn.execute(
@@ -3255,12 +3272,17 @@ def cs_cross(
                         })
 
             calls = cross_boundary
+            total = len(calls)
+            shown_calls = calls[:max_results] if max_results > 0 else calls
+            truncated = len(shown_calls) < total
         else:
-            calls = _cross_call_rows(conn, exclude_research)
+            shown_calls, call_summary = _collect_cross_entries(
+                _iter_cross_call_rows(conn, exclude_research),
+                max_results,
+            )
+            total = call_summary["total"]
+            truncated = call_summary["truncated"]
 
-        total = len(calls)
-        shown_calls = calls[:max_results] if max_results > 0 else calls
-        truncated = len(shown_calls) < total
         response = {
             "tool": "cs_cross",
             "query_scope": "production_only" if exclude_research else "all_sources",

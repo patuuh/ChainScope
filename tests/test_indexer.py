@@ -887,6 +887,38 @@ class TestIndexing:
         assert uncapped["truncated"] is False
         assert len(uncapped["calls"]) == 5
 
+    def test_cross_broad_scan_streams_capped_results(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        GraphDB(tmp_db)
+
+        def fake_cross_entries(conn, exclude_research):
+            for i in range(80):
+                yield {
+                    "source": f"Vault.sol::Vault.call{i}()",
+                    "target": f"External{i}.doThing()",
+                    "attributes": json.dumps({"unresolved": True}),
+                    "source_label": f"call{i}",
+                    "source_file": "Vault.sol",
+                    "target_label": None,
+                    "target_file": None,
+                    "source_context": "production",
+                }
+
+        def fail_full_cross_rows(conn, exclude_research):
+            raise AssertionError("broad cs_cross should not materialize all rows")
+
+        monkeypatch.setattr(mcp_server, "_iter_cross_call_rows", fake_cross_entries)
+        monkeypatch.setattr(mcp_server, "_cross_call_rows", fail_full_cross_rows)
+
+        capped = json.loads(mcp_server.cs_cross(db=tmp_db, max_results=2))
+
+        assert capped["total"] == 80
+        assert capped["shown"] == 2
+        assert capped["truncated"] is True
+        assert len(capped["calls"]) == 2
+        assert capped["calls"][0]["source_label"] == "call0"
+
     def test_sinks_caps_output_and_filters_scope_for_llm_context(self, tmp_db):
         import mcp_server
 
