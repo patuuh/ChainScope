@@ -241,11 +241,10 @@ def _iter_nodes_by_ids(conn, node_ids: list[str]):
         batch = node_ids[start:start + 500]
         placeholders = ",".join("?" for _ in batch)
         rows_by_id: dict[str, dict] = {}
-        rows = conn.execute(
+        for row in conn.execute(
             f"SELECT {columns} FROM nodes WHERE id IN ({placeholders})",
             batch,
-        ).fetchall()
-        for row in rows:
+        ):
             rows_by_id[row["id"]] = dict(row)
         for node_id in batch:
             if node_id in rows_by_id:

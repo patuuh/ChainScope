@@ -2460,6 +2460,66 @@ class TestIndexing:
         assert lookup["candidate_summary"] == {"total": 12, "shown": 3, "truncated": True}
         assert len(lookup["candidates"]) == 3
 
+    def test_lookup_streams_batched_node_loads(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(12):
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.transfer(address,uint256)",
+                label="transfer",
+                type="function",
+                visibility="external",
+                file=f"Vault{i:02d}.sol",
+                line_start=i + 1,
+                signature="function transfer(address to, uint256 amount) external",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+
+        real_open = mcp_server._open_query_connection
+
+        class StreamingCursor:
+            def __init__(self, cursor):
+                self._cursor = cursor
+
+            def __iter__(self):
+                return iter(self._cursor)
+
+            def fetchall(self):
+                raise AssertionError("batched node loads should stream")
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                cursor = self._conn.execute(sql, *args, **kwargs)
+                normalized = " ".join(sql.split())
+                if "FROM nodes WHERE id IN" in normalized:
+                    return StreamingCursor(cursor)
+                return cursor
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        lookup = json.loads(mcp_server.cs_lookup(
+            name="transfer",
+            db=tmp_db,
+            max_matches=2,
+            max_candidates=3,
+        ))
+
+        assert lookup["matches_total"] == 12
+        assert lookup["matches"] == 2
+        assert lookup["candidate_summary"] == {"total": 12, "shown": 3, "truncated": True}
+        assert len(lookup["candidates"]) == 3
+
     def test_lookup_caps_relation_lists_for_llm_context(self, tmp_db):
         import mcp_server
 
