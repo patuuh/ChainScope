@@ -17,6 +17,7 @@ import time
 import multiprocessing as mp
 import queue as queue_mod
 from collections.abc import Iterable
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 
@@ -355,10 +356,10 @@ def _metadata_raw_value(raw, key: str):
     return _MISSING_METADATA_VALUE
 
 
-def _metadata_top_level_keys(raw) -> set[str]:
-    if not isinstance(raw, str):
-        return set()
-    keys: set[str] = set()
+@lru_cache(maxsize=8192)
+def _metadata_top_level_key_tuple(raw: str) -> tuple[str, ...]:
+    keys: list[str] = []
+    seen: set[str] = set()
     depth = 0
     pos = 0
     while pos < len(raw):
@@ -373,9 +374,10 @@ def _metadata_top_level_keys(raw) -> set[str]:
                     try:
                         key = json.loads(raw[pos:end])
                     except ValueError:
-                        return keys
-                    if isinstance(key, str):
-                        keys.add(key)
+                        return tuple(keys)
+                    if isinstance(key, str) and key not in seen:
+                        seen.add(key)
+                        keys.append(key)
             pos = end
             continue
         if ch in "{[":
@@ -383,7 +385,13 @@ def _metadata_top_level_keys(raw) -> set[str]:
         elif ch in "}]":
             depth = max(depth - 1, 0)
         pos += 1
-    return keys
+    return tuple(keys)
+
+
+def _metadata_top_level_keys(raw) -> set[str]:
+    if not isinstance(raw, str):
+        return set()
+    return set(_metadata_top_level_key_tuple(raw))
 
 
 def _metadata_raw_value_truthy(raw, key: str) -> bool:

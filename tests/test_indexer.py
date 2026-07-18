@@ -367,6 +367,10 @@ class TestIndexing:
         assert mcp_server._metadata_top_level_keys(escaped_key) == {"source_context", "nested", "is_sink"}
         assert mcp_server._metadata_has_any_key(nested_context_only, ("source_context",)) is False
         assert mcp_server._metadata_has_any_key(nested_sink, ("is_sink",)) is True
+        mcp_server._metadata_top_level_key_tuple.cache_clear()
+        assert mcp_server._metadata_has_any_key(top_level_sink, ("is_sink",)) is True
+        assert mcp_server._metadata_has_any_key(top_level_sink, ("nested",)) is True
+        assert mcp_server._metadata_top_level_key_tuple.cache_info().hits == 1
 
     def test_summary_exclude_research_uses_raw_metadata_filters(self, tmp_db, monkeypatch):
         import mcp_server
