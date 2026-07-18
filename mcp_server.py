@@ -2871,24 +2871,29 @@ def cs_paths(
         return _query_open_error("cs_paths", db_path, exc)
 
     try:
-        all_nodes = conn.execute(
+        node_rows = conn.execute(
             "SELECT id, label, file, metadata FROM nodes"
-        ).fetchall()
-        node_labels = {row["id"]: row["label"] for row in all_nodes}
-        node_files = {row["id"]: row["file"] for row in all_nodes}
-        node_metadata_raw = {row["id"]: row["metadata"] for row in all_nodes}
+        )
+        node_labels: dict[str, str] = {}
+        node_files: dict[str, str] = {}
+        node_metadata_raw: dict[str, str] = {}
         label_counts: dict[str, int] = {}
-        for label in node_labels.values():
+        node_meta: dict[str, dict] = {}
+        allowed_ids: set[str] = set()
+        for row in node_rows:
+            node_id = row["id"]
+            label = row["label"]
+            node_labels[node_id] = label
+            node_files[node_id] = row["file"]
+            node_metadata_raw[node_id] = row["metadata"]
             label_counts[label] = label_counts.get(label, 0) + 1
-        if exclude_research:
-            node_meta = {row["id"]: _load_metadata(row["metadata"]) for row in all_nodes}
-            allowed_ids = {
-                row["id"] for row in all_nodes
-                if _include_metadata(node_meta[row["id"]], exclude_research)
-            }
-        else:
-            node_meta: dict[str, dict] = {}
-            allowed_ids = set(node_labels)
+            if exclude_research:
+                meta = _load_metadata(row["metadata"])
+                node_meta[node_id] = meta
+                if _include_metadata(meta, exclude_research):
+                    allowed_ids.add(node_id)
+            else:
+                allowed_ids.add(node_id)
 
         def _metadata_for_node(node_id: str) -> dict:
             meta = node_meta.get(node_id)
@@ -2934,7 +2939,7 @@ def cs_paths(
             WHERE relation IN (?, ?, ?)
             """,
             TRAVERSAL_RELATIONS,
-        ).fetchall()
+        )
         adjacency: dict[str, list[str]] = {}
         for row in adjacency_rows:
             if row["source"] not in allowed_ids or row["target"] not in allowed_ids:

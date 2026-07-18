@@ -2647,6 +2647,75 @@ class TestIndexing:
         assert paths["paths"] == [["start", "finish"]]
         assert parsed == []
 
+    def test_paths_streams_graph_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.start()"
+        finish_id = "Vault.sol::Vault.finish()"
+        db.insert_node(
+            id=start_id,
+            label="start",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id=finish_id,
+            label="finish",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge(start_id, finish_id, "calls")
+
+        real_open = mcp_server._open_query_connection
+
+        class StreamingRows:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchall(self):
+                raise AssertionError("cs_paths graph rows should stream")
+
+        class StreamingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                rows = self._conn.execute(sql, *args, **kwargs)
+                if (
+                    normalized == "SELECT id, label, file, metadata FROM nodes"
+                    or (
+                        "SELECT source, target FROM edges" in normalized
+                        and "relation IN" in normalized
+                    )
+                ):
+                    return StreamingRows(rows)
+                return rows
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: StreamingConnection(real_open(*args, **kwargs)),
+        )
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+        ))
+
+        assert paths["paths"] == [["start", "finish"]]
+        assert paths["_summary"]["paths_found"] == 1
+
     def test_paths_preserves_exact_match_stage_when_excluding_research(self, tmp_db):
         import mcp_server
 
