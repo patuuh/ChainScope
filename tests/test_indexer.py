@@ -285,12 +285,30 @@ class TestIndexing:
             )
 
         real_load = mcp_server._load_metadata
+        real_open = mcp_server._open_query_connection
         parsed = []
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
 
         def counting_load(raw):
             parsed.append(raw)
             return real_load(raw)
 
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
         monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
 
         summary = json.loads(mcp_server.cs_summary(db=tmp_db))
@@ -302,6 +320,9 @@ class TestIndexing:
             "custom": 1,
         }
         assert parsed == [custom_metadata]
+        assert sum("SUM(CASE WHEN" in sql and "source_context" in sql for sql in statements) == 1
+        assert not any("SELECT COUNT(*) FROM nodes WHERE 1=1" in sql for sql in statements)
+        assert any("AND NOT" in sql and "SELECT metadata FROM nodes" in sql for sql in statements)
 
     def test_summary_reports_attack_surface_truncation(self, tmp_db):
         import mcp_server

@@ -870,36 +870,41 @@ _KNOWN_SOURCE_CONTEXTS = (
 
 def _source_context_counts(conn, total_nodes: int) -> dict[str, int]:
     counts: dict[str, int] = {}
-    explicit_total = _single_count(
-        conn,
-        "SELECT COUNT(*) FROM nodes WHERE metadata LIKE '%\"source_context\"%'",
-    )
-    known_filters = []
+    known_filters: list[str] = []
     known_params: list[str] = []
+    select_parts = ["COUNT(*) AS explicit_total"]
     for context in _KNOWN_SOURCE_CONTEXTS:
         value_filter, value_params = _metadata_string_value_filter("source_context", context)
         if not value_filter:
             continue
-        count = _single_count(
-            conn,
-            f"SELECT COUNT(*) FROM nodes WHERE 1=1{value_filter}",
-            value_params,
-        )
+        condition = value_filter.removeprefix(" AND ")
+        select_parts.append(f"SUM(CASE WHEN {condition} THEN 1 ELSE 0 END) AS c{len(known_filters)}")
+        known_filters.append(condition)
+        known_params.extend(value_params)
+    aggregate = conn.execute(
+        "SELECT "
+        + ", ".join(select_parts)
+        + " FROM nodes WHERE metadata LIKE '%\"source_context\"%'",
+        tuple(known_params),
+    ).fetchone()
+    explicit_total = aggregate["explicit_total"] if aggregate else 0
+    known_total = 0
+    for index, context in enumerate(_KNOWN_SOURCE_CONTEXTS):
+        count = aggregate[f"c{index}"] if aggregate else 0
         if count:
             counts[context] = count
-        known_filters.append(value_filter.removeprefix(" AND "))
-        known_params.extend(value_params)
+            known_total += count
 
     unknown_filter = ""
-    if known_filters:
+    if known_filters and explicit_total > known_total:
         unknown_filter = " AND NOT (" + " OR ".join(f"({part})" for part in known_filters) + ")"
-    for row in conn.execute(
-        f"SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'{unknown_filter}",
-        tuple(known_params),
-    ):
-        meta = _load_metadata(row["metadata"])
-        source_context = meta.get("source_context", "production")
-        counts[source_context] = counts.get(source_context, 0) + 1
+        for row in conn.execute(
+            f"SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'{unknown_filter}",
+            tuple(known_params),
+        ):
+            meta = _load_metadata(row["metadata"])
+            source_context = meta.get("source_context", "production")
+            counts[source_context] = counts.get(source_context, 0) + 1
     implicit_production = total_nodes - explicit_total
     if implicit_production > 0:
         counts["production"] = counts.get("production", 0) + implicit_production
