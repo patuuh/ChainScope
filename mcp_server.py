@@ -1039,6 +1039,47 @@ def _cap_mapping(mapping: dict, max_items: int) -> tuple[dict, dict]:
     }
 
 
+def _cap_metadata_payload(meta: dict, max_bytes: int) -> tuple[dict, dict]:
+    """Return metadata capped for MCP context while preserving identity fields."""
+    if max_bytes <= 0:
+        return meta, {
+            "bytes": len(json.dumps(meta, default=str)),
+            "max_bytes": max_bytes,
+            "truncated": False,
+        }
+    encoded = json.dumps(meta, default=str)
+    if len(encoded) <= max_bytes:
+        return meta, {
+            "bytes": len(encoded),
+            "max_bytes": max_bytes,
+            "truncated": False,
+        }
+
+    essential_keys = (
+        "source_context",
+        "source_kind",
+        "language",
+        "contract",
+        "modifiers",
+        "role_guards",
+    )
+    compact = {
+        key: meta[key]
+        for key in essential_keys
+        if key in meta
+    }
+    compact.update({
+        "_truncated": True,
+        "_original_bytes": len(encoded),
+        "_keys": sorted(str(key) for key in meta.keys()),
+    })
+    return compact, {
+        "bytes": len(encoded),
+        "max_bytes": max_bytes,
+        "truncated": True,
+    }
+
+
 def _cap_profile_output(profile: dict, max_output_items: int) -> dict:
     if max_output_items < 0:
         max_output_items = 0
@@ -1553,7 +1594,7 @@ def cs_help() -> str:
             "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output is capped by max_per_category.",
         },
         "exploration_tools": {
-            "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items.",
+            "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
@@ -4951,11 +4992,12 @@ def cs_lookup(
     max_matches: int = 20,
     max_relation_items: int = 100,
     max_candidates: int = 50,
+    max_metadata_bytes: int = 4096,
 ) -> str:
     """Look up a function by name and return its complete profile.
 
     Returns every occurrence of the function in the graph with:
-      - File, line range, signature, visibility, metadata
+      - File, line range, signature, visibility, capped metadata
       - Direct callers (who calls this function)
       - Direct callees (what this function calls)
       - State variables it reads and writes
@@ -4974,6 +5016,7 @@ def cs_lookup(
         max_matches: Maximum matching functions to fully profile (0 disables)
         max_relation_items: Maximum rows per relation list in each function profile (0 disables)
         max_candidates: Maximum ambiguous match candidates to return (0 disables)
+        max_metadata_bytes: Maximum serialized metadata bytes per full profile (0 disables)
     """
     if max_matches < 0:
         max_matches = 0
@@ -4981,6 +5024,8 @@ def cs_lookup(
         max_relation_items = 0
     if max_candidates < 0:
         max_candidates = 0
+    if max_metadata_bytes < 0:
+        max_metadata_bytes = 0
 
     db_path = _resolve_db(db)
     try:
@@ -5016,7 +5061,8 @@ def cs_lookup(
             meta = _load_metadata(full_dict.get("metadata"))
             if not _include_metadata(meta, exclude_research):
                 return None
-            full_dict["metadata"] = meta
+            full_dict["metadata"], metadata_summary = _cap_metadata_payload(meta, max_metadata_bytes)
+            full_dict["_metadata_summary"] = metadata_summary
             full_by_id[full_dict["id"]] = full_dict
             return full_dict
 
@@ -5236,9 +5282,19 @@ def cs_lookup(
             "max_matches": max_matches,
             "max_relation_items": max_relation_items,
             "max_candidates": max_candidates,
+            "max_metadata_bytes": max_metadata_bytes,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "functions": results,
         }
+        metadata_truncated = any(
+            fn.get("_metadata_summary", {}).get("truncated")
+            for fn in results
+        )
+        if metadata_truncated:
+            response["metadata_truncated"] = True
+            response.setdefault("_warnings", []).append(
+                "Some cs_lookup metadata blobs were capped. Set max_metadata_bytes=0 for full metadata."
+            )
         relation_truncated = any(
             summary.get("truncated")
             for fn in results

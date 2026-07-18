@@ -239,7 +239,9 @@ full function profiles and `max_candidates` caps ambiguous candidate lists; set
 either value to `0` only when exhaustive output is intentional. Individual
 lookup relation lists such as callers, callees, state reads/writes, and other
 edges are capped by `max_relation_items`; set `max_relation_items=0` only for
-exhaustive profiles.
+exhaustive profiles. Large parsed metadata blobs are compacted by
+`max_metadata_bytes`; set `max_metadata_bytes=0` only when the full raw metadata
+is needed.
 
 `cs_paths` also caps ambiguous endpoint matches, endpoint candidate lists, and
 returned paths. Use qualified endpoint names first; set
@@ -480,4 +482,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`540 passed`
+`541 passed`

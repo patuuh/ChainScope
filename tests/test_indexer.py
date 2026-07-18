@@ -51,6 +51,8 @@ class TestIndexing:
         assert "do not self-timeout by default" in help_payload["timeout_policy"]
         assert "timeout_seconds is opt-in" in help_payload["core_tools"]["cs_summary"]
         assert "timeout_seconds are opt-in" in help_payload["core_tools"]["cs_audit"]
+        assert inspect.signature(mcp_server.cs_lookup).parameters["max_metadata_bytes"].default == 4096
+        assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
 
     def test_mcp_uses_capped_node_match_helpers(self):
         import mcp_server
@@ -4592,6 +4594,56 @@ class TestIndexing:
         assert lookup["candidate_summary"] == {"total": 12, "shown": 4, "truncated": True}
         assert len(lookup["candidates"]) == 4
         assert len(parsed) == 2
+
+    def test_lookup_caps_large_metadata_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        large_notes = ["x" * 100 for _ in range(20)]
+        db.insert_node(
+            id="Vault.sol::Vault.auditMe()",
+            label="auditMe",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({
+                "source_context": "production",
+                "language": "solidity",
+                "contract": "Vault",
+                "large_notes": large_notes,
+                "reentrancy_risk": True,
+            }),
+        )
+
+        capped = json.loads(mcp_server.cs_lookup(
+            name="auditMe",
+            db=tmp_db,
+            max_metadata_bytes=200,
+        ))
+        uncapped = json.loads(mcp_server.cs_lookup(
+            name="auditMe",
+            db=tmp_db,
+            max_metadata_bytes=0,
+        ))
+
+        capped_fn = capped["functions"][0]
+        uncapped_fn = uncapped["functions"][0]
+
+        assert capped["metadata_truncated"] is True
+        assert capped["max_metadata_bytes"] == 200
+        assert "max_metadata_bytes=0" in capped["_warnings"][0]
+        assert capped_fn["_metadata_summary"]["truncated"] is True
+        assert capped_fn["metadata"]["source_context"] == "production"
+        assert capped_fn["metadata"]["language"] == "solidity"
+        assert capped_fn["metadata"]["contract"] == "Vault"
+        assert capped_fn["metadata"]["_truncated"] is True
+        assert "large_notes" in capped_fn["metadata"]["_keys"]
+        assert "large_notes" not in capped_fn["metadata"]
+
+        assert uncapped["max_metadata_bytes"] == 0
+        assert "metadata_truncated" not in uncapped
+        assert uncapped_fn["_metadata_summary"]["truncated"] is False
+        assert uncapped_fn["metadata"]["large_notes"] == large_notes
 
     def test_lookup_exclude_research_retains_only_capped_matches(self, tmp_db, monkeypatch):
         import mcp_server
