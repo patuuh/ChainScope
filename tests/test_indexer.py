@@ -53,6 +53,9 @@ class TestIndexing:
         assert "timeout_seconds are opt-in" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_lookup).parameters["max_metadata_bytes"].default == 4096
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
+        assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50
+        assert inspect.signature(mcp_server.cs_sinks).parameters["max_callers_per_sink"].default == 10
+        assert "max_callers_per_sink=10" in help_payload["exploration_tools"]["cs_sinks"]
 
     def test_mcp_uses_capped_node_match_helpers(self):
         import mcp_server
@@ -3412,6 +3415,8 @@ class TestIndexing:
         assert "max_results=0" in capped["_warning"]
         assert capped["sinks"][0]["caller_summary"] == {"total": 4, "shown": 2, "truncated": True}
         assert len(capped["sinks"][0]["callers"]) == 2
+        assert capped["caller_truncated"] is True
+        assert capped["caller_truncated_sinks"] == 1
         assert "max_callers_per_sink=0" in capped["_warnings"][0]
 
         assert uncapped_production["total"] == 5

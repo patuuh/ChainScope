@@ -1608,7 +1608,7 @@ def cs_help() -> str:
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
-            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink; full sink metadata is opt-in with include_metadata.",
+            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50 and callers per sink at max_callers_per_sink=10; full sink metadata is opt-in with include_metadata.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
         "timeout_policy": "MCP tools do not self-timeout by default. Pass timeout_seconds only when a time-limited query or partial build is intentional.",
@@ -3737,8 +3737,8 @@ def cs_sinks(
     external_only: bool = False,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
-    max_results: int = 100,
-    max_callers_per_sink: int = 20,
+    max_results: int = 50,
+    max_callers_per_sink: int = 10,
     include_metadata: bool = False,
 ) -> str:
     """List dangerous sink nodes and bounded caller reachability.
@@ -3753,8 +3753,8 @@ def cs_sinks(
         external_only: Only include public/external callers in reachability output
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
-        max_results: Maximum sinks to expand (0 disables)
-        max_callers_per_sink: Maximum reachable callers per expanded sink (0 disables)
+        max_results: Maximum sinks to expand (default: 50; 0 disables)
+        max_callers_per_sink: Maximum reachable callers per expanded sink (default: 10; 0 disables)
         include_metadata: Include full parsed sink metadata in each sink result
     """
     if max_results < 0:
@@ -3900,7 +3900,14 @@ def cs_sinks(
         }
         if sink_summary["truncated"]:
             result["_warning"] = "cs_sinks output capped for MCP. Set max_results=0 for exhaustive sink expansion."
-        if any(s.get("caller_summary", {}).get("truncated") for s in shown_sinks):
+        caller_truncated_count = sum(
+            1
+            for s in shown_sinks
+            if s.get("caller_summary", {}).get("truncated")
+        )
+        if caller_truncated_count:
+            result["caller_truncated"] = True
+            result["caller_truncated_sinks"] = caller_truncated_count
             result.setdefault("_warnings", []).append(
                 "Some caller lists were capped. Set max_callers_per_sink=0 for exhaustive caller reachability."
             )

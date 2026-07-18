@@ -291,8 +291,9 @@ candidates are capped by `max_start_candidates` and require a more qualified
 name instead of silently picking the first match. Set `max_results=0` only when
 an exhaustive edge list is intentional.
 
-Broad `cs_sinks` output is capped by sink count and reachable callers per sink.
-The response still reports total sinks and type counts. Full parsed sink
+Broad `cs_sinks` output is capped by sink count and reachable callers per sink
+(`max_results=50`, `max_callers_per_sink=10` by default). The response still
+reports total sinks, type counts, and caller truncation. Full parsed sink
 metadata is omitted by default for MCP context; set `include_metadata=true` only
 when the raw sink metadata is needed. Set `max_results=0` or
 `max_callers_per_sink=0` only when exhaustive sink expansion is intentional.
