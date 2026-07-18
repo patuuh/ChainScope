@@ -4727,6 +4727,7 @@ def cs_state(
 
         current_entity = None
         current_transitions: list[dict] = []
+        current_entity_retained = False
 
         def _flush_current_entity():
             if current_entity is None:
@@ -4742,13 +4743,18 @@ def cs_state(
                 if not _include_metadata(meta, exclude_research):
                     continue
                 item["source_context"] = meta.get("source_context", "production")
-            else:
-                item["_function_metadata_raw"] = raw_meta
             ent = item["entity"]
             if current_entity is not None and ent != current_entity:
                 _flush_current_entity()
                 current_transitions = []
+                current_entity_retained = False
             current_entity = ent
+            if not current_entity_retained:
+                current_entity_retained = bool(
+                    entity or max_entities == 0 or len(shown_entities) < max_entities
+                )
+            if not exclude_research and current_entity_retained:
+                item["_function_metadata_raw"] = raw_meta
             current_transitions.append(item)
         _flush_current_entity()
 

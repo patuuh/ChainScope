@@ -5415,15 +5415,17 @@ class TestIndexing:
         import mcp_server
 
         db = GraphDB(tmp_db)
+        metadata_by_entity = {}
         for i in range(5):
             fn_id = f"Vault{i}.sol::Vault{i}.advance()"
+            metadata_by_entity[i] = json.dumps({"source_context": "production", "entity": i, "large": ["x"] * 20})
             db.insert_node(
                 id=fn_id,
                 label=f"advance{i}",
                 type="function",
                 visibility="external",
                 file=f"Vault{i}.sol",
-                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+                metadata=metadata_by_entity[i],
             )
             for j in range(20):
                 db.insert_transition(f"State{i}", f"S{j}", f"S{j + 1}", fn_id)
@@ -5447,6 +5449,7 @@ class TestIndexing:
         assert state["_summary"]["transitions_total"] == 100
         assert state["_summary"]["transitions_shown"] == 6
         assert len(parsed) == 6
+        assert set(parsed) == {metadata_by_entity[0], metadata_by_entity[1]}
         assert all(
             item["source_context"] == "production"
             for transitions in state["entities"].values()
