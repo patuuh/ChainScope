@@ -16,6 +16,7 @@ import sqlite3
 import time
 import multiprocessing as mp
 import queue as queue_mod
+from collections.abc import Iterable
 from pathlib import Path
 from urllib.parse import quote
 
@@ -305,7 +306,7 @@ def _category_truncation(results: dict, category_totals: dict[str, int]) -> dict
 
 
 def _metadata_rows_by_key(
-    rows: list,
+    rows: Iterable,
     keys: list[str],
     exclude_research: bool,
     max_per_key: int = 0,
@@ -1977,7 +1978,7 @@ def cs_defi(
         function_rows = conn.execute(
             "SELECT id, label, file, line_start, visibility, signature, metadata "
             "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
-        ).fetchall()
+        )
         metadata_rows, metadata_totals = _metadata_rows_by_key(function_rows, [
             "timestamp_dependence",
             "unchecked_erc20",
@@ -2257,7 +2258,7 @@ def cs_unsafe(
         function_rows = conn.execute(
             "SELECT id, label, file, line_start, visibility, signature, metadata "
             "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
-        ).fetchall()
+        )
         metadata_rows, metadata_totals = _metadata_rows_by_key(function_rows, [
             "unsafe_blocks",
             "panic_paths",

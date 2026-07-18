@@ -805,6 +805,66 @@ class TestIndexing:
         assert snapshots[1]["sizes"] == {"command_injection_risk": 3}
         assert snapshots[1]["totals"] == {"command_injection_risk": 12}
 
+    def test_scanners_stream_function_rows_into_metadata_index(self, monkeypatch):
+        import mcp_server
+
+        rows = [
+            {
+                "id": "Vault.sol::Vault.checkDeadline(uint256)",
+                "label": "checkDeadline",
+                "file": "Vault.sol",
+                "line_start": 7,
+                "visibility": "external",
+                "signature": "checkDeadline(uint256)",
+                "metadata": json.dumps({
+                    "timestamp_dependence": [{"line": 7}],
+                    "source_context": "production",
+                }),
+            },
+            {
+                "id": "ops.py::run_cmd",
+                "label": "run_cmd",
+                "file": "ops.py",
+                "line_start": 3,
+                "visibility": "",
+                "signature": "run_cmd(cmd)",
+                "metadata": json.dumps({
+                    "command_injection_risk": [{"line": 3}],
+                    "language": "python",
+                    "source_context": "production",
+                }),
+            },
+        ]
+
+        class StreamingRows:
+            def __iter__(self):
+                return iter(rows)
+
+            def fetchall(self):
+                raise AssertionError("scanner function rows should stream")
+
+        class FakeConn:
+            def execute(self, sql, params=()):
+                assert "FROM nodes WHERE type = 'function'" in sql
+                return StreamingRows()
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda db_path, timeout_seconds: FakeConn(),
+        )
+
+        defi = json.loads(mcp_server.cs_defi(db="stream.db", category="timestamp", max_per_category=1))
+        unsafe = json.loads(mcp_server.cs_unsafe(db="stream.db", category="command", max_per_category=1))
+
+        assert defi["_summary"]["category_totals"] == {"timestamp_dependence": 1}
+        assert defi["timestamp_dependence"][0]["function"] == "checkDeadline"
+        assert unsafe["_summary"]["category_totals"] == {"command_execution": 1}
+        assert unsafe["command_execution"][0]["function"] == "run_cmd"
+
     def test_scanners_parse_matching_metadata_once_per_function(self, tmp_db, monkeypatch):
         import mcp_server
 
