@@ -1482,6 +1482,50 @@ class TestIndexing:
         assert len(uncapped["top_targets"]) == 5
         assert uncapped["counter_summary"]["truncated"] is False
 
+    def test_cross_summary_ranks_only_capped_counter_items(self, monkeypatch):
+        import mcp_server
+
+        def entries():
+            for i in range(5):
+                yield {
+                    "source_label": f"call{i}",
+                    "source_file": f"Vault{i}.sol",
+                    "source_context": "production",
+                    "target_label": f"External{i}.doThing()",
+                    "attributes": json.dumps({"unresolved": True}),
+                }
+
+        real_top_counter = mcp_server._top_counter
+        limits = []
+
+        def tracking_top_counter(counter, limit):
+            limits.append((len(counter), limit))
+            return real_top_counter(counter, limit)
+
+        monkeypatch.setattr(mcp_server, "_top_counter", tracking_top_counter)
+
+        capped = mcp_server._summarize_cross_entries(
+            entries(),
+            top=1,
+            max_counter_items=2,
+        )
+        assert capped["counter_summary"]["top_source_files"] == {
+            "total": 5,
+            "shown": 2,
+            "truncated": True,
+        }
+        assert (5, 2) in limits
+        assert (5, 5) not in limits
+
+        limits.clear()
+        uncapped = mcp_server._summarize_cross_entries(
+            entries(),
+            top=1,
+            max_counter_items=0,
+        )
+        assert uncapped["counter_summary"]["truncated"] is False
+        assert (5, 5) in limits
+
     def test_cross_from_func_reports_ambiguous_start_candidates(self, tmp_db):
         import mcp_server
 

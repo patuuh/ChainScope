@@ -463,9 +463,15 @@ def _bump(counter: dict[str, int], key: str | None):
 
 
 def _top_counter(counter: dict[str, int], limit: int) -> list[dict]:
+    if limit <= 0:
+        return []
+    if limit >= len(counter):
+        items = sorted(counter.items(), key=lambda item: (-item[1], item[0]))
+    else:
+        items = heapq.nsmallest(limit, counter.items(), key=lambda item: (-item[1], item[0]))
     return [
         {"name": key, "calls": count}
-        for key, count in sorted(counter.items(), key=lambda item: (-item[1], item[0]))[:limit]
+        for key, count in items
     ]
 
 
@@ -653,14 +659,12 @@ def _summarize_cross_entries(entries, top: int, max_counter_items: int = 10) -> 
         if len(samples) < top:
             samples.append(compact)
 
-    top_source_files, source_files_summary = _cap_items(
-        _top_counter(source_file_counts, len(source_file_counts)),
-        max_counter_items,
-    )
-    top_targets, targets_summary = _cap_items(
-        _top_counter(target_counts, len(target_counts)),
-        max_counter_items,
-    )
+    source_file_limit = len(source_file_counts) if max_counter_items == 0 else max_counter_items
+    target_limit = len(target_counts) if max_counter_items == 0 else max_counter_items
+    top_source_files = _top_counter(source_file_counts, source_file_limit)
+    top_targets = _top_counter(target_counts, target_limit)
+    source_files_summary = _section_summary(len(source_file_counts), len(top_source_files))
+    targets_summary = _section_summary(len(target_counts), len(top_targets))
 
     return {
         "total": total,
