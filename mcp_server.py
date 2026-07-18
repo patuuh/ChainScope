@@ -1372,6 +1372,7 @@ def cs_audit(
     try:
         report: dict = {}
         report["query_scope"] = "production_only" if exclude_research else "all_sources"
+        scoped_node_ids: set[str] | None = None
 
         # --- 1. Stats (formerly cs_summary) ---
         if exclude_research:
@@ -1419,6 +1420,7 @@ def cs_audit(
             for row in conn.execute("SELECT function_id FROM state_transitions"):
                 if row["function_id"] in allowed_node_ids:
                     transition_count += 1
+            scoped_node_ids = allowed_node_ids
         else:
             node_count = conn.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
             edge_count = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
@@ -1489,15 +1491,16 @@ def cs_audit(
         ]
         detection_counts: dict[str, int] = {}
         source_context_counts: dict[str, int] = {}
-        all_funcs = conn.execute(
-            "SELECT id, label, file, line_start, visibility, signature, metadata FROM nodes WHERE type='function'"
-        ).fetchall()
+        all_funcs = []
         func_meta_cache: dict[str, dict] = {}
         func_by_id: dict[str, dict] = {}
-        for row in all_funcs:
+        for row in conn.execute(
+            "SELECT id, label, file, line_start, visibility, signature, metadata FROM nodes WHERE type='function'"
+        ):
             meta = _load_metadata(row["metadata"])
             if exclude_research and _is_research_meta(meta):
                 continue
+            all_funcs.append(row)
             func_meta_cache[row["id"]] = meta
             func_by_id[row["id"]] = row
             source_context = meta.get("source_context", "production")
@@ -1514,7 +1517,11 @@ def cs_audit(
         write_targets: dict[str, list[str]] = {}
         for r in conn.execute(
             "SELECT source, target FROM edges WHERE relation='writes_state'"
-        ).fetchall():
+        ):
+            if scoped_node_ids is not None and (
+                r["source"] not in scoped_node_ids or r["target"] not in scoped_node_ids
+            ):
+                continue
             write_map[r["source"]] = write_map.get(r["source"], 0) + 1
             write_targets.setdefault(r["source"], []).append(r["target"])
 
@@ -1527,7 +1534,11 @@ def cs_audit(
             WHERE e.relation='guards'
             ORDER BY e.target, n.label
             """
-        ).fetchall():
+        ):
+            if scoped_node_ids is not None and (
+                r["target"] not in scoped_node_ids
+            ):
+                continue
             guard_set.add(r["target"])
             if r["label"]:
                 guard_labels_by_target.setdefault(r["target"], []).append(r["label"])
@@ -1540,7 +1551,11 @@ def cs_audit(
         for r in conn.execute(
             "SELECT source, target, relation FROM edges WHERE relation IN (?, ?, ?)",
             TRAVERSAL_RELATIONS,
-        ).fetchall():
+        ):
+            if scoped_node_ids is not None and (
+                r["source"] not in scoped_node_ids or r["target"] not in scoped_node_ids
+            ):
+                continue
             adj.setdefault(r["source"], []).append(r["target"])
             if r["relation"] == "calls":
                 call_rev_adj.setdefault(r["target"], []).append(r["source"])
@@ -1662,8 +1677,10 @@ def cs_audit(
         sink_info: dict[str, dict] = {}
         for s in conn.execute(
             "SELECT id, label, metadata FROM nodes WHERE metadata LIKE '%\"is_sink\"%'"
-        ).fetchall():
+        ):
             smeta = _load_metadata(s["metadata"])
+            if exclude_research and _is_research_meta(smeta):
+                continue
             if smeta.get("is_sink"):
                 sink_ids.add(s["id"])
                 sink_info[s["id"]] = {
@@ -1806,7 +1823,9 @@ def cs_audit(
         emitters = set()
         for r in conn.execute(
             "SELECT DISTINCT source FROM edges WHERE relation='emits_event'"
-        ).fetchall():
+        ):
+            if scoped_node_ids is not None and r["source"] not in scoped_node_ids:
+                continue
             emitters.add(r["source"])
 
         silent = []
@@ -1840,7 +1859,9 @@ def cs_audit(
         library_ids = set()
         for r in conn.execute(
             "SELECT id FROM nodes WHERE type = 'library'"
-        ).fetchall():
+        ):
+            if scoped_node_ids is not None and r["id"] not in scoped_node_ids:
+                continue
             library_ids.add(r["id"])
 
         dead_internal = []

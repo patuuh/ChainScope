@@ -685,6 +685,9 @@ class TestIndexing:
         prod_audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10, exclude_research=True))
         assert prod_audit["query_scope"] == "production_only"
         assert "script" not in prod_audit["source_context_summary"]
+        prod_audit_hotspots = {item["function"] for item in prod_audit.get("critical_hotspots", [])}
+        assert "run" not in prod_audit_hotspots
+        assert "set" in prod_audit_hotspots
 
         prod_hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=20, exclude_research=True))
         prod_contexts = {item["function"]: item["source_context"] for item in prod_hotspots["hotspots"]}
@@ -765,6 +768,8 @@ class TestIndexing:
             "guards": 1,
             "writes_state": 1,
         }
+        assert audit["sink_summary"]["by_type"] == {"unknown": 2}
+        assert prod_audit["sink_summary"]["by_type"] == {"unknown": 1}
 
     def test_hotspots_do_not_mark_inline_role_guard_as_no_access_control(self, tmp_path, tmp_db):
         import mcp_server
