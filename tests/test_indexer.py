@@ -1761,6 +1761,68 @@ class TestIndexing:
         assert uncapped_writer["callers_summary"] == {"total": 5, "shown": 5, "truncated": False}
         assert "caller_truncated" not in uncapped
 
+    def test_trace_retains_only_capped_callers(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.total",
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.set(uint256)",
+            label="set",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge("Vault.sol::Vault.set(uint256)", "Vault.sol::Vault.total", "writes_state")
+        for i in range(40):
+            caller_id = f"Caller{i:02d}.sol::Caller{i:02d}.callSet()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callSet{i:02d}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i:02d}.sol",
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+            db.insert_edge(caller_id, "Vault.sol::Vault.set(uint256)", "calls")
+
+        real_load = mcp_server._load_metadata
+        real_keep_sorted = mcp_server._keep_sorted_result
+        parsed = []
+        caller_buffer_sizes = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        def tracking_keep_sorted(buffer, item, sort_key, limit):
+            real_keep_sorted(buffer, item, sort_key, limit)
+            if isinstance(item, dict) and item.get("_metadata_raw") is not None:
+                caller_buffer_sizes.append(len(buffer))
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+        monkeypatch.setattr(mcp_server, "_keep_sorted_result", tracking_keep_sorted)
+
+        trace = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            show_callers=True,
+            max_callers_per_accessor=3,
+        ))
+
+        writer = trace["writers"][0]
+        assert writer["callers_summary"] == {"total": 40, "shown": 3, "truncated": True}
+        assert [caller["label"] for caller in writer["callers"]] == ["callSet00", "callSet01", "callSet02"]
+        assert max(caller_buffer_sizes) == 3
+        assert len(parsed) == 5
+
     def test_paths_filter_research_paths(self, tmp_path, tmp_db):
         import mcp_server
 

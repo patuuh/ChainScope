@@ -3106,7 +3106,7 @@ def cs_trace(
                 results.append(item)
             return results
 
-        def _callers(node_id: str) -> list[dict]:
+        def _callers(node_id: str) -> tuple[list[dict], dict]:
             rows = conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility, n.metadata
                 FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
@@ -3114,14 +3114,37 @@ def cs_trace(
                 ORDER BY n.file, n.id
             """, (node_id,)).fetchall()
             callers = []
+            callers_total = 0
             for row in rows:
                 item = dict(row)
-                meta = _load_metadata(item.pop("metadata", None))
-                if not _include_metadata(meta, exclude_research):
-                    continue
-                item["source_context"] = meta.get("source_context", "production")
-                callers.append(item)
-            return callers
+                caller_meta = None
+                if exclude_research:
+                    caller_meta = _load_metadata(item.pop("metadata", None))
+                    if not _include_metadata(caller_meta, exclude_research):
+                        continue
+                    item["source_context"] = caller_meta.get("source_context", "production")
+                else:
+                    item["_metadata_raw"] = item.pop("metadata", None)
+                callers_total += 1
+                sort_key = (item["file"] or "", item["id"])
+                if max_callers_per_accessor == 0:
+                    callers.append((sort_key, item))
+                else:
+                    _keep_sorted_result(
+                        callers,
+                        item,
+                        sort_key,
+                        max_callers_per_accessor,
+                    )
+            shown = _sorted_results(callers)
+            summary = _section_summary(callers_total, len(shown))
+            for caller in shown:
+                if "source_context" not in caller:
+                    meta = _load_metadata(caller.pop("_metadata_raw", None))
+                    caller["source_context"] = meta.get("source_context", "production")
+                else:
+                    caller.pop("_metadata_raw", None)
+            return shown, summary
 
         writers_by_id: dict[str, dict] = {}
         readers_by_id: dict[str, dict] = {}
@@ -3136,7 +3159,7 @@ def cs_trace(
 
         if show_callers:
             for acc in writers + readers:
-                callers, caller_summary = _cap_items(_callers(acc["id"]), max_callers_per_accessor)
+                callers, caller_summary = _callers(acc["id"])
                 acc["callers"] = callers
                 acc["callers_summary"] = caller_summary
 
