@@ -2318,7 +2318,7 @@ class TestIndexing:
         assert result["sinks"][0]["caller_summary"] == {"total": 5, "shown": 5, "truncated": False}
         assert len(result["sinks"][0]["callers"]) == 5
 
-    def test_sinks_preloads_only_function_nodes_for_callers(self, tmp_db, monkeypatch):
+    def test_sinks_expands_callers_with_indexed_lazy_queries(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
@@ -2352,7 +2352,7 @@ class TestIndexing:
             )
 
         real_open = mcp_server._open_query_connection
-        node_map_queries = []
+        statements = []
 
         class CountingConnection:
             def __init__(self, conn):
@@ -2360,11 +2360,14 @@ class TestIndexing:
 
             def execute(self, sql, *args, **kwargs):
                 normalized = " ".join(sql.split())
-                if (
-                    "SELECT id, label, type, visibility, file, line_start, line_end, signature, metadata FROM nodes"
-                    in normalized
+                statements.append(normalized)
+                if normalized == (
+                    "SELECT id, label, type, visibility, file, line_start, line_end, "
+                    "signature, metadata FROM nodes WHERE type = 'function'"
                 ):
-                    node_map_queries.append(normalized)
+                    raise AssertionError("cs_sinks should not preload all function nodes")
+                if normalized == "SELECT source, target FROM edges WHERE relation = 'calls'":
+                    raise AssertionError("cs_sinks should not preload all call edges")
                 return self._conn.execute(sql, *args, **kwargs)
 
             def close(self):
@@ -2384,8 +2387,9 @@ class TestIndexing:
         ))
 
         assert result["sinks"][0]["caller_summary"] == {"total": 1, "shown": 1, "truncated": False}
-        assert any("WHERE type = 'function'" in sql for sql in node_map_queries)
-        assert not any(sql.endswith("FROM nodes") for sql in node_map_queries)
+        assert any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
+        assert any("WHERE e.target = ? AND e.relation = 'calls'" in sql for sql in statements)
+        assert any("FROM nodes WHERE id = ?" in sql for sql in statements)
 
     def test_sinks_caps_callers_before_metadata_formatting(self, tmp_db, monkeypatch):
         import mcp_server

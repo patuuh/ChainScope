@@ -396,10 +396,12 @@ def _cross_entry_attrs(entry: dict) -> dict:
 
 def _node_for_id(conn, node_id: str, node_cache: dict[str, dict | None]) -> dict | None:
     if node_id not in node_cache:
-        row = conn.execute(
-            "SELECT id, label, type, file, metadata FROM nodes WHERE id = ?",
+        rows = conn.execute(
+            "SELECT id, label, type, visibility, file, line_start, line_end, signature, metadata "
+            "FROM nodes WHERE id = ?",
             (node_id,),
-        ).fetchone()
+        )
+        row = rows.fetchone() if hasattr(rows, "fetchone") else next(iter(rows), None)
         node_cache[node_id] = dict(row) if row else None
     return node_cache[node_id]
 
@@ -429,6 +431,18 @@ def _iter_trust_boundary_call_edges_from_source(conn, source_id: str):
         ORDER BY e.target
         """,
         (source_id,),
+    )
+
+
+def _iter_callers_for_target(conn, target_id: str):
+    return conn.execute(
+        """
+        SELECT e.source
+        FROM edges AS e INDEXED BY idx_edges_target_relation
+        WHERE e.target = ? AND e.relation = 'calls'
+        ORDER BY e.source
+        """,
+        (target_id,),
     )
 
 
@@ -3004,30 +3018,7 @@ def cs_sinks(
         sink_summary = _section_summary(total, len(shown_sinks))
 
         if shown_sinks:
-            node_map: dict[str, dict] = {}
-            for row in conn.execute(
-                "SELECT id, label, type, visibility, file, line_start, line_end, "
-                "signature, metadata FROM nodes WHERE type = 'function'"
-            ):
-                node_map[row["id"]] = {
-                    "id": row["id"],
-                    "label": row["label"],
-                    "type": row["type"],
-                    "visibility": row["visibility"],
-                    "file": row["file"],
-                    "line_start": row["line_start"],
-                    "line_end": row["line_end"],
-                    "signature": row["signature"],
-                    "_metadata_raw": row["metadata"],
-                }
-
-            rev_adj: dict[str, list[str]] = {}
-            for row in conn.execute(
-                "SELECT source, target FROM edges WHERE relation = 'calls'"
-            ):
-                rev_adj.setdefault(row["target"], []).append(row["source"])
-            for callers in rev_adj.values():
-                callers.sort()
+            node_map: dict[str, dict | None] = {}
 
             def _reachable_callers(sink_id: str) -> tuple[list[dict], dict]:
                 visited = {sink_id}
@@ -3038,17 +3029,18 @@ def cs_sinks(
                 while pos < len(queue):
                     target_id, distance = queue[pos]
                     pos += 1
-                    for caller_id in rev_adj.get(target_id, []):
+                    for row in _iter_callers_for_target(conn, target_id):
+                        caller_id = row["source"]
                         if caller_id in visited:
                             continue
                         visited.add(caller_id)
                         queue.append((caller_id, distance + 1))
-                        caller = node_map.get(caller_id)
+                        caller = _node_for_id(conn, caller_id, node_map)
                         if not caller or caller.get("type") != "function":
                             continue
                         caller_meta = None
                         if exclude_research:
-                            caller_meta = _load_metadata(caller.get("_metadata_raw"))
+                            caller_meta = _load_metadata(caller.get("metadata"))
                             if not _include_metadata(caller_meta, exclude_research):
                                 continue
                         if external_only and caller.get("visibility") not in ("public", "external"):
@@ -3062,7 +3054,7 @@ def cs_sinks(
                             "visibility": caller["visibility"],
                             "signature": caller["signature"],
                             "distance": distance + 1,
-                            "_metadata_raw": caller.get("_metadata_raw"),
+                            "_metadata_raw": caller.get("metadata"),
                         }
                         if caller_meta is not None:
                             caller_entry["source_context"] = caller_meta.get("source_context", "production")
