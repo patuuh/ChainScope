@@ -652,18 +652,16 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
     node_by_id: dict[str, dict | None] = {
         start_row["id"]: start_row,
     }
-    node_meta: dict[str, dict] = {}
-    parsed_start_meta = start_row.get("_metadata_parsed")
-    if parsed_start_meta is not None:
-        node_meta[start_row["id"]] = parsed_start_meta
 
-    def _metadata_for_node(node_id: str) -> dict:
-        meta = node_meta.get(node_id)
-        if meta is None:
-            row = _node_for_id(conn, node_id, node_by_id)
-            meta = _load_metadata(row.get("metadata") if row else None)
-            node_meta[node_id] = meta
-        return meta
+    def _node_source_context(node: dict | None) -> str:
+        return _metadata_source_context(node.get("metadata") if node else None)
+
+    def _node_allowed(node: dict | None) -> bool:
+        if not node:
+            return False
+        if not exclude_research:
+            return True
+        return not _is_research_metadata_raw(node.get("metadata"))
 
     start_id = start_row["id"]
 
@@ -678,34 +676,30 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
             if target_id in reachable:
                 continue
             target_node = _node_for_id(conn, target_id, node_by_id)
-            if not target_node:
-                continue
-            if exclude_research and not _include_metadata(_metadata_for_node(target_id), exclude_research):
+            if not _node_allowed(target_node):
                 continue
             reachable.add(target_id)
             queue.append(target_id)
 
     for source_id in sorted(reachable):
         for row in _iter_trust_boundary_call_edges_from_source(conn, source_id):
+            target = _node_for_id(conn, row["target"], node_by_id)
+            if target and not _node_allowed(target):
+                continue
+            source_row = _node_for_id(conn, row["source"], node_by_id)
             attrs = _load_metadata(row["attributes"])
             if not _is_trust_boundary_call(attrs):
                 continue
-            target = _node_for_id(conn, row["target"], node_by_id)
-            if target and exclude_research and not _include_metadata(_metadata_for_node(row["target"]), exclude_research):
-                continue
-            source_row = _node_for_id(conn, row["source"], node_by_id)
-            source_meta = _metadata_for_node(row["source"])
-            target_meta = _metadata_for_node(row["target"]) if target else {}
             yield {
                 "source": {
                     "label": source_row["label"],
                     "file": source_row["file"],
-                    "source_context": source_meta.get("source_context", "production"),
+                    "source_context": _node_source_context(source_row),
                 } if source_row else {"label": row["source"]},
                 "target": {
                     "label": target["label"],
                     "file": target["file"],
-                    "source_context": target_meta.get("source_context", "production"),
+                    "source_context": _node_source_context(target),
                 } if target else {"label": row["target"]},
                 "attributes": attrs,
             }

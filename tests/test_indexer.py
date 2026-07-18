@@ -2461,7 +2461,62 @@ class TestIndexing:
 
         assert cross["total"] == 1
         assert cross["calls"][0]["source"]["source_context"] == "production"
-        assert len(parsed) == 2
+        assert len(parsed) == 1
+
+    def test_cross_from_func_filters_research_before_attribute_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.ping(address)"
+        prod_helper_id = "Vault.sol::Vault.prodHelper()"
+        script_helper_id = "scripts/Deploy.sol::Deploy.scriptHelper()"
+        prod_edge_attrs = json.dumps({"unresolved": True, "kind": "prod"})
+        script_edge_attrs = json.dumps({"unresolved": True, "kind": "script"})
+        for node_id, label, file, context in (
+            (start_id, "ping", "Vault.sol", "production"),
+            (prod_helper_id, "prodHelper", "Vault.sol", "production"),
+            (script_helper_id, "scriptHelper", "scripts/Deploy.sol", "script"),
+        ):
+            db.insert_node(
+                id=node_id,
+                label=label,
+                type="function",
+                visibility="external",
+                file=file,
+                metadata=json.dumps({"source_context": context, "large": ["x"] * 20}),
+            )
+        db.insert_edge(start_id, prod_helper_id, "calls", attributes=json.dumps({}))
+        db.insert_edge(start_id, script_helper_id, "calls", attributes=json.dumps({}))
+        db.insert_edge(prod_helper_id, "External.prod()", "calls", attributes=prod_edge_attrs)
+        db.insert_edge(script_helper_id, "External.script()", "calls", attributes=script_edge_attrs)
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        cross = json.loads(mcp_server.cs_cross(
+            db=tmp_db,
+            from_func="ping",
+            exclude_research=True,
+            max_results=0,
+        ))
+        summary = json.loads(mcp_server.cs_cross_summary(
+            db=tmp_db,
+            from_func="ping",
+            exclude_research=True,
+            top=10,
+        ))
+
+        assert cross["total"] == 1
+        assert cross["calls"][0]["source"]["label"] == "prodHelper"
+        assert summary["total"] == 1
+        assert summary["by_source_context"] == {"production": 1}
+        assert parsed == [prod_edge_attrs, prod_edge_attrs]
 
     def test_cross_from_func_retains_only_capped_boundary_calls(self, tmp_db, monkeypatch):
         import mcp_server
