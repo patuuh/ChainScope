@@ -261,6 +261,60 @@ class TestIndexing:
         assert prod_unsafe_contexts == {"run_live": "production"}
         assert prod_unsafe["_summary"]["query_scope"] == "production_only"
 
+    def test_scanners_cap_category_results_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.checkDeadline(uint256)",
+                label=f"checkDeadline{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "timestamp_dependence": [{"line": i + 1, "expr": "block.timestamp < deadline"}],
+                    "source_context": "production",
+                }),
+            )
+            db.insert_node(
+                id=f"ops{i}.py::run_cmd",
+                label=f"run_cmd_{i}",
+                type="function",
+                visibility="",
+                file=f"ops{i}.py",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "command_injection_risk": [{"line": i + 1, "call": "subprocess.run"}],
+                    "language": "python",
+                    "source_context": "production",
+                }),
+            )
+
+        capped_defi = json.loads(mcp_server.cs_defi(db=tmp_db, category="timestamp", max_per_category=2))
+        uncapped_defi = json.loads(mcp_server.cs_defi(db=tmp_db, category="timestamp", max_per_category=0))
+        capped_unsafe = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="command", max_per_category=2))
+        uncapped_unsafe = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="command", max_per_category=0))
+
+        assert len(capped_defi["timestamp_dependence"]) == 2
+        assert capped_defi["_summary"]["total_findings"] == 5
+        assert capped_defi["_summary"]["shown_findings"] == 2
+        assert capped_defi["_summary"]["category_totals"] == {"timestamp_dependence": 5}
+        assert capped_defi["_summary"]["truncated_categories"]["timestamp_dependence"]["hidden"] == 3
+        assert capped_defi["_summary"]["max_per_category"] == 2
+        assert len(uncapped_defi["timestamp_dependence"]) == 5
+        assert uncapped_defi["_summary"]["truncated"] is False
+
+        assert len(capped_unsafe["command_execution"]) == 2
+        assert capped_unsafe["_summary"]["total_findings"] == 5
+        assert capped_unsafe["_summary"]["shown_findings"] == 2
+        assert capped_unsafe["_summary"]["category_totals"] == {"command_execution": 5}
+        assert capped_unsafe["_summary"]["truncated_categories"]["command_execution"]["hidden"] == 3
+        assert capped_unsafe["_summary"]["max_per_category"] == 2
+        assert len(uncapped_unsafe["command_execution"]) == 5
+        assert uncapped_unsafe["_summary"]["truncated"] is False
+
     def test_lookup_and_cross_filter_research_nodes(self, tmp_path, tmp_db):
         import mcp_server
 

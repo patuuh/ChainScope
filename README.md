@@ -234,6 +234,10 @@ The same rule applies to broad `cs_trace` variable queries. Names like
 `total`, `owner`, or `balance` are capped by default and return compact
 candidates when ambiguous; set `max_matches=0` only for an exhaustive trace.
 
+Scanner category output from `cs_defi` and `cs_unsafe` is capped by
+`max_per_category` by default. The summary still reports full category totals;
+set `max_per_category=0` only when an exhaustive category dump is intentional.
+
 For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
 choose where to inspect without dumping every trust-boundary edge.
@@ -411,4 +415,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`407 passed`
+`408 passed`

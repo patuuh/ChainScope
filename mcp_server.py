@@ -274,6 +274,29 @@ def _top_counter(counter: dict[str, int], limit: int) -> list[dict]:
     ]
 
 
+def _cap_category_results(results: dict, max_per_category: int) -> dict[str, dict]:
+    """Cap list-valued result categories while preserving full category totals."""
+    if max_per_category < 0:
+        max_per_category = 0
+
+    truncated: dict[str, dict] = {}
+    if max_per_category == 0:
+        return truncated
+
+    for name, values in list(results.items()):
+        if name.startswith("_") or not isinstance(values, list):
+            continue
+        total = len(values)
+        if total > max_per_category:
+            results[name] = values[:max_per_category]
+            truncated[name] = {
+                "shown": max_per_category,
+                "total": total,
+                "hidden": total - max_per_category,
+            }
+    return truncated
+
+
 def _summarize_cross_entries(entries, top: int) -> dict:
     top = max(top, 0)
     total = 0
@@ -559,8 +582,8 @@ def cs_help() -> str:
         },
         "scanner_tools": {
             "cs_hotspots": "Composite risk scorer — all functions ranked with detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
-            "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter.",
-            "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter.",
+            "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter; category output is capped by max_per_category.",
+            "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output is capped by max_per_category.",
         },
         "exploration_tools": {
             "cs_lookup": "Complete function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; use qualified names or max_matches=0 for exhaustive output.",
@@ -1586,6 +1609,7 @@ def cs_defi(
     category: str = "",
     exclude_research: bool = False,
     timeout_seconds: int = 0,
+    max_per_category: int = 50,
 ) -> str:
     """Find DeFi-specific vulnerability patterns in Solidity contracts.
 
@@ -1610,7 +1634,11 @@ def cs_defi(
         category: Filter: timestamp, erc20, oracle, signature, precision, dos, frontrun, downcast, flashloan, slippage, callback, anchor, cpi_reentrancy, transfer, crosscontract, all (default: all)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+        max_per_category: Maximum findings to return per category (0 disables)
     """
+    if max_per_category < 0:
+        max_per_category = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
@@ -1621,8 +1649,8 @@ def cs_defi(
         cat = category.lower() if category else "all"
         results: dict = {}
         function_rows = conn.execute(
-            "SELECT label, file, line_start, visibility, signature, metadata "
-            "FROM nodes WHERE type = 'function'"
+            "SELECT id, label, file, line_start, visibility, signature, metadata "
+            "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
         ).fetchall()
 
         def _function_rows_with(metadata_key: str) -> list:
@@ -1877,10 +1905,18 @@ def cs_defi(
                 results["cross_contract_calls"] = cc_fns
 
         # Summary
-        total = sum(len(v) for v in results.values())
+        category_totals = {name: len(values) for name, values in results.items() if isinstance(values, list)}
+        total = sum(category_totals.values())
+        truncated_categories = _cap_category_results(results, max_per_category)
+        shown_total = sum(len(v) for v in results.values() if isinstance(v, list))
         results["_summary"] = {
             "total_findings": total,
+            "shown_findings": shown_total,
             "categories": list(results.keys()),
+            "category_totals": category_totals,
+            "truncated_categories": truncated_categories,
+            "truncated": bool(truncated_categories),
+            "max_per_category": max_per_category,
             "query_scope": "production_only" if exclude_research else "all_sources",
         }
 
@@ -1903,6 +1939,7 @@ def cs_unsafe(
     category: str = "",
     exclude_research: bool = False,
     timeout_seconds: int = 0,
+    max_per_category: int = 50,
 ) -> str:
     """Find Rust/Go/Java/Python/TypeScript/DSL security issues.
 
@@ -1918,7 +1955,11 @@ def cs_unsafe(
         category: Filter: unsafe, panic, race, ffi, validation, go, type_assert, sql, java, python, js, command, keys, deser, reflection, injection, crypto, downcast, dead_params, all (default: all)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+        max_per_category: Maximum findings to return per category (0 disables)
     """
+    if max_per_category < 0:
+        max_per_category = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
@@ -1929,8 +1970,8 @@ def cs_unsafe(
         cat = category.lower() if category else "all"
         results: dict = {}
         function_rows = conn.execute(
-            "SELECT label, file, line_start, visibility, signature, metadata "
-            "FROM nodes WHERE type = 'function'"
+            "SELECT id, label, file, line_start, visibility, signature, metadata "
+            "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
         ).fetchall()
 
         def _function_rows_with(metadata_key: str) -> list:
@@ -2239,10 +2280,18 @@ def cs_unsafe(
                 results["dead_params"] = dp_fns
 
         # Summary
-        total = sum(len(v) for v in results.values())
+        category_totals = {name: len(values) for name, values in results.items() if isinstance(values, list)}
+        total = sum(category_totals.values())
+        truncated_categories = _cap_category_results(results, max_per_category)
+        shown_total = sum(len(v) for v in results.values() if isinstance(v, list))
         results["_summary"] = {
             "total_findings": total,
+            "shown_findings": shown_total,
             "categories": list(results.keys()),
+            "category_totals": category_totals,
+            "truncated_categories": truncated_categories,
+            "truncated": bool(truncated_categories),
+            "max_per_category": max_per_category,
             "query_scope": "production_only" if exclude_research else "all_sources",
         }
 
