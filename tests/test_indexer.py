@@ -692,6 +692,80 @@ class TestIndexing:
         assert prod_contexts["set"] == "production"
         assert prod_hotspots["_summary"]["query_scope"] == "production_only"
 
+    def test_audit_exclude_research_filters_top_level_stats(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for prefix, source_context in (("prod", "production"), ("script", "script")):
+            func_id = f"{prefix}/Vault.sol::Vault.set(uint256)"
+            state_id = f"{prefix}/Vault.sol::Vault.total"
+            guard_id = f"{prefix}/Vault.sol::Vault.onlyOwner"
+            sink_id = f"{prefix}/Vault.sol::Vault.danger"
+            meta = json.dumps({"source_context": source_context})
+            db.insert_node(
+                id=func_id,
+                label="set",
+                type="function",
+                visibility="external",
+                file=f"{prefix}/Vault.sol",
+                metadata=meta,
+            )
+            db.insert_node(
+                id=state_id,
+                label="total",
+                type="state_var",
+                file=f"{prefix}/Vault.sol",
+                metadata=meta,
+            )
+            db.insert_node(
+                id=guard_id,
+                label="onlyOwner",
+                type="modifier",
+                file=f"{prefix}/Vault.sol",
+                metadata=meta,
+            )
+            db.insert_node(
+                id=sink_id,
+                label="danger",
+                type="sink",
+                file=f"{prefix}/Vault.sol",
+                metadata=json.dumps({"source_context": source_context, "is_sink": True}),
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+            db.insert_edge(guard_id, func_id, "guards")
+            db.insert_transition("Lifecycle", "Open", "Closed", func_id)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10))
+        prod_audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10, exclude_research=True))
+
+        assert audit["stats"]["nodes"] == 8
+        assert audit["stats"]["edges"] == 4
+        assert audit["stats"]["functions"] == 2
+        assert audit["stats"]["state_vars"] == 2
+        assert audit["stats"]["entry_points"] == 2
+        assert audit["stats"]["guarded_entry_points"] == 2
+        assert audit["stats"]["sinks"] == 2
+        assert audit["stats"]["transitions"] == 2
+
+        assert prod_audit["stats"]["nodes"] == 4
+        assert prod_audit["stats"]["edges"] == 2
+        assert prod_audit["stats"]["functions"] == 1
+        assert prod_audit["stats"]["state_vars"] == 1
+        assert prod_audit["stats"]["entry_points"] == 1
+        assert prod_audit["stats"]["guarded_entry_points"] == 1
+        assert prod_audit["stats"]["sinks"] == 1
+        assert prod_audit["stats"]["transitions"] == 1
+        assert prod_audit["stats"]["node_types"] == {
+            "function": 1,
+            "modifier": 1,
+            "sink": 1,
+            "state_var": 1,
+        }
+        assert prod_audit["stats"]["edge_relations"] == {
+            "guards": 1,
+            "writes_state": 1,
+        }
+
     def test_hotspots_do_not_mark_inline_role_guard_as_no_access_control(self, tmp_path, tmp_db):
         import mcp_server
 

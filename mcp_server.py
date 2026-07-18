@@ -1371,27 +1371,86 @@ def cs_audit(
 
     try:
         report: dict = {}
+        report["query_scope"] = "production_only" if exclude_research else "all_sources"
 
         # --- 1. Stats (formerly cs_summary) ---
-        node_count = conn.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
-        edge_count = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
-        func_count = conn.execute("SELECT COUNT(*) FROM nodes WHERE type='function'").fetchone()[0]
-        file_count = conn.execute("SELECT COUNT(DISTINCT file) FROM nodes").fetchone()[0]
-        entry_count = conn.execute(
-            "SELECT COUNT(*) FROM nodes WHERE type='function' AND visibility IN ('external', 'public')"
-        ).fetchone()[0]
-        guarded_count = conn.execute(
-            "SELECT COUNT(DISTINCT target) FROM edges WHERE relation='guards'"
-        ).fetchone()[0]
-        sink_count = conn.execute(
-            "SELECT COUNT(*) FROM nodes WHERE metadata LIKE '%\"is_sink\"%'"
-        ).fetchone()[0]
-        state_var_count = conn.execute(
-            "SELECT COUNT(*) FROM nodes WHERE type='state_var'"
-        ).fetchone()[0]
-        transition_count = conn.execute(
-            "SELECT COUNT(*) FROM state_transitions"
-        ).fetchone()[0]
+        if exclude_research:
+            allowed_node_ids: set[str] = set()
+            files: set[str] = set()
+            node_type_counts: dict[str, int] = {}
+            node_count = 0
+            func_count = 0
+            state_var_count = 0
+            entry_count = 0
+            sink_count = 0
+            for row in conn.execute(
+                "SELECT id, type, visibility, file, metadata FROM nodes"
+            ):
+                meta = _load_metadata(row["metadata"])
+                if _is_research_meta(meta):
+                    continue
+                allowed_node_ids.add(row["id"])
+                node_count += 1
+                files.add(row["file"])
+                node_type_counts[row["type"]] = node_type_counts.get(row["type"], 0) + 1
+                if row["type"] == "function":
+                    func_count += 1
+                    if row["visibility"] in ("external", "public"):
+                        entry_count += 1
+                elif row["type"] == "state_var":
+                    state_var_count += 1
+                if meta.get("is_sink"):
+                    sink_count += 1
+            file_count = len(files)
+
+            edge_count = 0
+            guarded_targets: set[str] = set()
+            edge_relation_counts: dict[str, int] = {}
+            for row in conn.execute("SELECT source, target, relation FROM edges"):
+                if row["source"] not in allowed_node_ids or row["target"] not in allowed_node_ids:
+                    continue
+                edge_count += 1
+                edge_relation_counts[row["relation"]] = edge_relation_counts.get(row["relation"], 0) + 1
+                if row["relation"] == "guards":
+                    guarded_targets.add(row["target"])
+            guarded_count = len(guarded_targets)
+
+            transition_count = 0
+            for row in conn.execute("SELECT function_id FROM state_transitions"):
+                if row["function_id"] in allowed_node_ids:
+                    transition_count += 1
+        else:
+            node_count = conn.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
+            edge_count = conn.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+            func_count = conn.execute("SELECT COUNT(*) FROM nodes WHERE type='function'").fetchone()[0]
+            file_count = conn.execute("SELECT COUNT(DISTINCT file) FROM nodes").fetchone()[0]
+            entry_count = conn.execute(
+                "SELECT COUNT(*) FROM nodes WHERE type='function' AND visibility IN ('external', 'public')"
+            ).fetchone()[0]
+            guarded_count = conn.execute(
+                "SELECT COUNT(DISTINCT target) FROM edges WHERE relation='guards'"
+            ).fetchone()[0]
+            sink_count = conn.execute(
+                "SELECT COUNT(*) FROM nodes WHERE metadata LIKE '%\"is_sink\"%'"
+            ).fetchone()[0]
+            state_var_count = conn.execute(
+                "SELECT COUNT(*) FROM nodes WHERE type='state_var'"
+            ).fetchone()[0]
+            transition_count = conn.execute(
+                "SELECT COUNT(*) FROM state_transitions"
+            ).fetchone()[0]
+            node_type_counts = {
+                r["type"]: r["cnt"]
+                for r in conn.execute(
+                    "SELECT type, COUNT(*) as cnt FROM nodes GROUP BY type ORDER BY cnt DESC"
+                )
+            }
+            edge_relation_counts = {
+                r["relation"]: r["cnt"]
+                for r in conn.execute(
+                    "SELECT relation, COUNT(*) as cnt FROM edges GROUP BY relation ORDER BY cnt DESC"
+                )
+            }
 
         report["stats"] = {
             "nodes": node_count, "edges": edge_count,
@@ -1402,21 +1461,12 @@ def cs_audit(
             "unguarded_entry_points": entry_count - guarded_count,
             "sinks": sink_count,
         }
-        report["query_scope"] = "production_only" if exclude_research else "all_sources"
         build_info = _load_build_info(conn)
         if build_info:
             report["build_info"] = build_info
 
-        # Node/edge type breakdown
-        type_rows = conn.execute(
-            "SELECT type, COUNT(*) as cnt FROM nodes GROUP BY type ORDER BY cnt DESC"
-        ).fetchall()
-        report["stats"]["node_types"] = {r["type"]: r["cnt"] for r in type_rows}
-
-        rel_rows = conn.execute(
-            "SELECT relation, COUNT(*) as cnt FROM edges GROUP BY relation ORDER BY cnt DESC"
-        ).fetchall()
-        report["stats"]["edge_relations"] = {r["relation"]: r["cnt"] for r in rel_rows}
+        report["stats"]["node_types"] = dict(sorted(node_type_counts.items(), key=lambda item: (-item[1], item[0])))
+        report["stats"]["edge_relations"] = dict(sorted(edge_relation_counts.items(), key=lambda item: (-item[1], item[0])))
 
         # --- 2. Detection tallies (single metadata pass) ---
         DETECTION_KEYS = [
