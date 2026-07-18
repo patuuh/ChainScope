@@ -338,18 +338,29 @@ def _chunked_ids(ids: set[str]):
         yield ordered[idx:idx + SQLITE_IN_CHUNK_SIZE]
 
 
-def _write_counts_for_sources(conn, source_ids: set[str] | None = None) -> dict[str, int]:
+def _write_counts_for_sources(
+    conn,
+    source_ids: set[str] | None = None,
+    validate_nodes: bool = False,
+) -> dict[str, int]:
     """Count writes per source, optionally skipping sources outside scope."""
     if source_ids is not None and not source_ids:
         return {}
+    source_expr = "e.source" if validate_nodes else "source"
+    from_sql = (
+        "edges e JOIN nodes s ON e.source = s.id JOIN nodes t ON e.target = t.id"
+        if validate_nodes
+        else "edges"
+    )
+    relation_expr = "e.relation" if validate_nodes else "relation"
     counts: dict[str, int] = {}
     if source_ids is None:
         queries = [(
-            """
-            SELECT source, COUNT(*) AS cnt
-            FROM edges
-            WHERE relation = 'writes_state'
-            GROUP BY source
+            f"""
+            SELECT {source_expr} AS source, COUNT(*) AS cnt
+            FROM {from_sql}
+            WHERE {relation_expr} = 'writes_state'
+            GROUP BY {source_expr}
             """,
             (),
         )]
@@ -359,10 +370,10 @@ def _write_counts_for_sources(conn, source_ids: set[str] | None = None) -> dict[
             placeholders = ",".join("?" for _ in chunk)
             queries.append((
                 f"""
-                SELECT source, COUNT(*) AS cnt
-                FROM edges
-                WHERE source IN ({placeholders}) AND relation = 'writes_state'
-                GROUP BY source
+                SELECT {source_expr} AS source, COUNT(*) AS cnt
+                FROM {from_sql}
+                WHERE {source_expr} IN ({placeholders}) AND {relation_expr} = 'writes_state'
+                GROUP BY {source_expr}
                 """,
                 tuple(chunk),
             ))
@@ -469,6 +480,28 @@ def _iter_edges_for_relation(conn, relation: str, source_ids: set[str] | None = 
             f"SELECT source, target FROM edges WHERE source IN ({placeholders}) AND relation = ?",
             (*chunk, relation),
         )
+
+
+def _iter_edges_for_relations(conn, relations: tuple[str, ...], validate_nodes: bool = False):
+    if not relations:
+        return
+    placeholders = ",".join("?" for _ in relations)
+    if validate_nodes:
+        yield from conn.execute(
+            f"""
+            SELECT e.source, e.target, e.relation
+            FROM edges e
+            JOIN nodes s ON e.source = s.id
+            JOIN nodes t ON e.target = t.id
+            WHERE e.relation IN ({placeholders})
+            """,
+            relations,
+        )
+        return
+    yield from conn.execute(
+        f"SELECT source, target, relation FROM edges WHERE relation IN ({placeholders})",
+        relations,
+    )
 
 
 def _iter_guard_label_rows(conn, target_ids: set[str] | None = None):
@@ -1383,7 +1416,7 @@ def cs_summary(
         return _query_open_error("cs_summary", db_path, exc)
 
     try:
-        if not attack_surface and not exclude_research:
+        if not exclude_research:
             build_info = _load_build_info(conn)
             type_counts = _count_rows(
                 conn,
@@ -1434,6 +1467,58 @@ def cs_summary(
                     "Run cs_build(repo_path=..., db=...) to populate this graph.",
                     "If you already built a graph, verify that the db argument points at the populated graph.db.",
                 ]
+            if attack_surface:
+                attack_surface_nodes: dict[str, dict] = {}
+                for row in conn.execute(
+                    """
+                    SELECT id, label, visibility, file, signature, metadata
+                    FROM nodes
+                    WHERE type = 'function' AND visibility IN ('public', 'external')
+                    """
+                ):
+                    row_dict = dict(row)
+                    meta = _load_metadata(row["metadata"])
+                    row_dict["_source_context"] = meta.get("source_context", "production")
+                    attack_surface_nodes[row["id"]] = row_dict
+
+                adjacency: dict[str, list[str]] = {}
+                for row in _iter_edges_for_relations(conn, TRAVERSAL_RELATIONS, validate_nodes=True):
+                    adjacency.setdefault(row["source"], []).append(row["target"])
+                write_map = _write_counts_for_sources(conn, validate_nodes=True)
+
+                reachable_cache: dict[str, set[str]] = {}
+                surface = []
+                surface_total = 0
+                for row in attack_surface_nodes.values():
+                    reachable = _forward_reachable_nodes(adjacency, row["id"], reachable_cache)
+                    write_count = sum(write_map.get(rid, 0) for rid in reachable)
+                    surface_total += 1
+                    item = {
+                        "id": row["id"],
+                        "label": row["label"],
+                        "file": row["file"],
+                        "signature": row["signature"],
+                        "reachable_count": len(reachable),
+                        "state_writes": write_count,
+                        "source_context": row.get("_source_context", "production"),
+                    }
+                    _keep_sorted_result(
+                        surface,
+                        item,
+                        (-write_count, row["file"] or "", row["label"] or "", row["id"]),
+                        top,
+                    )
+                data["attack_surface"] = _sorted_results(surface)
+                attack_surface_summary = _section_summary(surface_total, len(data["attack_surface"]))
+                attack_surface_summary["top"] = top
+                data["_summary"] = {
+                    "attack_surface": attack_surface_summary,
+                    "truncated": attack_surface_summary["truncated"],
+                }
+                if attack_surface_summary["truncated"]:
+                    data["_warning"] = (
+                        "cs_summary attack_surface output was capped. Increase top for more entries."
+                    )
             return json.dumps(data, indent=2)
 
         node_rows = conn.execute(

@@ -380,6 +380,74 @@ class TestIndexing:
         ]
         assert max(buffer_sizes) == 3
 
+    def test_summary_attack_surface_uses_aggregate_health_counts(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(4):
+            func_id = f"Vault.sol::Vault.entry{i}()"
+            state_id = f"Vault.sol::Vault.total{i}"
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=state_id,
+                label=f"total{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+            db.insert_edge(func_id, f"Vault.sol::Vault.helper{i}()", "calls")
+            db.insert_edge(f"Vault.sol::Vault.onlyOwner{i}", func_id, "guards")
+
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                if normalized == "SELECT id, label, type, visibility, file, signature, metadata FROM nodes":
+                    raise AssertionError("attack_surface cs_summary should not stream full node rows")
+                if normalized == "SELECT source, target, relation FROM edges":
+                    raise AssertionError("attack_surface cs_summary should not stream full edge rows")
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        summary = json.loads(mcp_server.cs_summary(db=tmp_db, attack_surface=True, top=2))
+
+        assert summary["_summary"]["attack_surface"] == {
+            "total": 4,
+            "shown": 2,
+            "truncated": True,
+            "top": 2,
+        }
+        assert any("GROUP BY type" in sql for sql in statements)
+        assert any("GROUP BY e.relation" in sql for sql in statements)
+        assert any("WHERE type = 'function' AND visibility IN" in sql for sql in statements)
+        assert any("e.relation IN" in sql and "JOIN nodes" in sql for sql in statements)
+        assert any(
+            "e.relation = 'writes_state'" in sql
+            and "JOIN nodes" in sql
+            and "GROUP BY e.source" in sql
+            for sql in statements
+        )
+
     def test_summary_streams_rows_for_attack_surface(self, monkeypatch):
         import mcp_server
 
@@ -435,8 +503,7 @@ class TestIndexing:
                 if "FROM edges" in normalized:
                     return StreamingRows(edge_rows)
                 if "FROM state_transitions" in normalized:
-                    assert normalized == "SELECT COUNT(*) FROM state_transitions"
-                    return SingleRow((1,))
+                    return StreamingRows([{"function_id": "Vault.sol::Vault.entry()", "metadata": json.dumps({"source_context": "production"})}])
                 if "FROM graph_metadata" in normalized:
                     return SingleRow()
                 raise AssertionError(normalized)
@@ -450,7 +517,12 @@ class TestIndexing:
             lambda db_path, timeout_seconds: FakeConn(),
         )
 
-        summary = json.loads(mcp_server.cs_summary(db="stream.db", attack_surface=True, top=1))
+        summary = json.loads(mcp_server.cs_summary(
+            db="stream.db",
+            attack_surface=True,
+            top=1,
+            exclude_research=True,
+        ))
 
         assert summary["nodes"] == 2
         assert summary["edges"] == 1
