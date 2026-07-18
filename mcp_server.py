@@ -80,8 +80,27 @@ def _open_query_connection(db_path: str, timeout_seconds: int | None = DEFAULT_M
     raise sqlite3.OperationalError(f"unable to open database file: {db_path}")
 
 
-def _node_match_queries(columns: str, label: str) -> tuple[tuple[str, tuple], ...]:
+def _node_match_queries(
+    columns: str,
+    label: str,
+    node_type: str = "",
+) -> tuple[tuple[str, tuple], ...]:
     """Return lookup stages in the same exact, qualified, fuzzy order."""
+    if node_type:
+        return (
+            (
+                f"SELECT {columns} FROM nodes WHERE type = ? AND label = ? ORDER BY id",
+                (node_type, label),
+            ),
+            (
+                f"SELECT {columns} FROM nodes WHERE type = ? AND id LIKE ? ORDER BY id",
+                (node_type, f"%{label}%"),
+            ),
+            (
+                f"SELECT {columns} FROM nodes WHERE type = ? AND label LIKE ? ORDER BY id",
+                (node_type, f"%{label}%"),
+            ),
+        )
     return (
         (
             f"SELECT {columns} FROM nodes WHERE label = ? ORDER BY id",
@@ -103,10 +122,11 @@ def _find_node_ids_capped(
     label: str,
     exclude_research: bool,
     retain_limit: int,
+    node_type: str = "",
 ) -> tuple[list[str], int, bool]:
     """Find matching node IDs while retaining only rows needed by callers."""
     columns = "id, label, metadata"
-    for sql, params in _node_match_queries(columns, label):
+    for sql, params in _node_match_queries(columns, label, node_type):
         ids: list[str] = []
         total = 0
         matched_before_scope = False
@@ -130,15 +150,13 @@ def _find_function_rows_capped(
 ) -> tuple[list[dict], int, bool]:
     """Find matching function rows while retaining only candidate-preview rows."""
     columns = "id, label, type, visibility, file, line_start, line_end, signature, metadata"
-    for sql, params in _node_match_queries(columns, label):
+    for sql, params in _node_match_queries(columns, label, "function"):
         rows: list[dict] = []
         total = 0
         matched_before_scope = False
         for row in conn.execute(sql, params):
             matched_before_scope = True
             item = dict(row)
-            if item.get("type") != "function":
-                continue
             if exclude_research:
                 meta = _load_metadata(item.get("metadata"))
                 if not _include_metadata(meta, exclude_research):
@@ -4092,6 +4110,7 @@ def cs_lookup(
             name,
             exclude_research,
             match_retain_limit,
+            node_type="function",
         )
         if not matched_before_scope:
             return json.dumps({"error": f"No function found matching '{name}'"})

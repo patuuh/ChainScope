@@ -1541,7 +1541,7 @@ class TestIndexing:
             def execute(self, sql, *args, **kwargs):
                 cursor = self._conn.execute(sql, *args, **kwargs)
                 normalized = " ".join(sql.split())
-                if "FROM nodes WHERE label = ?" in normalized:
+                if "FROM nodes WHERE type = ? AND label = ?" in normalized:
                     return StreamingCursor(cursor)
                 return cursor
 
@@ -2505,6 +2505,31 @@ class TestIndexing:
         assert uncapped["max_candidates"] == 50
         assert "candidates" not in uncapped
 
+    def test_lookup_matches_only_functions_for_function_profiles(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.transfer",
+            label="transfer",
+            type="state_var",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.transfer(address,uint256)",
+            label="transfer",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            signature="function transfer(address to, uint256 amount) external",
+        )
+
+        lookup = json.loads(mcp_server.cs_lookup(name="transfer", db=tmp_db))
+
+        assert lookup["matches"] == 1
+        assert lookup["functions"][0]["type"] == "function"
+        assert lookup["functions"][0]["signature"] == "function transfer(address to, uint256 amount) external"
+
     def test_lookup_formats_only_capped_candidates(self, tmp_db, monkeypatch):
         import mcp_server
 
@@ -2676,7 +2701,7 @@ class TestIndexing:
             def execute(self, sql, *args, **kwargs):
                 cursor = self._conn.execute(sql, *args, **kwargs)
                 normalized = " ".join(sql.split())
-                if "FROM nodes WHERE label = ?" in normalized:
+                if "FROM nodes WHERE type = ? AND label = ?" in normalized:
                     return StreamingCursor(cursor)
                 return cursor
 
