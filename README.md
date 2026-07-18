@@ -250,7 +250,8 @@ The same rule applies to broad `cs_trace` variable queries. Names like
 candidates when ambiguous. `max_matches` caps fully traced variables and
 `max_candidates` caps the candidate list; set either value to `0` only for
 exhaustive trace output. When using `show_callers`, caller lists are capped by
-`max_callers_per_accessor`.
+`max_callers_per_accessor`. Full parsed variable metadata is omitted by default;
+set `include_metadata=true` only when that raw metadata is needed.
 
 `cs_summary --attack-surface` is also a bounded overview. Its `_summary`
 reports the total entry points, how many were shown, and whether the list was
@@ -319,6 +320,7 @@ when the raw sink metadata is needed. Set `max_results=0` or
 - `python cs_trace.py --max-matches 0 ...`
 - `python cs_trace.py --max-candidates 0 ...`
 - `python cs_trace.py --show-callers --max-callers-per-accessor 0 ...`
+- `python cs_trace.py --include-metadata --json ...`
 - `python cs_cross.py --summary ...`
 - `python cs_cross.py --summary --max-counter-items 0 ...`
 - `python cs_cross.py ...`
@@ -472,4 +474,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`482 passed`
+`483 passed`

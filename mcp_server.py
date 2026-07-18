@@ -927,7 +927,7 @@ def cs_help() -> str:
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
-            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, and show_callers lists by max_callers_per_accessor.",
+            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink; full sink metadata is opt-in with include_metadata.",
@@ -3257,6 +3257,7 @@ def cs_trace(
     max_matches: int = 20,
     max_candidates: int = 50,
     max_callers_per_accessor: int = 20,
+    include_metadata: bool = False,
 ) -> str:
     """Trace all functions that read or write a state variable.
 
@@ -3272,6 +3273,7 @@ def cs_trace(
         max_matches: Maximum matching state variables to trace fully (0 disables)
         max_candidates: Maximum ambiguous variable candidates to return (0 disables)
         max_callers_per_accessor: Maximum callers attached to each reader/writer when show_callers is true (0 disables)
+        include_metadata: Include full parsed state-variable metadata
     """
     if max_matches < 0:
         max_matches = 0
@@ -3311,12 +3313,16 @@ def cs_trace(
                 return cached
             item = dict(row)
             parsed_meta = item.pop("_metadata_parsed", None)
-            item["metadata"] = (
+            meta = (
                 parsed_meta
                 if parsed_meta is not None
                 else _load_metadata(item.get("metadata"))
             )
-            item["source_context"] = item["metadata"].get("source_context", "production")
+            item["source_context"] = meta.get("source_context", "production")
+            if include_metadata:
+                item["metadata"] = meta
+            else:
+                item.pop("metadata", None)
             full_by_id[item["id"]] = item
             return item
 
@@ -3421,6 +3427,7 @@ def cs_trace(
             "max_matches": max_matches,
             "max_candidates": max_candidates,
             "max_callers_per_accessor": max_callers_per_accessor,
+            "include_metadata": include_metadata,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "writers": writers,
             "readers": readers,

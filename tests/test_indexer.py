@@ -2866,6 +2866,46 @@ class TestIndexing:
         assert len(trace["candidates"]) == 4
         assert len(parsed) == 4
 
+    def test_trace_omits_variable_metadata_by_default_for_mcp_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.total",
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+            signature="uint256 public total",
+            metadata=json.dumps({
+                "source_context": "production",
+                "large": ["x"] * 50,
+            }),
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.set(uint256)",
+            label="set",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge(
+            "Vault.sol::Vault.set(uint256)",
+            "Vault.sol::Vault.total",
+            "writes_state",
+        )
+
+        compact = json.loads(mcp_server.cs_trace(var="total", db=tmp_db))
+        detailed = json.loads(mcp_server.cs_trace(var="total", db=tmp_db, include_metadata=True))
+
+        assert compact["include_metadata"] is False
+        assert compact["variable"]["source_context"] == "production"
+        assert "metadata" not in compact["variable"]
+        assert "metadata" not in compact["variables"][0]
+        assert compact["writers"][0]["source_context"] == "production"
+        assert detailed["include_metadata"] is True
+        assert detailed["variable"]["metadata"]["large"] == ["x"] * 50
+
     def test_trace_retains_only_capped_variable_rows(self, tmp_db, monkeypatch):
         import mcp_server
 

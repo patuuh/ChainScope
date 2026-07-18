@@ -19,6 +19,7 @@ def trace(
         "--max-callers-per-accessor",
         help="Max callers per reader/writer with --show-callers (0 = all)",
     ),
+    include_metadata: bool = typer.Option(False, "--include-metadata", help="Include full parsed variable metadata in JSON results"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -30,6 +31,7 @@ def trace(
         max_matches=max_matches,
         max_candidates=max_candidates,
         max_callers_per_accessor=max_callers_per_accessor,
+        include_metadata=include_metadata,
     ))
 
     if "error" in data:
