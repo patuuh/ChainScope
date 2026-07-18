@@ -401,7 +401,7 @@ def cs_help() -> str:
             "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter.",
         },
         "exploration_tools": {
-            "cs_lookup": "Complete function profile: callers, callees, state reads/writes, guards, edges. Use depth=2 for two levels.",
+            "cs_lookup": "Complete function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; use qualified names or max_matches=0 for exhaustive output.",
             "cs_paths": "Find call paths between two functions (from_label → to_label)",
             "cs_trace": "Trace all readers/writers of a state variable",
             "cs_cross": "Cross-contract/module boundary calls (trust boundary crossings)",
@@ -2727,6 +2727,7 @@ def cs_lookup(
     depth: int = 1,
     exclude_research: bool = False,
     timeout_seconds: int = DEFAULT_MCP_QUERY_TIMEOUT_SECONDS,
+    max_matches: int = 20,
 ) -> str:
     """Look up a function by name and return its complete profile.
 
@@ -2747,37 +2748,65 @@ def cs_lookup(
         depth: How many levels of callers/callees to include (1 or 2)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: SQLite query budget before returning an error
+        max_matches: Maximum matching functions to fully profile (0 disables)
     """
+    if max_matches < 0:
+        max_matches = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
     except sqlite3.Error as exc:
-        return json.dumps({
-            "error": f"Unable to open graph database '{db_path}': {exc}",
-            "query": name,
-        }, indent=2)
+        return _query_open_error("cs_lookup", db_path, exc)
 
     try:
         nodes = _find_nodes(conn, name)
         if not nodes:
             return json.dumps({"error": f"No function found matching '{name}'"})
 
-        results = []
+        candidates = []
+        full_by_id: dict[str, dict] = {}
         for node_row in nodes:
-            node_id = node_row["id"]
-
-            # Full node details
             full = conn.execute(
                 "SELECT id, label, type, visibility, file, line_start, line_end, "
                 "signature, metadata FROM nodes WHERE id = ?",
-                (node_id,)
+                (node_row["id"],)
             ).fetchone()
             if not full:
                 continue
-            info = dict(full)
-            info["metadata"] = _load_metadata(info.get("metadata"))
-            if not _include_metadata(info["metadata"], exclude_research):
+            full_dict = dict(full)
+            meta = _load_metadata(full_dict.get("metadata"))
+            if not _include_metadata(meta, exclude_research):
                 continue
+            full_dict["metadata"] = meta
+            full_by_id[full_dict["id"]] = full_dict
+            candidates.append({
+                "id": full_dict["id"],
+                "label": full_dict["label"],
+                "type": full_dict["type"],
+                "visibility": full_dict["visibility"],
+                "file": full_dict["file"],
+                "line": full_dict["line_start"],
+                "source_context": meta.get("source_context", "production"),
+            })
+
+        if not candidates:
+            if exclude_research:
+                return json.dumps({"error": f"No production function found matching '{name}'"})
+            return json.dumps({"error": f"No function found matching '{name}'"})
+
+        total_matches = len(candidates)
+        truncated = max_matches > 0 and total_matches > max_matches
+        candidate_ids = [c["id"] for c in candidates[:max_matches or total_matches]]
+
+        results = []
+        for node_id in candidate_ids:
+
+            # Full node details
+            full = full_by_id.get(node_id)
+            if not full:
+                continue
+            info = dict(full)
 
             # Callers (who calls this)
             callers = conn.execute("""
@@ -2927,12 +2956,22 @@ def cs_lookup(
 
             results.append(info)
 
-        return json.dumps({
+        response = {
             "query": name,
             "matches": len(results),
+            "matches_total": total_matches,
+            "truncated": truncated,
+            "max_matches": max_matches,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "functions": results,
-        }, indent=2)
+        }
+        if truncated:
+            response["_warning"] = (
+                f"cs_lookup found {total_matches} matches and returned the first {len(results)} full profiles. "
+                "Use a more qualified name, inspect candidates, or set max_matches=0 for all profiles."
+            )
+            response["candidates"] = candidates[:50]
+        return json.dumps(response, indent=2)
     except sqlite3.OperationalError as exc:
         if "interrupted" in str(exc).lower():
             return json.dumps({

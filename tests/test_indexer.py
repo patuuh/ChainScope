@@ -340,6 +340,36 @@ class TestIndexing:
         assert any("mode=ro" in uri and "immutable=1" not in uri for uri in attempts)
         assert any("mode=ro&immutable=1" in uri for uri in attempts)
 
+    def test_lookup_caps_ambiguous_matches_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.transfer(address,uint256)",
+                label="transfer",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                signature="function transfer(address to, uint256 amount) external",
+            )
+
+        capped = json.loads(mcp_server.cs_lookup(name="transfer", db=tmp_db, max_matches=2))
+        uncapped = json.loads(mcp_server.cs_lookup(name="transfer", db=tmp_db, max_matches=0))
+
+        assert capped["matches"] == 2
+        assert capped["matches_total"] == 5
+        assert capped["truncated"] is True
+        assert "candidates" in capped
+        assert len(capped["candidates"]) == 5
+        assert "max_matches=0" in capped["_warning"]
+
+        assert uncapped["matches"] == 5
+        assert uncapped["matches_total"] == 5
+        assert uncapped["truncated"] is False
+        assert "candidates" not in uncapped
+
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
 

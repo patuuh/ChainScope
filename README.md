@@ -219,6 +219,11 @@ For agents, the usual loop is:
 5. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate structure
 6. direct source reading only where the graph indicates it matters
 
+For common function names, prefer qualified `cs_lookup` queries such as
+`Vault.deposit` or `TokenMessaging.send`. Broad lookups are capped by default
+so agents get candidates instead of an oversized response; set `max_matches=0`
+only when exhaustive output is intentional.
+
 ## Query surface
 
 ### MCP tools
@@ -388,4 +393,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`401 passed`
+`402 passed`
