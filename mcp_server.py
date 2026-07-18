@@ -3709,7 +3709,7 @@ def cs_trace(
         def _accessors(var_id: str, relation: str) -> list[dict]:
             accessors = conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start, n.line_end, n.metadata
-                FROM edges e JOIN nodes n ON e.source = n.id
+                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = ?
                 ORDER BY n.file, n.line_start, n.id
             """, (var_id, relation))

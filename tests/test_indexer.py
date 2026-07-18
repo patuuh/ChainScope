@@ -3525,6 +3525,7 @@ class TestIndexing:
 
         real_open = mcp_server._open_query_connection
         match_queries = []
+        edge_queries = []
 
         class CountingConnection:
             def __init__(self, conn):
@@ -3534,6 +3535,12 @@ class TestIndexing:
                 normalized = " ".join(sql.split())
                 if "FROM nodes" in normalized and "state_var" in normalized:
                     match_queries.append(normalized)
+                if (
+                    "FROM edges" in normalized
+                    and "e.target = ?" in normalized
+                    and "e.relation = ?" in normalized
+                ):
+                    edge_queries.append(normalized)
                 return self._conn.execute(sql, *args, **kwargs)
 
             def close(self):
@@ -3550,6 +3557,7 @@ class TestIndexing:
         assert trace["variable_matches_total"] == 1
         assert any("WHERE type = 'state_var' AND label = ?" in sql for sql in match_queries)
         assert not any("WHERE label = ? AND type = 'state_var'" in sql for sql in match_queries)
+        assert any("INDEXED BY idx_edges_target_relation" in sql for sql in edge_queries)
 
     def test_trace_formats_only_capped_variable_candidates(self, tmp_db, monkeypatch):
         import mcp_server
