@@ -1144,6 +1144,66 @@ class TestIndexing:
         assert uncapped_fn["_relation_summary"]["callers"] == {"total": 5, "shown": 5, "truncated": False}
         assert "relation_truncated" not in uncapped
 
+    def test_lookup_relation_caps_limit_materialized_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.ping()",
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        for i in range(80):
+            caller_id = f"Caller{i}.sol::Caller{i}.callPing()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callPing{i}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i}.sol",
+            )
+            db.insert_edge(caller_id, "Vault.sol::Vault.ping()", "calls")
+
+        real_open = mcp_server._open_query_connection
+        real_load = mcp_server._load_metadata
+        statements = []
+        parsed = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        def counting_open(*args, **kwargs):
+            return CountingConnection(real_open(*args, **kwargs))
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_open_query_connection", counting_open)
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        lookup = json.loads(mcp_server.cs_lookup(
+            name="ping",
+            db=tmp_db,
+            max_relation_items=2,
+        ))
+
+        fn = lookup["functions"][0]
+        assert len(fn["callers"]) == 2
+        assert fn["_relation_summary"]["callers"] == {"total": 80, "shown": 2, "truncated": True}
+        assert len(parsed) == 3
+        assert any("WHERE e.target = ? AND e.relation = 'calls' LIMIT ?" in sql for sql in statements)
+
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
 

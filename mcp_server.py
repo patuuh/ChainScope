@@ -3649,168 +3649,160 @@ def cs_lookup(
             info = dict(full)
             relation_summary: dict[str, dict] = {}
 
-            def _set_relation(name: str, items: list):
-                shown, summary = _cap_items(items, max_relation_items)
+            def _set_relation(name: str, items: list, summary: dict | None = None):
+                if summary is None:
+                    shown, summary = _cap_items(items, max_relation_items)
+                else:
+                    shown = items
                 info[name] = shown
                 relation_summary[name] = summary
 
+            def _relation_item(row) -> dict | None:
+                item = dict(row)
+                meta = _load_metadata(item.pop("metadata", None))
+                if not _include_metadata(meta, exclude_research):
+                    return None
+                item["source_context"] = meta.get("source_context", "production")
+                return item
+
+            def _collect_relation(sql: str, params: tuple, count_sql: str) -> tuple[list, dict]:
+                if max_relation_items > 0 and not exclude_research:
+                    total = conn.execute(count_sql, params).fetchone()[0]
+                    if total == 0:
+                        return [], {
+                            "total": 0,
+                            "shown": 0,
+                            "truncated": False,
+                        }
+                    rows = conn.execute(f"{sql} LIMIT ?", params + (max_relation_items,)).fetchall()
+                    items = [_relation_item(row) for row in rows]
+                    shown = [item for item in items if item is not None]
+                    return shown, {
+                        "total": total,
+                        "shown": len(shown),
+                        "truncated": total > len(shown),
+                    }
+
+                items = []
+                total = 0
+                for row in conn.execute(sql, params):
+                    item = _relation_item(row)
+                    if item is None:
+                        continue
+                    total += 1
+                    if max_relation_items == 0 or len(items) < max_relation_items:
+                        items.append(item)
+                return items, {
+                    "total": total,
+                    "shown": len(items),
+                    "truncated": total > len(items),
+                }
+
             # Callers (who calls this)
-            callers = conn.execute("""
+            callers, callers_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start,
                        n.line_end, n.signature, n.metadata, e.attributes
                 FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
-            """, (node_id,)).fetchall()
-            filtered_callers = []
-            for row in callers:
-                caller = dict(row)
-                meta = _load_metadata(caller.pop("metadata", None))
-                if not _include_metadata(meta, exclude_research):
-                    continue
-                caller["source_context"] = meta.get("source_context", "production")
-                filtered_callers.append(caller)
-            _set_relation("callers", filtered_callers)
+            """, (node_id,), (
+                "SELECT COUNT(*) FROM edges AS e JOIN nodes n ON e.source = n.id "
+                "WHERE e.target = ? AND e.relation = 'calls'"
+            ))
+            _set_relation("callers", callers, callers_summary)
 
             # Depth-2 callers
             if depth >= 2 and info["callers"]:
                 for caller in info["callers"]:
-                    c2 = conn.execute("""
+                    caller["callers"], caller["callers_summary"] = _collect_relation("""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
                         FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                         WHERE e.target = ? AND e.relation = 'calls'
-                    """, (caller["id"],)).fetchall()
-                    caller["callers"] = []
-                    for row in c2:
-                        nested = dict(row)
-                        meta = _load_metadata(nested.pop("metadata", None))
-                        if not _include_metadata(meta, exclude_research):
-                            continue
-                        nested["source_context"] = meta.get("source_context", "production")
-                        caller["callers"].append(nested)
-                    caller["callers"], caller["callers_summary"] = _cap_items(
-                        caller["callers"],
-                        max_relation_items,
-                    )
+                    """, (caller["id"],), (
+                        "SELECT COUNT(*) FROM edges AS e JOIN nodes n ON e.source = n.id "
+                        "WHERE e.target = ? AND e.relation = 'calls'"
+                    ))
 
             # Callees (what this calls)
-            callees = conn.execute("""
+            callees, callees_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start,
                        n.line_end, n.signature, n.metadata, e.attributes
                 FROM edges e JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'calls'
-            """, (node_id,)).fetchall()
-            filtered_callees = []
-            for row in callees:
-                callee = dict(row)
-                meta = _load_metadata(callee.pop("metadata", None))
-                if not _include_metadata(meta, exclude_research):
-                    continue
-                callee["source_context"] = meta.get("source_context", "production")
-                filtered_callees.append(callee)
-            _set_relation("callees", filtered_callees)
+            """, (node_id,), (
+                "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                "WHERE e.source = ? AND e.relation = 'calls'"
+            ))
+            _set_relation("callees", callees, callees_summary)
 
             # Depth-2 callees
             if depth >= 2 and info["callees"]:
                 for callee in info["callees"]:
-                    c2 = conn.execute("""
+                    callee["callees"], callee["callees_summary"] = _collect_relation("""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
                         FROM edges e JOIN nodes n ON e.target = n.id
                         WHERE e.source = ? AND e.relation = 'calls'
-                    """, (callee["id"],)).fetchall()
-                    callee["callees"] = []
-                    for row in c2:
-                        nested = dict(row)
-                        meta = _load_metadata(nested.pop("metadata", None))
-                        if not _include_metadata(meta, exclude_research):
-                            continue
-                        nested["source_context"] = meta.get("source_context", "production")
-                        callee["callees"].append(nested)
-                    callee["callees"], callee["callees_summary"] = _cap_items(
-                        callee["callees"],
-                        max_relation_items,
-                    )
+                    """, (callee["id"],), (
+                        "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                        "WHERE e.source = ? AND e.relation = 'calls'"
+                    ))
 
             # State reads
-            reads = conn.execute("""
+            state_reads, state_reads_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.metadata
                 FROM edges e JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'reads_state'
-            """, (node_id,)).fetchall()
-            state_reads = []
-            for row in reads:
-                state = dict(row)
-                meta = _load_metadata(state.pop("metadata", None))
-                if not _include_metadata(meta, exclude_research):
-                    continue
-                state["source_context"] = meta.get("source_context", "production")
-                state_reads.append(state)
-            _set_relation("state_reads", state_reads)
+            """, (node_id,), (
+                "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                "WHERE e.source = ? AND e.relation = 'reads_state'"
+            ))
+            _set_relation("state_reads", state_reads, state_reads_summary)
 
             # State writes
-            writes = conn.execute("""
+            state_writes, state_writes_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.metadata
                 FROM edges e JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'writes_state'
-            """, (node_id,)).fetchall()
-            state_writes = []
-            for row in writes:
-                state = dict(row)
-                meta = _load_metadata(state.pop("metadata", None))
-                if not _include_metadata(meta, exclude_research):
-                    continue
-                state["source_context"] = meta.get("source_context", "production")
-                state_writes.append(state)
-            _set_relation("state_writes", state_writes)
+            """, (node_id,), (
+                "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                "WHERE e.source = ? AND e.relation = 'writes_state'"
+            ))
+            _set_relation("state_writes", state_writes, state_writes_summary)
 
             # Guards/modifiers
-            guard_rows = conn.execute("""
+            guards, guards_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.type, n.metadata
                 FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'guards'
-            """, (node_id,)).fetchall()
-            guards = []
-            for row in guard_rows:
-                guard = dict(row)
-                guard_meta = _load_metadata(guard.pop("metadata", None))
-                if not _include_metadata(guard_meta, exclude_research):
-                    continue
-                guard["source_context"] = guard_meta.get("source_context", "production")
-                guards.append(guard)
-            _set_relation("guards", guards)
+            """, (node_id,), (
+                "SELECT COUNT(*) FROM edges AS e JOIN nodes n ON e.source = n.id "
+                "WHERE e.target = ? AND e.relation = 'guards'"
+            ))
+            _set_relation("guards", guards, guards_summary)
 
             # All other edges (flows_to, inherits, emits_event, etc.)
-            other_out = conn.execute("""
+            other_edges_out, other_out_summary = _collect_relation("""
                 SELECT e.relation, n.id, n.label, n.file, n.metadata, e.attributes
                 FROM edges e JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation NOT IN
                       ('calls', 'reads_state', 'writes_state')
-            """, (node_id,)).fetchall()
-            if other_out:
-                other_edges_out = []
-                for row in other_out:
-                    edge = dict(row)
-                    meta = _load_metadata(edge.pop("metadata", None))
-                    if not _include_metadata(meta, exclude_research):
-                        continue
-                    edge["source_context"] = meta.get("source_context", "production")
-                    other_edges_out.append(edge)
-                _set_relation("other_edges_out", other_edges_out)
+            """, (node_id,), (
+                "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                "WHERE e.source = ? AND e.relation NOT IN "
+                "('calls', 'reads_state', 'writes_state')"
+            ))
+            if other_out_summary["total"]:
+                _set_relation("other_edges_out", other_edges_out, other_out_summary)
 
-            other_in = conn.execute("""
+            other_edges_in, other_in_summary = _collect_relation("""
                 SELECT e.relation, n.id, n.label, n.file, n.metadata, e.attributes
                 FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')
-            """, (node_id,)).fetchall()
-            if other_in:
-                other_edges_in = []
-                for row in other_in:
-                    edge = dict(row)
-                    meta = _load_metadata(edge.pop("metadata", None))
-                    if not _include_metadata(meta, exclude_research):
-                        continue
-                    edge["source_context"] = meta.get("source_context", "production")
-                    other_edges_in.append(edge)
-                _set_relation("other_edges_in", other_edges_in)
+            """, (node_id,), (
+                "SELECT COUNT(*) FROM edges AS e JOIN nodes n ON e.source = n.id "
+                "WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')"
+            ))
+            if other_in_summary["total"]:
+                _set_relation("other_edges_in", other_edges_in, other_in_summary)
 
             info["_relation_summary"] = relation_summary
 
