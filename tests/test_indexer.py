@@ -780,6 +780,79 @@ class TestIndexing:
         assert "Ambiguous from_func" in summary["error"]
         assert summary["start_candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
 
+    def test_cross_from_func_avoids_full_graph_metadata_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.ping(address)",
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge(
+            source="Vault.sol::Vault.ping(address)",
+            target="External.doThing()",
+            relation="calls",
+            attributes=json.dumps({"unresolved": True}),
+        )
+        for i in range(200):
+            db.insert_node(
+                id=f"Helper{i}.sol::Helper{i}.noop()",
+                label=f"noop{i}",
+                type="function",
+                visibility="internal",
+                file=f"Helper{i}.sol",
+                metadata=json.dumps({"source_context": "script", "large": ["x"] * 20}),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, from_func="ping"))
+
+        assert cross["total"] == 1
+        assert cross["calls"][0]["source"]["source_context"] == "production"
+        assert len(parsed) == 2
+
+    def test_cross_from_func_ignores_non_function_candidates(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.Deposited",
+            label="Deposited",
+            type="event",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.deposit(address,uint256)",
+            label="deposit",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_edge(
+            source="Vault.sol::Vault.deposit(address,uint256)",
+            target="External.doThing()",
+            relation="calls",
+            attributes=json.dumps({"unresolved": True}),
+        )
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, from_func="Vault.deposit"))
+
+        assert "error" not in cross
+        assert cross["total"] == 1
+        assert cross["calls"][0]["source"]["label"] == "deposit"
+
     def test_cross_caps_raw_output_for_llm_context(self, tmp_db):
         import mcp_server
 

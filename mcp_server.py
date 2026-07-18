@@ -3137,26 +3137,42 @@ def cs_cross(
                 return json.dumps({"error": f"No function found matching '{from_func}'"})
 
             all_nodes = conn.execute(
-                "SELECT id, label, file, metadata FROM nodes"
+                "SELECT id, label, type, file, metadata FROM nodes"
             ).fetchall()
             node_by_id = {row["id"]: dict(row) for row in all_nodes}
-            node_meta = {row["id"]: _load_metadata(row["metadata"]) for row in all_nodes}
-            allowed_ids = {
-                row["id"] for row in all_nodes
-                if _include_metadata(node_meta[row["id"]], exclude_research)
-            }
+            if exclude_research:
+                node_meta = {row["id"]: _load_metadata(row["metadata"]) for row in all_nodes}
+                allowed_ids = {
+                    row["id"] for row in all_nodes
+                    if _include_metadata(node_meta[row["id"]], exclude_research)
+                }
+            else:
+                node_meta: dict[str, dict] = {}
+                allowed_ids = set(node_by_id)
+
+            def _metadata_for_node(node_id: str) -> dict:
+                meta = node_meta.get(node_id)
+                if meta is None:
+                    row = node_by_id.get(node_id)
+                    meta = _load_metadata(row.get("metadata") if row else None)
+                    node_meta[node_id] = meta
+                return meta
 
             matching_starts = [
                 node_by_id[node["id"]]
                 for node in nodes
-                if node["id"] in allowed_ids and node["id"] in node_by_id
+                if (
+                    node["id"] in allowed_ids
+                    and node["id"] in node_by_id
+                    and node_by_id[node["id"]].get("type") == "function"
+                )
             ]
             if not matching_starts:
                 return json.dumps({"error": f"No production function found matching '{from_func}'"})
             if len(matching_starts) > 1:
                 candidates = []
                 for node in matching_starts:
-                    meta = node_meta.get(node["id"], {})
+                    meta = _metadata_for_node(node["id"])
                     candidates.append({
                         "id": node["id"],
                         "label": node["label"],
@@ -3215,15 +3231,15 @@ def cs_cross(
             cross_boundary = []
             for node_id in reachable:
                 source_row = node_by_id.get(node_id)
-                source_meta = node_meta.get(node_id, {})
                 edges = call_edges_by_source.get(node_id, [])
                 for edge in edges:
                     attrs = _load_metadata(edge["attributes"])
                     if _is_trust_boundary_call(attrs):
                         target = node_by_id.get(edge["target"])
-                        target_meta = node_meta.get(edge["target"], {})
                         if target and edge["target"] not in allowed_ids:
                             continue
+                        source_meta = _metadata_for_node(node_id)
+                        target_meta = _metadata_for_node(edge["target"]) if target else {}
                         cross_boundary.append({
                             "source": {
                                 "label": source_row["label"],
