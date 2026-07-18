@@ -1861,6 +1861,58 @@ class TestIndexing:
         assert uncapped["_summary"]["endpoint_matches_truncated"] is False
         assert uncapped["_summary"]["truncated"] is False
 
+    def test_paths_formats_only_capped_endpoint_candidates(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(8):
+            start_id = f"Vault{i}.sol::Vault{i}.start()"
+            finish_id = f"Vault{i}.sol::Vault{i}.finish()"
+            metadata = json.dumps({"source_context": "production", "large": ["x"] * 20})
+            db.insert_node(
+                id=start_id,
+                label="start",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                metadata=metadata,
+            )
+            db.insert_node(
+                id=finish_id,
+                label="finish",
+                type="function",
+                visibility="internal",
+                file=f"Vault{i}.sol",
+                line_start=i + 10,
+                metadata=metadata,
+            )
+            db.insert_edge(start_id, finish_id, "calls")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            max_paths=1,
+            max_endpoint_matches=1,
+            max_endpoint_candidates=2,
+        ))
+
+        assert paths["_summary"]["from_candidates"] == {"total": 8, "shown": 2, "truncated": True}
+        assert paths["_summary"]["to_candidates"] == {"total": 8, "shown": 2, "truncated": True}
+        assert len(paths["from_candidates"]) == 2
+        assert len(paths["to_candidates"]) == 2
+        assert len(parsed) == 4
+
     def test_state_filters_research_transitions(self, tmp_path, tmp_db):
         import mcp_server
 

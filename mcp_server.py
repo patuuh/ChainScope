@@ -502,6 +502,17 @@ def _append_capped(items: list, item, total: int, limit: int) -> int:
     return total
 
 
+def _collect_mapped_items(items, mapper, max_items: int) -> tuple[list, dict]:
+    max_items = max(max_items, 0)
+    total = 0
+    shown = []
+    for item in items:
+        total += 1
+        if max_items == 0 or len(shown) < max_items:
+            shown.append(mapper(item))
+    return shown, _section_summary(total, len(shown))
+
+
 def _keep_ranked_result(heap: list, item: dict, score: int, sequence: int, limit: int):
     if limit <= 0:
         return
@@ -2902,12 +2913,14 @@ def cs_paths(
             },
         }
         if endpoint_truncated:
-            from_candidates, from_candidate_summary = _cap_items(
-                [_candidate_for_node(n) for n in from_nodes],
+            from_candidates, from_candidate_summary = _collect_mapped_items(
+                from_nodes,
+                _candidate_for_node,
                 max_endpoint_candidates,
             )
-            to_candidates, to_candidate_summary = _cap_items(
-                [_candidate_for_node(n) for n in to_nodes],
+            to_candidates, to_candidate_summary = _collect_mapped_items(
+                to_nodes,
+                _candidate_for_node,
                 max_endpoint_candidates,
             )
             result["from_candidates"] = from_candidates
