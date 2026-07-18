@@ -693,7 +693,7 @@ def cs_help() -> str:
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches and paths by max_paths.",
-            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches; use max_matches=0 only when exhaustive output is intentional.",
+            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches and candidates by max_candidates; use 0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; use max_results=0 for exhaustive output.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink.",
@@ -2891,6 +2891,7 @@ def cs_trace(
     exclude_research: bool = False,
     timeout_seconds: int = 0,
     max_matches: int = 20,
+    max_candidates: int = 50,
 ) -> str:
     """Trace all functions that read or write a state variable.
 
@@ -2904,9 +2905,12 @@ def cs_trace(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
         max_matches: Maximum matching state variables to trace fully (0 disables)
+        max_candidates: Maximum ambiguous variable candidates to return (0 disables)
     """
     if max_matches < 0:
         max_matches = 0
+    if max_candidates < 0:
+        max_candidates = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3019,6 +3023,7 @@ def cs_trace(
             "variable_matches_total": total_matches,
             "truncated": truncated,
             "max_matches": max_matches,
+            "max_candidates": max_candidates,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "writers": writers,
             "readers": readers,
@@ -3028,7 +3033,13 @@ def cs_trace(
                 f"cs_trace found {total_matches} matching state variables and traced the first {len(variables)}. "
                 "Use a more qualified variable name or set max_matches=0 for all matches."
             )
-            response["candidates"] = candidates[:50]
+            shown_candidates, candidate_summary = _cap_items(candidates, max_candidates)
+            response["candidates"] = shown_candidates
+            response["candidate_summary"] = candidate_summary
+            if candidate_summary["truncated"]:
+                response.setdefault("_warnings", []).append(
+                    "cs_trace candidate list was capped. Increase max_candidates or set max_candidates=0 for all candidates."
+                )
         return json.dumps(response, indent=2)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(

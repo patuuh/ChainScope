@@ -195,6 +195,30 @@ class TestResearchAwareCli:
         assert result.returncode == 1
         assert "not a directory" in result.stderr
 
+    def test_trace_cli_caps_ambiguous_candidates(self, tmp_path):
+        repo = tmp_path / "trace-repo"
+        repo.mkdir()
+        for i in range(3):
+            (repo / f"Vault{i}.sol").write_text(
+                "pragma solidity ^0.8.0;\n"
+                f"contract Vault{i} {{\n"
+                "    uint256 public total;\n"
+                "    function set(uint256 x) external { total = x; }\n"
+                "}\n"
+            )
+        db = str(tmp_path / "trace.db")
+        build = run_tool("cs_build.py", [str(repo), "--db", db])
+        assert build.returncode == 0
+
+        result = run_tool(
+            "cs_trace.py",
+            ["--db", db, "--var", "total", "--max-matches", "1", "--max-candidates", "2", "--json"],
+        )
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["variable_matches_total"] == 3
+        assert data["candidate_summary"] == {"total": 3, "shown": 2, "truncated": True}
+
     def test_cli_exclude_research_flags(self, tmp_path):
         repo = tmp_path / "repo"
         repo.mkdir()

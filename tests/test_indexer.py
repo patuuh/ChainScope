@@ -883,20 +883,24 @@ class TestIndexing:
                 relation="writes_state",
             )
 
-        capped = json.loads(mcp_server.cs_trace(var="total", db=tmp_db, max_matches=2))
+        capped = json.loads(mcp_server.cs_trace(var="total", db=tmp_db, max_matches=2, max_candidates=3))
         uncapped = json.loads(mcp_server.cs_trace(var="total", db=tmp_db, max_matches=0))
 
         assert capped["variable_matches"] == 2
         assert capped["variable_matches_total"] == 5
         assert capped["truncated"] is True
         assert capped["max_matches"] == 2
-        assert len(capped["candidates"]) == 5
+        assert capped["max_candidates"] == 3
+        assert len(capped["candidates"]) == 3
+        assert capped["candidate_summary"] == {"total": 5, "shown": 3, "truncated": True}
+        assert "max_candidates=0" in capped["_warnings"][0]
         assert len(capped["writers"]) == 2
         assert "max_matches=0" in capped["_warning"]
 
         assert uncapped["variable_matches"] == 5
         assert uncapped["variable_matches_total"] == 5
         assert uncapped["truncated"] is False
+        assert uncapped["max_candidates"] == 50
         assert len(uncapped["writers"]) == 5
         assert "candidates" not in uncapped
 

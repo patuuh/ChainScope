@@ -13,6 +13,7 @@ def trace(
     var: str = typer.Option(..., "--var", help="State variable label to trace"),
     show_callers: bool = typer.Option(False, "--show-callers", help="Show one level of callers"),
     max_matches: int = typer.Option(20, "--max-matches", help="Max matching variables to trace fully (0 = all)"),
+    max_candidates: int = typer.Option(50, "--max-candidates", help="Max ambiguous candidates to show (0 = all)"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -22,6 +23,7 @@ def trace(
         show_callers=show_callers,
         exclude_research=exclude_research,
         max_matches=max_matches,
+        max_candidates=max_candidates,
     ))
 
     if "error" in data:

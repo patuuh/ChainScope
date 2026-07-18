@@ -246,7 +246,9 @@ only when exhaustive path search is intentional.
 
 The same rule applies to broad `cs_trace` variable queries. Names like
 `total`, `owner`, or `balance` are capped by default and return compact
-candidates when ambiguous; set `max_matches=0` only for an exhaustive trace.
+candidates when ambiguous. `max_matches` caps fully traced variables and
+`max_candidates` caps the candidate list; set either value to `0` only for
+exhaustive trace output.
 
 `cs_summary --attack-surface` is also a bounded overview. Its `_summary`
 reports the total entry points, how many were shown, and whether the list was
@@ -305,6 +307,7 @@ The response still reports total sinks and type counts; set `max_results=0` or
 - `python cs_paths.py --max-paths 0 --max-endpoint-matches 0 ...`
 - `python cs_trace.py ...`
 - `python cs_trace.py --max-matches 0 ...`
+- `python cs_trace.py --max-candidates 0 ...`
 - `python cs_cross.py --summary ...`
 - `python cs_cross.py ...`
 - `python cs_cross.py --max-results 0 ...`
@@ -455,4 +458,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`425 passed`
+`426 passed`
