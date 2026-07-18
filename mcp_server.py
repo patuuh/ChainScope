@@ -3920,9 +3920,13 @@ def cs_trace(
             meta = (
                 parsed_meta
                 if parsed_meta is not None
-                else _load_metadata(item.get("metadata"))
+                else _load_metadata(item.get("metadata")) if include_metadata else None
             )
-            item["source_context"] = meta.get("source_context", "production")
+            item["source_context"] = (
+                meta.get("source_context", "production")
+                if meta is not None
+                else _metadata_source_context(item.get("metadata"))
+            )
             if include_metadata:
                 item["metadata"] = meta
             else:
@@ -3969,8 +3973,7 @@ def cs_trace(
         def _finalize_accessor_items(items: list[dict]) -> list[dict]:
             for item in items:
                 if "source_context" not in item:
-                    meta = _load_metadata(item.pop("_metadata_raw", None))
-                    item["source_context"] = meta.get("source_context", "production")
+                    item["source_context"] = _metadata_source_context(item.pop("_metadata_raw", None))
                 else:
                     item.pop("_metadata_raw", None)
             return items
@@ -4036,8 +4039,7 @@ def cs_trace(
             summary = _section_summary(callers_total, len(shown))
             for caller in shown:
                 if "source_context" not in caller:
-                    meta = _load_metadata(caller.pop("_metadata_raw", None))
-                    caller["source_context"] = meta.get("source_context", "production")
+                    caller["source_context"] = _metadata_source_context(caller.pop("_metadata_raw", None))
                 else:
                     caller.pop("_metadata_raw", None)
             return shown, summary

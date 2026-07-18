@@ -4244,6 +4244,64 @@ class TestIndexing:
         assert max(caller_buffer_sizes) == 3
         assert len(parsed) == 5
 
+    def test_trace_skips_untagged_source_context_parses(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        state_id = "Vault.sol::Vault.total"
+        writer_id = "Vault.sol::Vault.set(uint256)"
+        caller_id = "Caller.sol::Caller.callSet()"
+        untagged_metadata = json.dumps({"large": ["x"] * 20})
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+            metadata=untagged_metadata,
+        )
+        db.insert_node(
+            id=writer_id,
+            label="set",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=untagged_metadata,
+        )
+        db.insert_node(
+            id=caller_id,
+            label="callSet",
+            type="function",
+            visibility="external",
+            file="Caller.sol",
+            metadata=untagged_metadata,
+        )
+        db.insert_edge(writer_id, state_id, "writes_state")
+        db.insert_edge(caller_id, writer_id, "calls")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        trace = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            show_callers=True,
+            max_accessors_per_relation=0,
+            max_callers_per_accessor=0,
+        ))
+
+        writer = trace["writers"][0]
+        caller = writer["callers"][0]
+        assert trace["variables"][0]["source_context"] == "production"
+        assert writer["source_context"] == "production"
+        assert caller["source_context"] == "production"
+        assert parsed == []
+
     def test_paths_filter_research_paths(self, tmp_path, tmp_db):
         import mcp_server
 
