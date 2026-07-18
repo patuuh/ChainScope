@@ -58,7 +58,9 @@ class TestIndexing:
         assert "max_per_category=25" in help_payload["scanner_tools"]["cs_defi"]
         assert "max_per_category=25" in help_payload["scanner_tools"]["cs_unsafe"]
         assert inspect.signature(mcp_server.cs_cross).parameters["max_results"].default == 50
+        assert inspect.signature(mcp_server.cs_cross).parameters["include_node_ids"].default is False
         assert "max_results=50" in help_payload["exploration_tools"]["cs_cross"]
+        assert "include_node_ids=true" in help_payload["exploration_tools"]["cs_cross"]
         assert inspect.signature(mcp_server.cs_lookup).parameters["max_metadata_bytes"].default == 4096
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50
@@ -3315,14 +3317,25 @@ class TestIndexing:
             )
 
         capped = json.loads(mcp_server.cs_cross(db=tmp_db, max_results=2))
+        with_ids = json.loads(mcp_server.cs_cross(
+            db=tmp_db,
+            max_results=2,
+            include_node_ids=True,
+        ))
         uncapped = json.loads(mcp_server.cs_cross(db=tmp_db, max_results=0))
 
         assert capped["total"] == 5
         assert capped["shown"] == 2
         assert capped["truncated"] is True
         assert capped["max_results"] == 2
+        assert capped["include_node_ids"] is False
         assert len(capped["calls"]) == 2
+        assert "source" not in capped["calls"][0]
+        assert "target" not in capped["calls"][0]
         assert "max_results=0" in capped["_warning"]
+        assert with_ids["include_node_ids"] is True
+        assert with_ids["calls"][0]["source"] == "Vault.sol::Vault.call0()"
+        assert with_ids["calls"][0]["target"] == "External0.doThing()"
 
         assert uncapped["total"] == 5
         assert uncapped["shown"] == 5
