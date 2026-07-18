@@ -4246,10 +4246,10 @@ def cs_lookup(
             callees, callees_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start,
                        n.line_end, n.signature, n.metadata, e.attributes
-                FROM edges e JOIN nodes n ON e.target = n.id
+                FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'calls'
             """, (node_id,), (
-                "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
                 "WHERE e.source = ? AND e.relation = 'calls'"
             ))
             _set_relation("callees", callees, callees_summary)
@@ -4259,20 +4259,20 @@ def cs_lookup(
                 for callee in info["callees"]:
                     callee["callees"], callee["callees_summary"] = _collect_relation("""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
-                        FROM edges e JOIN nodes n ON e.target = n.id
+                        FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
                         WHERE e.source = ? AND e.relation = 'calls'
                     """, (callee["id"],), (
-                        "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                        "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
                         "WHERE e.source = ? AND e.relation = 'calls'"
                     ))
 
             # State reads
             state_reads, state_reads_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.metadata
-                FROM edges e JOIN nodes n ON e.target = n.id
+                FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'reads_state'
             """, (node_id,), (
-                "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
                 "WHERE e.source = ? AND e.relation = 'reads_state'"
             ))
             _set_relation("state_reads", state_reads, state_reads_summary)
@@ -4280,10 +4280,10 @@ def cs_lookup(
             # State writes
             state_writes, state_writes_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.metadata
-                FROM edges e JOIN nodes n ON e.target = n.id
+                FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'writes_state'
             """, (node_id,), (
-                "SELECT COUNT(*) FROM edges e JOIN nodes n ON e.target = n.id "
+                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
                 "WHERE e.source = ? AND e.relation = 'writes_state'"
             ))
             _set_relation("state_writes", state_writes, state_writes_summary)

@@ -2898,6 +2898,7 @@ class TestIndexing:
         assert fn["_relation_summary"]["callers"] == {"total": 80, "shown": 2, "truncated": True}
         assert len(parsed) == 3
         assert any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
         assert any("WHERE e.target = ? AND e.relation = 'calls' LIMIT ?" in sql for sql in statements)
 
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
