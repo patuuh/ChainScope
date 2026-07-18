@@ -8,6 +8,7 @@ Consolidated tool set (15 tools):
 """
 
 import json
+import heapq
 import os
 import sys
 import logging
@@ -498,6 +499,26 @@ def _collect_cross_entries(entries, max_results: int) -> tuple[list[dict], dict]
         "shown": len(calls),
         "truncated": len(calls) < total,
     }
+
+
+def _keep_ranked_result(heap: list, item: dict, score: int, sequence: int, limit: int):
+    if limit <= 0:
+        return
+    ranked = (score, -sequence, item)
+    if len(heap) < limit:
+        heapq.heappush(heap, ranked)
+    elif ranked > heap[0]:
+        heapq.heapreplace(heap, ranked)
+
+
+def _ranked_results(heap: list) -> list[dict]:
+    return [
+        item
+        for _score, _neg_sequence, item in sorted(
+            heap,
+            key=lambda entry: (-entry[0], -entry[1]),
+        )
+    ]
 
 
 def _load_build_info(conn) -> object | None:
@@ -1734,6 +1755,9 @@ def cs_hotspots(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
+    if top < 0:
+        top = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
@@ -1745,7 +1769,7 @@ def cs_hotspots(
         rows = conn.execute("""
             SELECT id, label, file, visibility, signature, line_start, metadata
             FROM nodes WHERE type = 'function'
-        """).fetchall()
+        """)
 
         write_map = {
             r["source"]: r["cnt"]
@@ -1767,7 +1791,12 @@ def cs_hotspots(
             """).fetchall()
         }
 
-        scored = []
+        total_scored = 0
+        critical = 0
+        high = 0
+        medium = 0
+        top_heap: list[tuple[int, int, dict]] = []
+        sequence = 0
         for r in rows:
             if r["label"] in ("constructor", "fallback", "receive"):
                 continue
@@ -1785,7 +1814,15 @@ def cs_hotspots(
             score, reasons = _score_function(r, meta, writes, ext_calls, guards)
 
             if score >= 3:
-                scored.append({
+                total_scored += 1
+                if score >= 8:
+                    critical += 1
+                elif score >= 5:
+                    high += 1
+                else:
+                    medium += 1
+
+                _keep_ranked_result(top_heap, {
                     "function": r["label"],
                     "file": r["file"],
                     "line": r["line_start"],
@@ -1793,20 +1830,15 @@ def cs_hotspots(
                     "source_context": meta.get("source_context", "production"),
                     "score": score,
                     "reasons": reasons,
-                })
+                }, score, sequence, top)
+                sequence += 1
 
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        result = scored[:top]
-
-        # Severity distribution
-        critical = sum(1 for s in scored if s["score"] >= 8)
-        high = sum(1 for s in scored if 5 <= s["score"] < 8)
-        medium = sum(1 for s in scored if 3 <= s["score"] < 5)
+        result = _ranked_results(top_heap)
 
         return json.dumps({
             "hotspots": result,
             "_summary": {
-                "total_scored": len(scored),
+                "total_scored": total_scored,
                 "critical_8plus": critical,
                 "high_5to7": high,
                 "medium_3to4": medium,

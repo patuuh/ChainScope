@@ -1153,6 +1153,57 @@ class TestIndexing:
         assert hotspots["_summary"]["top_shown"] == 25
         assert len(statements) == 4
 
+    def test_hotspots_retains_only_top_results_during_scan(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(40):
+            func_id = f"Vault.sol::Vault.entry{i}()"
+            state_id = f"Vault.sol::Vault.total{i}"
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=state_id,
+                label=f"total{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+            db.insert_edge(
+                func_id,
+                f"Vault.sol::_unresolved::external{i}",
+                "calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+
+        real_heappush = mcp_server.heapq.heappush
+        real_heapreplace = mcp_server.heapq.heapreplace
+        heap_sizes = []
+
+        def tracking_heappush(heap, item):
+            real_heappush(heap, item)
+            heap_sizes.append(len(heap))
+
+        def tracking_heapreplace(heap, item):
+            result = real_heapreplace(heap, item)
+            heap_sizes.append(len(heap))
+            return result
+
+        monkeypatch.setattr(mcp_server.heapq, "heappush", tracking_heappush)
+        monkeypatch.setattr(mcp_server.heapq, "heapreplace", tracking_heapreplace)
+
+        hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=3))
+
+        assert hotspots["_summary"]["total_scored"] == 40
+        assert hotspots["_summary"]["top_shown"] == 3
+        assert [item["function"] for item in hotspots["hotspots"]] == ["entry0", "entry1", "entry2"]
+        assert max(heap_sizes) == 3
+
     def test_lookup_query_connection_falls_back_to_immutable(self, tmp_db, monkeypatch):
         import mcp_server
 
