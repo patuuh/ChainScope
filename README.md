@@ -269,9 +269,10 @@ state caps to `0` when you intentionally need every transition.
 
 For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
-choose where to inspect without dumping every trust-boundary edge. Raw
-`cs_cross` output is capped by `max_results`; set `max_results=0` only when an
-exhaustive edge list is intentional.
+choose where to inspect without dumping every trust-boundary edge. Sample calls
+are capped by `top`; source/target counters are capped by `max_counter_items`.
+Raw `cs_cross` output is capped by `max_results`; set `max_results=0` only when
+an exhaustive edge list is intentional.
 
 Broad `cs_sinks` output is capped by sink count and reachable callers per sink.
 The response still reports total sinks and type counts; set `max_results=0` or
@@ -311,6 +312,7 @@ The response still reports total sinks and type counts; set `max_results=0` or
 - `python cs_trace.py --max-matches 0 ...`
 - `python cs_trace.py --max-candidates 0 ...`
 - `python cs_cross.py --summary ...`
+- `python cs_cross.py --summary --max-counter-items 0 ...`
 - `python cs_cross.py ...`
 - `python cs_cross.py --max-results 0 ...`
 - `python cs_state.py ...`
@@ -460,4 +462,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`427 passed`
+`429 passed`

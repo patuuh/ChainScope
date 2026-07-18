@@ -16,6 +16,7 @@ def cross(
     max_results: int = typer.Option(500, "--max-results", help="Max raw calls for cs_cross output (0 = all)"),
     summary: bool = typer.Option(False, "--summary", help="Show bounded cross-boundary summary"),
     top: int = typer.Option(50, "--top", help="Max sample calls for --summary"),
+    max_counter_items: int = typer.Option(10, "--max-counter-items", help="Max source/target counters for --summary (0 = all)"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -28,6 +29,7 @@ def cross(
             db=db,
             from_func=from_func or "",
             top=top,
+            max_counter_items=max_counter_items,
             exclude_research=exclude_research,
         ))
     else:
@@ -58,6 +60,9 @@ def cross(
             typer.echo("Top source files:")
             for item in result["top_source_files"]:
                 typer.echo(f"  {item['file'] if 'file' in item else item['name']}: {item['calls']}")
+            counter_summary = result.get("counter_summary", {})
+            if counter_summary.get("truncated"):
+                typer.echo("Counters capped; increase --max-counter-items for more.")
         if result.get("calls"):
             typer.echo("Sample calls:")
             for call in result["calls"]:

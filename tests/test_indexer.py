@@ -548,6 +548,39 @@ class TestIndexing:
         raw_cross = json.loads(mcp_server.cs_cross(db=tmp_db))
         assert {item["source_label"] for item in raw_cross["calls"]} == {"call0", "call1", "call2", "call3", "call4", "run"}
 
+    def test_cross_summary_caps_counter_sections_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.call()",
+                label=f"call{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+            )
+            db.insert_edge(
+                source=f"Vault{i}.sol::Vault{i}.call()",
+                target=f"External{i}.doThing()",
+                relation="calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+
+        capped = json.loads(mcp_server.cs_cross_summary(db=tmp_db, top=2, max_counter_items=2))
+        uncapped = json.loads(mcp_server.cs_cross_summary(db=tmp_db, top=2, max_counter_items=0))
+
+        assert len(capped["top_source_files"]) == 2
+        assert len(capped["top_targets"]) == 2
+        assert capped["counter_summary"]["top_source_files"] == {"total": 5, "shown": 2, "truncated": True}
+        assert capped["counter_summary"]["top_targets"] == {"total": 5, "shown": 2, "truncated": True}
+        assert capped["counter_summary"]["truncated"] is True
+        assert "max_counter_items=0" in capped["_warnings"][0]
+
+        assert len(uncapped["top_source_files"]) == 5
+        assert len(uncapped["top_targets"]) == 5
+        assert uncapped["counter_summary"]["truncated"] is False
+
     def test_cross_caps_raw_output_for_llm_context(self, tmp_db):
         import mcp_server
 

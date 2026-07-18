@@ -388,8 +388,9 @@ def _cap_profile_output(profile: dict, max_output_items: int) -> dict:
     return profile
 
 
-def _summarize_cross_entries(entries, top: int) -> dict:
+def _summarize_cross_entries(entries, top: int, max_counter_items: int = 10) -> dict:
     top = max(top, 0)
+    max_counter_items = max(max_counter_items, 0)
     total = 0
     attr_counts: dict[str, int] = {}
     context_counts: dict[str, int] = {}
@@ -413,14 +414,29 @@ def _summarize_cross_entries(entries, top: int) -> dict:
         if len(samples) < top:
             samples.append(compact)
 
+    top_source_files, source_files_summary = _cap_items(
+        _top_counter(source_file_counts, len(source_file_counts)),
+        max_counter_items,
+    )
+    top_targets, targets_summary = _cap_items(
+        _top_counter(target_counts, len(target_counts)),
+        max_counter_items,
+    )
+
     return {
         "total": total,
         "shown": len(samples),
         "truncated": total > len(samples),
         "by_attribute": dict(sorted(attr_counts.items(), key=lambda item: (-item[1], item[0]))),
         "by_source_context": dict(sorted(context_counts.items(), key=lambda item: (-item[1], item[0]))),
-        "top_source_files": _top_counter(source_file_counts, 10),
-        "top_targets": _top_counter(target_counts, 10),
+        "top_source_files": top_source_files,
+        "top_targets": top_targets,
+        "counter_summary": {
+            "max_counter_items": max_counter_items,
+            "top_source_files": source_files_summary,
+            "top_targets": targets_summary,
+            "truncated": source_files_summary["truncated"] or targets_summary["truncated"],
+        },
         "calls": samples,
     }
 
@@ -695,7 +711,7 @@ def cs_help() -> str:
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches and candidates by max_candidates; use 0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; use max_results=0 for exhaustive output.",
-            "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
+            "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
@@ -3218,6 +3234,7 @@ def cs_cross_summary(
     db: str = "",
     from_func: str = "",
     top: int = 50,
+    max_counter_items: int = 10,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
 ) -> str:
@@ -3231,9 +3248,13 @@ def cs_cross_summary(
         db: Database path (default: graph.db)
         from_func: Optional function to trace before summarizing trust-boundary calls
         top: Maximum sample calls to include
+        max_counter_items: Maximum top source files/targets to include (0 disables)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
+    if max_counter_items < 0:
+        max_counter_items = 0
+
     db_path = _resolve_db(db)
     try:
         if from_func:
@@ -3248,11 +3269,15 @@ def cs_cross_summary(
                 cross_result["tool"] = "cs_cross_summary"
                 return json.dumps(cross_result, indent=2)
             entries = cross_result.get("calls", []) if isinstance(cross_result, dict) else cross_result
-            summary = _summarize_cross_entries(entries, top)
+            summary = _summarize_cross_entries(entries, top, max_counter_items)
         else:
             conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
             try:
-                summary = _summarize_cross_entries(_iter_cross_call_rows(conn, exclude_research), top)
+                summary = _summarize_cross_entries(
+                    _iter_cross_call_rows(conn, exclude_research),
+                    top,
+                    max_counter_items,
+                )
             finally:
                 conn.close()
 
@@ -3266,6 +3291,10 @@ def cs_cross_summary(
                 "Use direct source review on the top source files before treating this as a finding.",
             ],
         })
+        if summary.get("counter_summary", {}).get("truncated"):
+            summary.setdefault("_warnings", []).append(
+                "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
+            )
         return json.dumps(summary, indent=2, default=str)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
