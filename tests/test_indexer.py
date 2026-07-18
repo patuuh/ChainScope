@@ -867,6 +867,54 @@ class TestIndexing:
             for sql in statements
         )
 
+    def test_audit_scopes_external_call_counts_to_included_functions(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        prod_id = "prod/Vault.sol::Vault.set(uint256)"
+        script_id = "scripts/Deploy.sol::Deploy.run(uint256)"
+        for func_id, context in ((prod_id, "production"), (script_id, "script")):
+            db.insert_node(
+                id=func_id,
+                label="set" if context == "production" else "run",
+                type="function",
+                visibility="external",
+                file=func_id.split("::", 1)[0],
+                metadata=json.dumps({"source_context": context}),
+            )
+            db.insert_edge(
+                func_id,
+                f"{func_id}::_unresolved",
+                "calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+            db.insert_node(
+                id=f"{func_id}::total",
+                label="total",
+                type="state_var",
+                file=func_id.split("::", 1)[0],
+                metadata=json.dumps({"source_context": context}),
+            )
+            db.insert_edge(func_id, f"{func_id}::total", "writes_state")
+
+        real_external_counts = mcp_server._external_call_counts
+        calls = []
+
+        def tracking_external_counts(conn, include_cpi=False, source_ids=None):
+            calls.append({
+                "include_cpi": include_cpi,
+                "source_ids": set(source_ids or ()),
+            })
+            return real_external_counts(conn, include_cpi=include_cpi, source_ids=source_ids)
+
+        monkeypatch.setattr(mcp_server, "_external_call_counts", tracking_external_counts)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10, exclude_research=True))
+
+        assert calls == [{"include_cpi": True, "source_ids": {prod_id}}]
+        assert audit["hotspot_summary"]["total_scored"] == 1
+        assert audit["critical_hotspots"][0]["function"] == "set"
+
     def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
         import mcp_server
 

@@ -1828,7 +1828,11 @@ def cs_audit(
             if r["label"]:
                 guard_labels_by_target.setdefault(r["target"], []).append(r["label"])
 
-        ext_call_map = _external_call_counts(conn, include_cpi=True)
+        ext_call_map = _external_call_counts(
+            conn,
+            include_cpi=True,
+            source_ids=set(func_meta_cache),
+        )
 
         adj: dict[str, list[str]] = {}
         call_rev_adj: dict[str, list[str]] = {}
