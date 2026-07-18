@@ -673,10 +673,19 @@ def _ranked_results(heap: list) -> list[dict]:
 def _keep_sorted_result(buffer: list, item: dict, sort_key, limit: int):
     if limit <= 0:
         return
-    buffer.append((sort_key, item))
-    if len(buffer) > limit:
-        buffer.sort(key=lambda entry: entry[0])
-        del buffer[limit:]
+    entry = (sort_key, item)
+    if len(buffer) < limit:
+        buffer.append(entry)
+        return
+
+    worst_index = 0
+    worst_key = buffer[0][0]
+    for index, (existing_key, _existing_item) in enumerate(buffer[1:], start=1):
+        if existing_key > worst_key:
+            worst_index = index
+            worst_key = existing_key
+    if sort_key < worst_key:
+        buffer[worst_index] = entry
 
 
 def _sorted_results(buffer: list) -> list[dict]:

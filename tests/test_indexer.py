@@ -590,6 +590,20 @@ class TestIndexing:
         assert max(taint_sizes) == 2
         assert max(silent_sizes) == 2
 
+    def test_keep_sorted_result_does_not_sort_on_each_overflow(self):
+        import mcp_server
+
+        class NoSortList(list):
+            def sort(self, *args, **kwargs):
+                raise AssertionError("_keep_sorted_result should not sort the retained buffer")
+
+        buffer = NoSortList()
+        for key in (5, 1, 3, 2, 4):
+            mcp_server._keep_sorted_result(buffer, {"key": key}, (key,), 3)
+
+        assert len(buffer) == 3
+        assert [item["key"] for item in mcp_server._sorted_results(buffer)] == [1, 2, 3]
+
     def test_audit_taint_summary_reports_full_total(self, tmp_db):
         import mcp_server
 
