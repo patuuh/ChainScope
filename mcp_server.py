@@ -3496,8 +3496,7 @@ def cs_sinks(
                 summary = _section_summary(callers_total, len(shown))
                 for caller in shown:
                     if "source_context" not in caller:
-                        meta = _load_metadata(caller.pop("_metadata_raw", None))
-                        caller["source_context"] = meta.get("source_context", "production")
+                        caller["source_context"] = _metadata_source_context(caller.pop("_metadata_raw", None))
                     else:
                         caller.pop("_metadata_raw", None)
                 return shown, summary

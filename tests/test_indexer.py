@@ -2772,6 +2772,53 @@ class TestIndexing:
         assert len(result["sinks"][0]["callers"]) == 2
         assert len(parsed) == 3
 
+    def test_sinks_skips_untagged_caller_context_parses(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        sink_id = "Vault.sol::Vault.transfer()"
+        db.insert_node(
+            id=sink_id,
+            label="transfer",
+            type="function",
+            visibility="public",
+            file="Vault.sol",
+            metadata=json.dumps({"is_sink": True, "sink_type": "fund_transfer"}),
+        )
+        caller_metadata = json.dumps({"large": ["x"] * 20})
+        for i in range(3):
+            caller_id = f"Caller{i}.sol::Caller{i}.callTransfer()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callTransfer{i}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i}.sol",
+                metadata=caller_metadata,
+            )
+            db.insert_edge(caller_id, sink_id, "calls")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            max_callers_per_sink=0,
+        ))
+
+        callers = result["sinks"][0]["callers"]
+        assert result["sinks"][0]["caller_summary"] == {"total": 3, "shown": 3, "truncated": False}
+        assert all(caller["source_context"] == "production" for caller in callers)
+        assert caller_metadata not in parsed
+
     def test_sinks_retains_only_capped_callers(self, tmp_db, monkeypatch):
         import mcp_server
 
