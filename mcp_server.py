@@ -317,6 +317,31 @@ _KNOWN_SOURCE_CONTEXT_FRAGMENTS = tuple(
 )
 
 
+_JSON_DECODER = json.JSONDecoder()
+
+
+def _metadata_string_value(raw, key: str) -> str | None:
+    if not isinstance(raw, str) or not key:
+        return None
+    needle = json.dumps(key)
+    pos = raw.find(needle)
+    while pos >= 0:
+        colon = raw.find(":", pos + len(needle))
+        if colon < 0:
+            return None
+        value_pos = colon + 1
+        while value_pos < len(raw) and raw[value_pos] in " \t\r\n":
+            value_pos += 1
+        try:
+            value, _end = _JSON_DECODER.raw_decode(raw[value_pos:])
+        except ValueError:
+            return None
+        if isinstance(value, str):
+            return value
+        pos = raw.find(needle, pos + len(needle))
+    return None
+
+
 def _metadata_source_context(raw) -> str:
     if isinstance(raw, dict):
         return raw.get("source_context", "production")
@@ -325,6 +350,9 @@ def _metadata_source_context(raw) -> str:
     for context, compact, spaced in _KNOWN_SOURCE_CONTEXT_FRAGMENTS:
         if compact in raw or spaced in raw:
             return context
+    source_context = _metadata_string_value(raw, "source_context")
+    if source_context is not None:
+        return source_context
     return _load_metadata(raw).get("source_context", "production")
 
 
@@ -897,8 +925,7 @@ def _source_context_counts(conn, total_nodes: int) -> dict[str, int]:
             f"SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'{unknown_filter}",
             tuple(known_params),
         ):
-            meta = _load_metadata(row["metadata"])
-            source_context = meta.get("source_context", "production")
+            source_context = _metadata_source_context(row["metadata"])
             counts[source_context] = counts.get(source_context, 0) + 1
     implicit_production = total_nodes - explicit_total
     if implicit_production > 0:
@@ -1745,6 +1772,11 @@ def _is_research_metadata_raw(raw) -> bool:
     if not raw or ('"source_context"' not in raw and '"source_kind"' not in raw):
         return False
     if '"source_kind"' not in raw:
+        return _metadata_source_context(raw) not in ("", "production")
+    source_kind = _metadata_string_value(raw, "source_kind")
+    if source_kind is not None:
+        if source_kind == "research":
+            return True
         return _metadata_source_context(raw) not in ("", "production")
     return _is_research_meta(_load_metadata(raw))
 

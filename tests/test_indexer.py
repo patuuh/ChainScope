@@ -319,26 +319,32 @@ class TestIndexing:
             "script": 1,
             "custom": 1,
         }
-        assert parsed == [custom_metadata]
+        assert parsed == []
         assert sum("SUM(CASE WHEN" in sql and "source_context" in sql for sql in statements) == 1
         assert not any("SELECT COUNT(*) FROM nodes WHERE 1=1" in sql for sql in statements)
         assert any("AND NOT" in sql and "SELECT metadata FROM nodes" in sql for sql in statements)
 
-    def test_known_source_context_helpers_avoid_json_parse(self, monkeypatch):
+    def test_source_context_helpers_avoid_json_parse(self, monkeypatch):
         import mcp_server
 
         def fail_load(_raw):
-            raise AssertionError("known source_context values should not require JSON parsing")
+            raise AssertionError("source_context values should not require JSON parsing")
 
         monkeypatch.setattr(mcp_server, "_load_metadata", fail_load)
 
         production = json.dumps({"source_context": "production", "large": ["x"] * 20})
         script = json.dumps({"source_context": "script", "large": ["x"] * 20})
+        custom = json.dumps({"source_context": "custom", "large": ["x"] * 20})
+        research_kind = json.dumps({"source_kind": "research", "large": ["x"] * 20})
+        prod_kind = json.dumps({"source_kind": "source", "source_context": "production", "large": ["x"] * 20})
 
         assert mcp_server._metadata_source_context(production) == "production"
         assert mcp_server._metadata_source_context(script) == "script"
+        assert mcp_server._metadata_source_context(custom) == "custom"
         assert mcp_server._is_research_metadata_raw(production) is False
         assert mcp_server._is_research_metadata_raw(script) is True
+        assert mcp_server._is_research_metadata_raw(research_kind) is True
+        assert mcp_server._is_research_metadata_raw(prod_kind) is False
 
     def test_summary_exclude_research_uses_raw_metadata_filters(self, tmp_db, monkeypatch):
         import mcp_server
@@ -3322,7 +3328,7 @@ class TestIndexing:
         assert result["total"] == 1
         assert result["sinks"][0]["caller_summary"] == {"total": 80, "shown": 2, "truncated": True}
         assert len(result["sinks"][0]["callers"]) == 2
-        assert len(parsed) == 3
+        assert len(parsed) == 1
 
     def test_sinks_exclude_research_uses_raw_context_filter(self, tmp_db, monkeypatch):
         import mcp_server
@@ -3854,7 +3860,7 @@ class TestIndexing:
         assert hotspots["_summary"]["total_scored"] == 10
         assert [item["function"] for item in hotspots["hotspots"]] == ["entry00", "entry01", "entry02"]
         assert [item["source_context"] for item in hotspots["hotspots"]] == ["custom0", "custom1", "custom2"]
-        assert parsed == [metadata_by_index[0], metadata_by_index[1], metadata_by_index[2]]
+        assert parsed == []
 
     def test_hotspots_skips_neutral_metadata_parses(self, tmp_db, monkeypatch):
         import mcp_server
@@ -4741,7 +4747,7 @@ class TestIndexing:
         assert trace["variable_matches_total"] == 12
         assert trace["candidate_summary"] == {"total": 12, "shown": 4, "truncated": True}
         assert len(trace["candidates"]) == 4
-        assert len(parsed) == 4
+        assert parsed == []
 
     def test_trace_omits_variable_metadata_by_default_for_mcp_context(self, tmp_db):
         import mcp_server
@@ -4931,7 +4937,7 @@ class TestIndexing:
         assert len(uncapped["writers"]) == 8
         assert uncapped["writers_summary"] == {"total": 8, "shown": 8, "truncated": False}
         assert "accessor_truncated" not in uncapped
-        assert len(parsed) == 13
+        assert parsed == []
 
     def test_trace_streams_accessor_and_caller_rows(self, tmp_db, monkeypatch):
         import mcp_server
@@ -5094,7 +5100,7 @@ class TestIndexing:
         assert [caller["label"] for caller in writer["callers"]] == ["callSet00", "callSet01", "callSet02"]
         assert any("SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_target_relation" in sql for sql in statements)
         assert any("ORDER BY n.file, n.id LIMIT ?" in sql for sql in statements)
-        assert len(parsed) == 3
+        assert parsed == []
 
     def test_trace_skips_untagged_source_context_parses(self, tmp_db, monkeypatch):
         import mcp_server
@@ -6205,8 +6211,7 @@ class TestIndexing:
 
         assert state["_summary"]["transitions_total"] == 100
         assert state["_summary"]["transitions_shown"] == 6
-        assert len(parsed) == 6
-        assert set(parsed) == {metadata_by_entity[0], metadata_by_entity[1]}
+        assert parsed == []
         assert all(
             item["source_context"] in {"custom0", "custom1"}
             for transitions in state["entities"].values()
