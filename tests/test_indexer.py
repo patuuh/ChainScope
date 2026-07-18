@@ -543,6 +543,66 @@ class TestIndexing:
         assert len(uncapped_unsafe["command_execution"]) == 5
         assert uncapped_unsafe["_summary"]["truncated"] is False
 
+    def test_scanners_parse_matching_metadata_once_per_function(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(4):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.swap(uint256)",
+                label=f"swap{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "timestamp_dependence": [{"line": i + 1}],
+                    "unchecked_erc20": [{"line": i + 2}],
+                    "oracle_risk": [{"line": i + 3}],
+                    "source_context": "production",
+                }),
+            )
+            db.insert_node(
+                id=f"ops{i}.py::run_cmd",
+                label=f"run_cmd_{i}",
+                type="function",
+                file=f"ops{i}.py",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "command_injection_risk": [{"line": i + 1}],
+                    "weak_crypto": [{"line": i + 2}],
+                    "dead_params": ["unused"],
+                    "language": "python",
+                    "source_context": "production",
+                }),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        defi = json.loads(mcp_server.cs_defi(db=tmp_db, category="all"))
+        assert defi["_summary"]["category_totals"] == {
+            "timestamp_dependence": 4,
+            "unchecked_erc20": 4,
+            "oracle_manipulation": 4,
+        }
+        assert len(parsed) == 4
+
+        parsed.clear()
+        unsafe = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="all"))
+        assert unsafe["_summary"]["category_totals"] == {
+            "command_execution": 4,
+            "dead_params": 4,
+            "weak_crypto": 4,
+        }
+        assert len(parsed) == 4
+
     def test_lookup_and_cross_filter_research_nodes(self, tmp_path, tmp_db):
         import mcp_server
 

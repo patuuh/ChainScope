@@ -292,6 +292,27 @@ def _cap_category_results(results: dict, max_per_category: int) -> dict[str, dic
     return truncated
 
 
+def _metadata_rows_by_key(
+    rows: list,
+    keys: list[str],
+    exclude_research: bool,
+) -> dict[str, list[tuple]]:
+    """Index node rows by metadata keys while parsing each matching row once."""
+    needles = {key: f'"{key}"' for key in keys}
+    indexed: dict[str, list[tuple]] = {key: [] for key in keys}
+    for row in rows:
+        raw = row["metadata"] or ""
+        matched = [key for key, needle in needles.items() if needle in raw]
+        if not matched:
+            continue
+        meta = _load_metadata(raw)
+        if not _include_metadata(meta, exclude_research):
+            continue
+        for key in matched:
+            indexed[key].append((row, meta))
+    return indexed
+
+
 def _section_summary(total: int, shown: int) -> dict:
     return {
         "total": total,
@@ -1816,13 +1837,26 @@ def cs_defi(
             "SELECT id, label, file, line_start, visibility, signature, metadata "
             "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
         ).fetchall()
+        metadata_rows = _metadata_rows_by_key(function_rows, [
+            "timestamp_dependence",
+            "unchecked_erc20",
+            "oracle_risk",
+            "signature_risk",
+            "precision_risk",
+            "dos_risk",
+            "frontrun_risk",
+            "unsafe_downcast",
+            "flash_loan_risk",
+            "slippage_risk",
+            "erc_callback_risk",
+            "anchor_risks",
+            "cpi_reentrancy_risk",
+            "transfer_sinks",
+            "cross_contract_calls",
+        ], exclude_research)
 
-        def _function_rows_with(metadata_key: str) -> list:
-            needle = f'"{metadata_key}"'
-            return [r for r in function_rows if needle in (r["metadata"] or "")]
-
-        def _include(meta: dict) -> bool:
-            return not (exclude_research and _is_research_meta(meta))
+        def _function_rows_with(metadata_key: str) -> list[tuple]:
+            return metadata_rows.get(metadata_key, [])
 
         def _ctx(meta: dict) -> str:
             return meta.get("source_context", "production")
@@ -1831,10 +1865,7 @@ def cs_defi(
         if cat in ("all", "timestamp"):
             rows = _function_rows_with("timestamp_dependence")
             ts_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 ts_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("timestamp_dependence", []),
@@ -1847,10 +1878,7 @@ def cs_defi(
         if cat in ("all", "erc20"):
             rows = _function_rows_with("unchecked_erc20")
             erc_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 erc_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "unchecked_calls": meta.get("unchecked_erc20", []),
@@ -1863,10 +1891,7 @@ def cs_defi(
         if cat in ("all", "oracle"):
             rows = _function_rows_with("oracle_risk")
             oracle_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 oracle_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("oracle_risk", []),
@@ -1879,10 +1904,7 @@ def cs_defi(
         if cat in ("all", "signature"):
             rows = _function_rows_with("signature_risk")
             sig_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 sig_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("signature_risk", []),
@@ -1895,10 +1917,7 @@ def cs_defi(
         if cat in ("all", "precision"):
             rows = _function_rows_with("precision_risk")
             prec_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 prec_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("precision_risk", []),
@@ -1911,10 +1930,7 @@ def cs_defi(
         if cat in ("all", "dos"):
             rows = _function_rows_with("dos_risk")
             dos_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 dos_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("dos_risk", []),
@@ -1927,10 +1943,7 @@ def cs_defi(
         if cat in ("all", "frontrun"):
             rows = _function_rows_with("frontrun_risk")
             fr_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 fr_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("frontrun_risk", []),
@@ -1943,10 +1956,7 @@ def cs_defi(
         if cat in ("all", "downcast"):
             rows = _function_rows_with("unsafe_downcast")
             dc_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 dc_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "casts": meta.get("unsafe_downcast", []),
@@ -1959,10 +1969,7 @@ def cs_defi(
         if cat in ("all", "flashloan"):
             rows = _function_rows_with("flash_loan_risk")
             fl_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 fl_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("flash_loan_risk", []),
@@ -1975,10 +1982,7 @@ def cs_defi(
         if cat in ("all", "slippage"):
             rows = _function_rows_with("slippage_risk")
             sl_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 sl_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("slippage_risk", []),
@@ -1991,10 +1995,7 @@ def cs_defi(
         if cat in ("all", "callback"):
             rows = _function_rows_with("erc_callback_risk")
             cb_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 cb_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("erc_callback_risk", []),
@@ -2007,10 +2008,7 @@ def cs_defi(
         if cat in ("all", "anchor"):
             rows = _function_rows_with("anchor_risks")
             anch_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 anch_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "risks": meta.get("anchor_risks", []),
@@ -2023,10 +2021,7 @@ def cs_defi(
         if cat in ("all", "cpi_reentrancy"):
             rows = _function_rows_with("cpi_reentrancy_risk")
             cpi_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 cpi_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"],
@@ -2039,10 +2034,7 @@ def cs_defi(
         if cat in ("all", "transfer"):
             rows = _function_rows_with("transfer_sinks")
             transfer_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 transfer_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "sinks": meta.get("transfer_sinks", []),
@@ -2055,10 +2047,7 @@ def cs_defi(
         if cat in ("all", "crosscontract"):
             rows = _function_rows_with("cross_contract_calls")
             cc_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 cc_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "calls": meta.get("cross_contract_calls", []),
@@ -2137,10 +2126,28 @@ def cs_unsafe(
             "SELECT id, label, file, line_start, visibility, signature, metadata "
             "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
         ).fetchall()
+        metadata_rows = _metadata_rows_by_key(function_rows, [
+            "unsafe_blocks",
+            "panic_paths",
+            "potential_race",
+            "no_input_validation",
+            "wrapping_arithmetic",
+            "unsafe_type_assertions",
+            "sql_injection_risk",
+            "deserialization_sinks",
+            "reflection_usage",
+            "injection_sinks",
+            "weak_crypto",
+            "command_injection_risk",
+            "private_key_material",
+            "swallowed_exceptions",
+            "resource_leaks",
+            "unsafe_downcast",
+            "dead_params",
+        ], exclude_research)
 
-        def _function_rows_with(metadata_key: str) -> list:
-            needle = f'"{metadata_key}"'
-            return [r for r in function_rows if needle in (r["metadata"] or "")]
+        def _function_rows_with(metadata_key: str) -> list[tuple]:
+            return metadata_rows.get(metadata_key, [])
 
         def _include(meta: dict) -> bool:
             return not (exclude_research and _is_research_meta(meta))
@@ -2152,10 +2159,7 @@ def cs_unsafe(
         if cat in ("all", "unsafe"):
             rows = _function_rows_with("unsafe_blocks")
             unsafe_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 unsafe_fns.append({
                     "function": r["label"], "file": r["file"],
                     "unsafe_blocks": meta.get("unsafe_blocks", 0),
@@ -2170,10 +2174,7 @@ def cs_unsafe(
         if cat in ("all", "panic"):
             rows = _function_rows_with("panic_paths")
             panic_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 panic_fns.append({
                     "function": r["label"], "file": r["file"],
                     "panic_calls": meta.get("panic_paths", []),
@@ -2186,10 +2187,7 @@ def cs_unsafe(
         if cat in ("all", "race"):
             rows = _function_rows_with("potential_race")
             races = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 race_info = meta.get("potential_race", {})
                 races.append({
                     "function": r["label"], "file": r["file"],
@@ -2219,10 +2217,7 @@ def cs_unsafe(
         if cat in ("all", "validation"):
             rows = _function_rows_with("no_input_validation")
             no_val = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 if meta.get("no_input_validation"):
                     no_val.append({
                         "function": r["label"], "file": r["file"],
@@ -2236,10 +2231,7 @@ def cs_unsafe(
         if cat in ("all", "unsafe"):
             rows = _function_rows_with("wrapping_arithmetic")
             wrap_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 wrap_fns.append({
                     "function": r["label"], "file": r["file"],
                     "operations": meta.get("wrapping_arithmetic", []),
@@ -2252,10 +2244,7 @@ def cs_unsafe(
         if cat in ("all", "go", "type_assert"):
             rows = _function_rows_with("unsafe_type_assertions")
             ta_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 ta_fns.append({
                     "function": r["label"], "file": r["file"],
                     "assertions": meta.get("unsafe_type_assertions", []),
@@ -2268,10 +2257,7 @@ def cs_unsafe(
         if cat in ("all", "go", "sql"):
             rows = _function_rows_with("sql_injection_risk")
             sql_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 sql_fns.append({
                     "function": r["label"], "file": r["file"],
                     "risks": meta.get("sql_injection_risk", []),
@@ -2284,10 +2270,7 @@ def cs_unsafe(
         if cat in ("all", "java", "python", "js", "deser"):
             rows = _function_rows_with("deserialization_sinks")
             deser_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 deser_fns.append({
                     "function": r["label"], "file": r["file"],
                     "sinks": meta.get("deserialization_sinks", []),
@@ -2300,10 +2283,7 @@ def cs_unsafe(
         if cat in ("all", "java", "reflection"):
             rows = _function_rows_with("reflection_usage")
             refl_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 refl_fns.append({
                     "function": r["label"], "file": r["file"],
                     "operations": meta.get("reflection_usage", []),
@@ -2316,10 +2296,7 @@ def cs_unsafe(
         if cat in ("all", "java", "injection"):
             rows = _function_rows_with("injection_sinks")
             inj_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 inj_fns.append({
                     "function": r["label"], "file": r["file"],
                     "sinks": meta.get("injection_sinks", []),
@@ -2332,10 +2309,7 @@ def cs_unsafe(
         if cat in ("all", "java", "python", "js", "crypto"):
             rows = _function_rows_with("weak_crypto")
             crypto_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 crypto_fns.append({
                     "function": r["label"], "file": r["file"],
                     "patterns": meta.get("weak_crypto", []),
@@ -2348,10 +2322,7 @@ def cs_unsafe(
         if cat in ("all", "python", "command"):
             rows = _function_rows_with("command_injection_risk")
             cmd_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 cmd_fns.append({
                     "function": r["label"], "file": r["file"],
                     "risks": meta.get("command_injection_risk", []),
@@ -2365,10 +2336,7 @@ def cs_unsafe(
         if cat in ("all", "python", "js", "keys"):
             rows = _function_rows_with("private_key_material")
             key_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 key_fns.append({
                     "function": r["label"], "file": r["file"],
                     "language": meta.get("language", ""),
@@ -2381,10 +2349,7 @@ def cs_unsafe(
         if cat in ("all", "java"):
             rows = _function_rows_with("swallowed_exceptions")
             swallow_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 if meta.get("swallowed_exceptions", 0) > 0:
                     swallow_fns.append({
                         "function": r["label"], "file": r["file"],
@@ -2398,10 +2363,7 @@ def cs_unsafe(
         if cat in ("all", "java"):
             rows = _function_rows_with("resource_leaks")
             leak_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 leak_fns.append({
                     "function": r["label"], "file": r["file"],
                     "types": meta.get("resource_leaks", []),
@@ -2414,10 +2376,7 @@ def cs_unsafe(
         if cat in ("all", "downcast"):
             rows = _function_rows_with("unsafe_downcast")
             dc_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 dc_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "casts": meta.get("unsafe_downcast", []),
@@ -2430,10 +2389,7 @@ def cs_unsafe(
         if cat in ("all", "dead_params"):
             rows = _function_rows_with("dead_params")
             dp_fns = []
-            for r in rows:
-                meta = _load_metadata(r["metadata"])
-                if not _include(meta):
-                    continue
+            for r, meta in rows:
                 dp_fns.append({
                     "function": r["label"], "file": r["file"],
                     "line": r["line_start"], "visibility": r["visibility"],
