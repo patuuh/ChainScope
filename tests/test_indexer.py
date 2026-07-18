@@ -1214,10 +1214,18 @@ class TestIndexing:
         snapshots = []
 
         def tracking_index(rows, keys, exclude_research, max_per_key=0):
-            indexed, totals = real_index(rows, keys, exclude_research, max_per_key)
+            seen_labels = []
+
+            def tracked_rows():
+                for row in rows:
+                    seen_labels.append(row["label"])
+                    yield row
+
+            indexed, totals = real_index(tracked_rows(), keys, exclude_research, max_per_key)
             snapshots.append({
                 "keys": keys,
                 "max_per_key": max_per_key,
+                "seen_labels": seen_labels,
                 "sizes": {key: len(values) for key, values in indexed.items() if values},
                 "totals": {key: total for key, total in totals.items() if total},
             })
@@ -1232,10 +1240,14 @@ class TestIndexing:
         assert unsafe["_summary"]["category_totals"] == {"command_execution": 12}
         assert snapshots[0]["keys"] == ["timestamp_dependence"]
         assert snapshots[0]["max_per_key"] == 3
+        assert len(snapshots[0]["seen_labels"]) == 12
+        assert all(label.startswith("checkDeadline") for label in snapshots[0]["seen_labels"])
         assert snapshots[0]["sizes"] == {"timestamp_dependence": 3}
         assert snapshots[0]["totals"] == {"timestamp_dependence": 12}
         assert snapshots[1]["keys"] == ["command_injection_risk"]
         assert snapshots[1]["max_per_key"] == 3
+        assert len(snapshots[1]["seen_labels"]) == 12
+        assert all(label.startswith("run_cmd_") for label in snapshots[1]["seen_labels"])
         assert snapshots[1]["sizes"] == {"command_injection_risk": 3}
         assert snapshots[1]["totals"] == {"command_injection_risk": 12}
 
@@ -1280,6 +1292,11 @@ class TestIndexing:
         class FakeConn:
             def execute(self, sql, params=()):
                 assert "FROM nodes WHERE type = 'function'" in sql
+                assert "metadata LIKE ?" in sql
+                assert params in (
+                    ('%"timestamp_dependence"%',),
+                    ('%"command_injection_risk"%',),
+                )
                 return StreamingRows()
 
             def close(self):

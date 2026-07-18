@@ -568,6 +568,15 @@ def _selected_metadata_keys(
     return category_keys.get(category, [])
 
 
+def _metadata_key_filter(keys: list[str]) -> tuple[str, tuple[str, ...]]:
+    """Return a SQL predicate for rows that may contain any metadata key."""
+    if not keys:
+        return "", ()
+    clauses = " OR ".join("metadata LIKE ?" for _ in keys)
+    params = tuple(f'%"{key}"%' for key in keys)
+    return f" AND ({clauses})", params
+
+
 def _section_summary(total: int, shown: int) -> dict:
     return {
         "total": total,
@@ -2433,9 +2442,12 @@ def cs_defi(
             "crosscontract": ["cross_contract_calls"],
         })
         if selected_keys:
+            metadata_filter, metadata_params = _metadata_key_filter(selected_keys)
             function_rows = conn.execute(
                 "SELECT id, label, file, line_start, visibility, signature, metadata "
-                "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
+                f"FROM nodes WHERE type = 'function'{metadata_filter} "
+                "ORDER BY file, line_start, id",
+                metadata_params,
             )
             metadata_rows, metadata_totals = _metadata_rows_by_key(
                 function_rows,
@@ -2761,9 +2773,12 @@ def cs_unsafe(
             "dead_params": ["dead_params"],
         })
         if selected_keys:
+            metadata_filter, metadata_params = _metadata_key_filter(selected_keys)
             function_rows = conn.execute(
                 "SELECT id, label, file, line_start, visibility, signature, metadata "
-                "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
+                f"FROM nodes WHERE type = 'function'{metadata_filter} "
+                "ORDER BY file, line_start, id",
+                metadata_params,
             )
             metadata_rows, metadata_totals = _metadata_rows_by_key(
                 function_rows,
