@@ -303,6 +303,14 @@ def _include_metadata(meta: dict, exclude_research: bool) -> bool:
     return not (exclude_research and _is_research_meta(meta))
 
 
+def _metadata_source_context(raw) -> str:
+    if isinstance(raw, dict):
+        return raw.get("source_context", "production")
+    if not raw or '"source_context"' not in raw:
+        return "production"
+    return _load_metadata(raw).get("source_context", "production")
+
+
 TRAVERSAL_RELATIONS = ("calls", "flows_to", "inherits")
 SQLITE_IN_CHUNK_SIZE = 900
 
@@ -4746,10 +4754,14 @@ def cs_lookup(
 
             def _relation_item(row) -> dict | None:
                 item = dict(row)
-                meta = _load_metadata(item.pop("metadata", None))
-                if not _include_metadata(meta, exclude_research):
-                    return None
-                item["source_context"] = meta.get("source_context", "production")
+                raw_meta = item.pop("metadata", None)
+                if exclude_research:
+                    meta = _load_metadata(raw_meta)
+                    if not _include_metadata(meta, exclude_research):
+                        return None
+                    item["source_context"] = meta.get("source_context", "production")
+                else:
+                    item["source_context"] = _metadata_source_context(raw_meta)
                 return item
 
             def _collect_relation(sql: str, params: tuple, count_sql: str) -> tuple[list, dict]:

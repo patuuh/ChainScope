@@ -3518,6 +3518,7 @@ class TestIndexing:
             type="function",
             visibility="external",
             file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
         )
         for i in range(80):
             caller_id = f"Caller{i}.sol::Caller{i}.callPing()"
@@ -3579,7 +3580,7 @@ class TestIndexing:
         fn = lookup["functions"][0]
         assert len(fn["callers"]) == 2
         assert fn["_relation_summary"]["callers"] == {"total": 80, "shown": 2, "truncated": True}
-        assert len(parsed) == 3
+        assert len(parsed) == 1
         assert any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
         assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
         assert any("WHERE e.target = ? AND e.relation = 'calls' LIMIT ?" in sql for sql in statements)
@@ -3593,6 +3594,60 @@ class TestIndexing:
             or sql.startswith("SELECT COUNT(*) FROM edges e JOIN")
             for sql in statements
         )
+
+    def test_lookup_parses_only_tagged_relation_contexts(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.ping()",
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.prodCaller()",
+            label="prodCaller",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({}),
+        )
+        db.insert_node(
+            id="scripts/Deploy.sol::Deploy.run()",
+            label="run",
+            type="function",
+            visibility="external",
+            file="scripts/Deploy.sol",
+            metadata=json.dumps({"source_context": "script", "large": ["x"] * 20}),
+        )
+        db.insert_edge("Vault.sol::Vault.prodCaller()", "Vault.sol::Vault.ping()", "calls")
+        db.insert_edge("scripts/Deploy.sol::Deploy.run()", "Vault.sol::Vault.ping()", "calls")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        lookup = json.loads(mcp_server.cs_lookup(
+            name="ping",
+            db=tmp_db,
+            max_relation_items=10,
+        ))
+
+        callers = {
+            caller["label"]: caller["source_context"]
+            for caller in lookup["functions"][0]["callers"]
+        }
+        assert callers == {"prodCaller": "production", "run": "script"}
+        assert any('"source_context": "script"' in raw for raw in parsed)
+        assert not any(raw == json.dumps({}) for raw in parsed)
 
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
