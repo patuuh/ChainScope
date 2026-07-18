@@ -57,6 +57,8 @@ class TestIndexing:
         assert inspect.signature(mcp_server.cs_unsafe).parameters["max_per_category"].default == 25
         assert "max_per_category=25" in help_payload["scanner_tools"]["cs_defi"]
         assert "max_per_category=25" in help_payload["scanner_tools"]["cs_unsafe"]
+        assert inspect.signature(mcp_server.cs_cross).parameters["max_results"].default == 50
+        assert "max_results=50" in help_payload["exploration_tools"]["cs_cross"]
         assert inspect.signature(mcp_server.cs_lookup).parameters["max_metadata_bytes"].default == 4096
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50

@@ -1606,7 +1606,7 @@ def cs_help() -> str:
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
-            "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
+            "cs_cross": "Cross-contract/module boundary calls. Raw calls default to max_results=50; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50 and callers per sink at max_callers_per_sink=10; use include_metadata and include_caller_details for verbose output.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
@@ -4524,7 +4524,7 @@ def cs_trace(
 def cs_cross(
     db: str = "",
     from_func: str = "",
-    max_results: int = 500,
+    max_results: int = 50,
     max_start_candidates: int = 20,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
@@ -4537,7 +4537,7 @@ def cs_cross(
     Args:
         db: Database path (default: graph.db)
         from_func: Trace from a specific function (empty = list all cross-contract calls)
-        max_results: Maximum raw calls returned (0 disables)
+        max_results: Maximum raw calls returned (default: 50; 0 disables)
         max_start_candidates: Maximum ambiguous from_func candidates to return (0 disables)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)

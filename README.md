@@ -289,10 +289,10 @@ choose where to inspect without dumping every trust-boundary edge. Sample calls
 are capped by `top`; source/target counters are capped by `max_counter_items`.
 `cs_cross_summary(from_func=...)` also streams the reachable boundary calls
 directly instead of expanding an exhaustive raw `cs_cross` result first.
-Raw `cs_cross` output is capped by `max_results`; ambiguous `from_func`
-candidates are capped by `max_start_candidates` and require a more qualified
-name instead of silently picking the first match. Set `max_results=0` only when
-an exhaustive edge list is intentional.
+Raw `cs_cross` output is capped by `max_results=50` by default; ambiguous
+`from_func` candidates are capped by `max_start_candidates` and require a more
+qualified name instead of silently picking the first match. Set `max_results=0`
+only when an exhaustive edge list is intentional.
 
 Broad `cs_sinks` output is capped by sink count and reachable callers per sink
 (`max_results=50`, `max_callers_per_sink=10` by default). The response still
