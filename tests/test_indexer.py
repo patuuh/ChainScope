@@ -2022,6 +2022,75 @@ class TestIndexing:
         assert result["sinks"][0]["caller_summary"] == {"total": 5, "shown": 5, "truncated": False}
         assert len(result["sinks"][0]["callers"]) == 5
 
+    def test_sinks_preloads_only_function_nodes_for_callers(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        sink_id = "Vault.sol::Vault.transfer()"
+        db.insert_node(
+            id=sink_id,
+            label="transfer",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+            }),
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.callTransfer()",
+            label="callTransfer",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge("Vault.sol::Vault.callTransfer()", sink_id, "calls")
+        for i in range(30):
+            db.insert_node(
+                id=f"Vault.sol::Vault.state{i}",
+                label=f"state{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+
+        real_open = mcp_server._open_query_connection
+        node_map_queries = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                if (
+                    "SELECT id, label, type, visibility, file, line_start, line_end, signature, metadata FROM nodes"
+                    in normalized
+                ):
+                    node_map_queries.append(normalized)
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            max_callers_per_sink=1,
+        ))
+
+        assert result["sinks"][0]["caller_summary"] == {"total": 1, "shown": 1, "truncated": False}
+        assert any("WHERE type = 'function'" in sql for sql in node_map_queries)
+        assert not any(sql.endswith("FROM nodes") for sql in node_map_queries)
+
     def test_sinks_caps_callers_before_metadata_formatting(self, tmp_db, monkeypatch):
         import mcp_server
 

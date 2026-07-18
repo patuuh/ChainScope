@@ -2843,7 +2843,7 @@ def cs_sinks(
             node_map: dict[str, dict] = {}
             for row in conn.execute(
                 "SELECT id, label, type, visibility, file, line_start, line_end, "
-                "signature, metadata FROM nodes"
+                "signature, metadata FROM nodes WHERE type = 'function'"
             ):
                 node_map[row["id"]] = {
                     "id": row["id"],
