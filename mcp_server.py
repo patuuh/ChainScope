@@ -331,8 +331,29 @@ def _is_trust_boundary_call(attrs: dict) -> bool:
     )
 
 
-def _external_call_counts(conn, include_cpi: bool = False) -> dict[str, int]:
+def _write_counts_for_sources(conn, source_ids: set[str] | None = None) -> dict[str, int]:
+    """Count writes per source, optionally skipping sources outside scope."""
+    if source_ids is not None and not source_ids:
+        return {}
+    counts: dict[str, int] = {}
+    for row in conn.execute(
+        "SELECT source FROM edges WHERE relation = 'writes_state'"
+    ):
+        source = row["source"]
+        if source_ids is not None and source not in source_ids:
+            continue
+        counts[source] = counts.get(source, 0) + 1
+    return counts
+
+
+def _external_call_counts(
+    conn,
+    include_cpi: bool = False,
+    source_ids: set[str] | None = None,
+) -> dict[str, int]:
     """Count true external calls per source without trusting JSON key presence."""
+    if source_ids is not None and not source_ids:
+        return {}
     query = (
         "SELECT source, attributes FROM edges WHERE relation = 'calls' "
         "AND (attributes LIKE '%\"unresolved\"%'"
@@ -343,14 +364,22 @@ def _external_call_counts(conn, include_cpi: bool = False) -> dict[str, int]:
 
     counts: dict[str, int] = {}
     for row in conn.execute(query):
+        source = row["source"]
+        if source_ids is not None and source not in source_ids:
+            continue
         attrs = _load_metadata(row["attributes"])
         if _is_unresolved_external_call(attrs) or (include_cpi and _attr_enabled(attrs.get("cpi"))):
-            counts[row["source"]] = counts.get(row["source"], 0) + 1
+            counts[source] = counts.get(source, 0) + 1
     return counts
 
 
-def _guard_counts_for_writable_entries(conn) -> dict[str, int]:
+def _guard_counts_for_writable_entries(
+    conn,
+    source_ids: set[str] | None = None,
+) -> dict[str, int]:
     """Count guards only for writable public/external functions."""
+    if source_ids is not None and not source_ids:
+        return {}
     guard_index = (
         " INDEXED BY idx_edges_relation_target"
         if _sqlite_index_exists(conn, "idx_edges_relation_target")
@@ -376,7 +405,10 @@ def _guard_counts_for_writable_entries(conn) -> dict[str, int]:
           )
         GROUP BY g.target
     """):
-        counts[row["target"]] = row["cnt"]
+        target = row["target"]
+        if source_ids is not None and target not in source_ids:
+            continue
+        counts[target] = row["cnt"]
     return counts
 
 
@@ -2278,22 +2310,26 @@ def cs_hotspots(
         return _query_open_error("cs_hotspots", db_path, exc)
 
     try:
-        # Get all functions
         rows = conn.execute("""
             SELECT id, label, file, visibility, signature, line_start, metadata
             FROM nodes WHERE type = 'function'
         """)
 
-        write_map = {}
-        for r in conn.execute("""
-                SELECT source, COUNT(*) as cnt
-                FROM edges
-                WHERE relation = 'writes_state'
-                GROUP BY source
-            """):
-            write_map[r["source"]] = r["cnt"]
-        ext_call_map = _external_call_counts(conn)
-        guard_map = _guard_counts_for_writable_entries(conn)
+        function_rows: list[tuple] = []
+        function_meta: dict[str, dict] = {}
+        for r in rows:
+            if r["label"] in ("constructor", "fallback", "receive"):
+                continue
+            meta = _load_metadata(r["metadata"])
+            if exclude_research and _is_research_meta(meta):
+                continue
+            function_rows.append(r)
+            function_meta[r["id"]] = meta
+
+        function_ids = set(function_meta)
+        write_map = _write_counts_for_sources(conn, function_ids)
+        ext_call_map = _external_call_counts(conn, source_ids=function_ids)
+        guard_map = _guard_counts_for_writable_entries(conn, function_ids)
 
         total_scored = 0
         critical = 0
@@ -2301,13 +2337,8 @@ def cs_hotspots(
         medium = 0
         top_heap: list[tuple[int, int, dict]] = []
         sequence = 0
-        for r in rows:
-            if r["label"] in ("constructor", "fallback", "receive"):
-                continue
-            meta = _load_metadata(r["metadata"])
-            if exclude_research and _is_research_meta(meta):
-                continue
-
+        for r in function_rows:
+            meta = function_meta[r["id"]]
             writes = write_map.get(r["id"], 0)
             ext_calls = ext_call_map.get(r["id"], 0)
             guards = 0

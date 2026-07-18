@@ -2668,6 +2668,38 @@ class TestIndexing:
         assert fallback_counts == counts
         assert all("INDEXED BY" not in sql for sql in statements)
 
+    def test_hotspots_edge_counts_skip_out_of_scope_sources(self, monkeypatch):
+        import mcp_server
+
+        class FakeConn:
+            def execute(self, sql, *args, **kwargs):
+                if "writes_state" in sql:
+                    return [
+                        {"source": "keep"},
+                        {"source": "skip"},
+                        {"source": "keep"},
+                    ]
+                if "relation = 'calls'" in sql:
+                    return [
+                        {"source": "keep", "attributes": json.dumps({"unresolved": True})},
+                        {"source": "skip", "attributes": json.dumps({"unresolved": True})},
+                    ]
+                raise AssertionError(f"unexpected query: {sql}")
+
+        parsed_attrs = []
+        real_load = mcp_server._load_metadata
+
+        def counting_load(raw):
+            parsed_attrs.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        source_ids = {"keep"}
+        assert mcp_server._write_counts_for_sources(FakeConn(), source_ids) == {"keep": 2}
+        assert mcp_server._external_call_counts(FakeConn(), source_ids=source_ids) == {"keep": 1}
+        assert parsed_attrs == [json.dumps({"unresolved": True})]
+
     def test_hotspots_streams_aggregate_rows(self, tmp_db, monkeypatch):
         import mcp_server
 
