@@ -200,6 +200,52 @@ class TestIndexing:
             "top": 0,
         }
 
+    def test_summary_retains_only_top_attack_surface_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(30):
+            func_id = f"Vault.sol::Vault.entry{i:02d}()"
+            state_id = f"Vault.sol::Vault.total{i:02d}"
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i:02d}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=state_id,
+                label=f"total{i:02d}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+
+        real_keep_sorted = mcp_server._keep_sorted_result
+        buffer_sizes = []
+
+        def tracking_keep_sorted(buffer, item, sort_key, limit):
+            real_keep_sorted(buffer, item, sort_key, limit)
+            buffer_sizes.append(len(buffer))
+
+        monkeypatch.setattr(mcp_server, "_keep_sorted_result", tracking_keep_sorted)
+
+        summary = json.loads(mcp_server.cs_summary(db=tmp_db, attack_surface=True, top=3))
+
+        assert summary["_summary"]["attack_surface"] == {
+            "total": 30,
+            "shown": 3,
+            "truncated": True,
+            "top": 3,
+        }
+        assert [item["label"] for item in summary["attack_surface"]] == [
+            "entry00",
+            "entry01",
+            "entry02",
+        ]
+        assert max(buffer_sizes) == 3
+
     def test_summary_warns_on_empty_unbuilt_graph(self, tmp_path):
         import mcp_server
 

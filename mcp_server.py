@@ -521,6 +521,19 @@ def _ranked_results(heap: list) -> list[dict]:
     ]
 
 
+def _keep_sorted_result(buffer: list, item: dict, sort_key, limit: int):
+    if limit <= 0:
+        return
+    buffer.append((sort_key, item))
+    if len(buffer) > limit:
+        buffer.sort(key=lambda entry: entry[0])
+        del buffer[limit:]
+
+
+def _sorted_results(buffer: list) -> list[dict]:
+    return [item for _sort_key, item in sorted(buffer, key=lambda entry: entry[0])]
+
+
 def _load_build_info(conn) -> object | None:
     """Load persisted build metadata without constructing a write-capable GraphDB."""
     row = conn.execute(
@@ -923,13 +936,15 @@ def cs_summary(
                 return reachable
 
             surface = []
+            surface_total = 0
             for row in node_by_id.values():
                 if row["type"] != "function" or row["visibility"] not in ("public", "external"):
                     continue
                 meta = _load_metadata(row["metadata"])
                 reachable = _reachable(row["id"])
                 write_count = sum(write_map.get(rid, 0) for rid in reachable)
-                surface.append({
+                surface_total += 1
+                item = {
                     "id": row["id"],
                     "label": row["label"],
                     "file": row["file"],
@@ -937,10 +952,15 @@ def cs_summary(
                     "reachable_count": len(reachable),
                     "state_writes": write_count,
                     "source_context": meta.get("source_context", "production"),
-                })
-            surface.sort(key=lambda item: (-item["state_writes"], item["file"], item["label"]))
-            data["attack_surface"] = surface[:top]
-            attack_surface_summary = _section_summary(len(surface), len(data["attack_surface"]))
+                }
+                _keep_sorted_result(
+                    surface,
+                    item,
+                    (-write_count, row["file"] or "", row["label"] or "", row["id"]),
+                    top,
+                )
+            data["attack_surface"] = _sorted_results(surface)
+            attack_surface_summary = _section_summary(surface_total, len(data["attack_surface"]))
             attack_surface_summary["top"] = top
             data["_summary"] = {
                 "attack_surface": attack_surface_summary,
