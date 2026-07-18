@@ -5857,6 +5857,57 @@ class TestIndexing:
         assert prod_contexts == {"Vault.sol": "production"}
         assert prod_state["warnings"] == ["UNGUARDED: close() transitions VaultState to Closed without checking current state", "TERMINAL: VaultState::Closed has no outgoing transitions"]
 
+    def test_state_exclude_research_filters_transitions_without_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        prod_metadata = json.dumps({"source_context": "production", "large": ["x"] * 20})
+        script_metadata = json.dumps({"source_context": "script", "large": ["x"] * 20})
+        prod_fn = "Vault.sol::Vault.close()"
+        script_fn = "scripts/Deploy.sol::Deploy.close()"
+        db.insert_node(
+            id=prod_fn,
+            label="close",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=prod_metadata,
+        )
+        db.insert_node(
+            id=script_fn,
+            label="closeScript",
+            type="function",
+            visibility="external",
+            file="scripts/Deploy.sol",
+            metadata=script_metadata,
+        )
+        db.insert_transition("VaultState", "*", "Closed", prod_fn)
+        db.insert_transition("VaultState", "*", "Closed", script_fn)
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        state = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            exclude_research=True,
+            max_entities=0,
+            max_transitions_per_entity=0,
+            max_warnings=0,
+        ))
+
+        transitions = state["entities"]["VaultState"]
+        assert len(transitions) == 1
+        assert transitions[0]["function_label"] == "close"
+        assert transitions[0]["source_context"] == "production"
+        assert state["_summary"]["transitions_total"] == 1
+        assert parsed == []
+
     def test_state_caps_broad_entity_output_for_llm_context(self, tmp_db):
         import mcp_server
 

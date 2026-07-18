@@ -4747,10 +4747,8 @@ def cs_state(
             item = dict(row)
             raw_meta = item.pop("function_metadata", None)
             if exclude_research:
-                meta = _load_metadata(raw_meta)
-                if not _include_metadata(meta, exclude_research):
+                if _is_research_metadata_raw(raw_meta):
                     continue
-                item["source_context"] = meta.get("source_context", "production")
             ent = item["entity"]
             if current_entity is not None and ent != current_entity:
                 _flush_current_entity()
@@ -4761,7 +4759,7 @@ def cs_state(
                 current_entity_retained = bool(
                     entity or max_entities == 0 or len(shown_entities) < max_entities
                 )
-            if not exclude_research and current_entity_retained:
+            if current_entity_retained:
                 item["_function_metadata_raw"] = raw_meta
             current_transitions.append(item)
         _flush_current_entity()
