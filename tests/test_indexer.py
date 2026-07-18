@@ -340,6 +340,64 @@ class TestIndexing:
         assert mcp_server._is_research_metadata_raw(production) is False
         assert mcp_server._is_research_metadata_raw(script) is True
 
+    def test_summary_exclude_research_uses_raw_metadata_filters(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        prod_meta = json.dumps({"source_context": "production", "large": ["x"] * 20})
+        script_meta = json.dumps({"source_context": "script", "large": ["x"] * 20})
+        db.insert_node(
+            id="Vault.sol::Vault.entry()",
+            label="entry",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=prod_meta,
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.total",
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+            metadata=json.dumps({"large": ["x"] * 20}),
+        )
+        db.insert_node(
+            id="scripts/Deploy.sol::Deploy.run()",
+            label="run",
+            type="function",
+            visibility="external",
+            file="scripts/Deploy.sol",
+            metadata=script_meta,
+        )
+        db.insert_node(
+            id="scripts/Deploy.sol::Deploy.total",
+            label="total",
+            type="state_var",
+            file="scripts/Deploy.sol",
+            metadata=script_meta,
+        )
+        db.insert_edge("Vault.sol::Vault.entry()", "Vault.sol::Vault.total", "writes_state")
+        db.insert_edge("scripts/Deploy.sol::Deploy.run()", "scripts/Deploy.sol::Deploy.total", "writes_state")
+        db.insert_transition("Lifecycle", "Open", "Closed", "Vault.sol::Vault.entry()")
+        db.insert_transition("Lifecycle", "Open", "Closed", "scripts/Deploy.sol::Deploy.run()")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        summary = json.loads(mcp_server.cs_summary(db=tmp_db, exclude_research=True))
+
+        assert summary["nodes"] == 2
+        assert summary["edges"] == 1
+        assert summary["transitions"] == 1
+        assert summary["source_context_summary"] == {"production": 2}
+        assert parsed == []
+
     def test_summary_reports_attack_surface_truncation(self, tmp_db):
         import mcp_server
 

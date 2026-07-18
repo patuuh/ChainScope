@@ -1607,14 +1607,14 @@ def cs_summary(
         entry_points = 0
 
         for row in node_rows:
-            meta = _load_metadata(row["metadata"])
-            if not _include_metadata(meta, exclude_research):
+            raw_meta = row["metadata"]
+            if _is_research_metadata_raw(raw_meta):
                 continue
             row_dict = dict(row)
             allowed_ids.add(row["id"])
             files.add(row["file"])
             type_counts[row["type"]] = type_counts.get(row["type"], 0) + 1
-            source_context = meta.get("source_context", "production")
+            source_context = _metadata_source_context(raw_meta)
             source_context_counts[source_context] = source_context_counts.get(source_context, 0) + 1
             if row["type"] == "function" and row["visibility"] in ("public", "external"):
                 entry_points += 1
@@ -1647,8 +1647,7 @@ def cs_summary(
                 FROM state_transitions st
                 LEFT JOIN nodes n ON st.function_id = n.id
             """):
-                meta = _load_metadata(row["metadata"])
-                if _include_metadata(meta, exclude_research):
+                if not _is_research_metadata_raw(row["metadata"]):
                     transitions += 1
         else:
             transitions = _single_count(conn, "SELECT COUNT(*) FROM state_transitions")
