@@ -4062,6 +4062,50 @@ class TestIndexing:
         assert paths["state_access"]["start"]["reads"] == ["Vault.total"]
         assert paths["state_access"]["finish"]["writes"] == ["Vault.total"]
 
+    def test_paths_show_state_omits_empty_state_access_entries(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.start()"
+        middle_id = "Vault.sol::Vault.middle()"
+        finish_id = "Vault.sol::Vault.finish()"
+        state_id = "Vault.sol::Vault.total"
+        for node_id, label in (
+            (start_id, "start"),
+            (middle_id, "middle"),
+            (finish_id, "finish"),
+        ):
+            db.insert_node(
+                id=node_id,
+                label=label,
+                type="function",
+                file="Vault.sol",
+            )
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+        )
+        db.insert_edge(start_id, middle_id, "calls")
+        db.insert_edge(middle_id, finish_id, "calls")
+        db.insert_edge(start_id, state_id, "reads_state")
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            show_state=True,
+        ))
+
+        assert paths["paths"] == [["start", "middle", "finish"]]
+        assert paths["state_access"] == {
+            "start": {
+                "reads": ["Vault.total"],
+                "writes": [],
+            }
+        }
+
     def test_state_filters_research_transitions(self, tmp_path, tmp_db):
         import mcp_server
 

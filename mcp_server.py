@@ -3414,10 +3414,12 @@ def cs_paths(
                         "SELECT target FROM edges WHERE source=? AND relation='writes_state'",
                         (node_id,)
                     )
-                    if reads or writes:
+                    read_labels = [r[0].split("::")[-1] for r in reads]
+                    write_labels = [w[0].split("::")[-1] for w in writes]
+                    if read_labels or write_labels:
                         result["state_access"][_label_for_node(node_id)] = {
-                            "reads": [r[0].split("::")[-1] for r in reads],
-                            "writes": [w[0].split("::")[-1] for w in writes],
+                            "reads": read_labels,
+                            "writes": write_labels,
                         }
 
         return json.dumps(result, indent=2)
