@@ -915,6 +915,50 @@ class TestIndexing:
         assert audit["hotspot_summary"]["total_scored"] == 1
         assert audit["critical_hotspots"][0]["function"] == "set"
 
+    def test_audit_reuses_production_function_metadata_from_stats(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        prod_meta = json.dumps({
+            "source_context": "production",
+            "no_input_validation": True,
+        })
+        script_meta = json.dumps({
+            "source_context": "script",
+            "no_input_validation": True,
+        })
+        db.insert_node(
+            id="prod/Vault.sol::Vault.set(uint256)",
+            label="set",
+            type="function",
+            visibility="external",
+            file="prod/Vault.sol",
+            metadata=prod_meta,
+        )
+        db.insert_node(
+            id="scripts/Deploy.sol::Deploy.run(uint256)",
+            label="run",
+            type="function",
+            visibility="external",
+            file="scripts/Deploy.sol",
+            metadata=script_meta,
+        )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10, exclude_research=True))
+
+        assert audit["source_context_summary"] == {"production": 1}
+        assert parsed.count(prod_meta) == 1
+        assert parsed.count(script_meta) == 1
+
     def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
         import mcp_server
 

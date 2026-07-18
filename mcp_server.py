@@ -1658,6 +1658,8 @@ def cs_audit(
         report: dict = {}
         report["query_scope"] = "production_only" if exclude_research else "all_sources"
         scoped_node_ids: set[str] | None = None
+        preloaded_function_rows: list[dict] | None = None
+        preloaded_function_meta: dict[str, dict] = {}
 
         # --- 1. Stats (formerly cs_summary) ---
         if exclude_research:
@@ -1670,7 +1672,7 @@ def cs_audit(
             entry_count = 0
             sink_count = 0
             for row in conn.execute(
-                "SELECT id, type, visibility, file, metadata FROM nodes"
+                "SELECT id, label, type, visibility, file, line_start, signature, metadata FROM nodes"
             ):
                 meta = _load_metadata(row["metadata"])
                 if _is_research_meta(meta):
@@ -1681,6 +1683,10 @@ def cs_audit(
                 node_type_counts[row["type"]] = node_type_counts.get(row["type"], 0) + 1
                 if row["type"] == "function":
                     func_count += 1
+                    if preloaded_function_rows is None:
+                        preloaded_function_rows = []
+                    preloaded_function_rows.append(row)
+                    preloaded_function_meta[row["id"]] = meta
                     if row["visibility"] in ("external", "public"):
                         entry_count += 1
                 elif row["type"] == "state_var":
@@ -1779,12 +1785,18 @@ def cs_audit(
         all_funcs = []
         func_meta_cache: dict[str, dict] = {}
         func_by_id: dict[str, dict] = {}
-        for row in conn.execute(
-            "SELECT id, label, file, line_start, visibility, signature, metadata FROM nodes WHERE type='function'"
-        ):
-            meta = _load_metadata(row["metadata"])
-            if exclude_research and _is_research_meta(meta):
-                continue
+        if preloaded_function_rows is not None:
+            function_rows = preloaded_function_rows
+        else:
+            function_rows = conn.execute(
+                "SELECT id, label, file, line_start, visibility, signature, metadata FROM nodes WHERE type='function'"
+            )
+        for row in function_rows:
+            meta = preloaded_function_meta.get(row["id"])
+            if meta is None:
+                meta = _load_metadata(row["metadata"])
+                if exclude_research and _is_research_meta(meta):
+                    continue
             all_funcs.append(row)
             func_meta_cache[row["id"]] = meta
             func_by_id[row["id"]] = row
