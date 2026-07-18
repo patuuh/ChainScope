@@ -3419,10 +3419,14 @@ def cs_state(
         transitions = []
         for row in rows:
             item = dict(row)
-            meta = _load_metadata(item.pop("function_metadata", None))
-            if not _include_metadata(meta, exclude_research):
-                continue
-            item["source_context"] = meta.get("source_context", "production")
+            raw_meta = item.pop("function_metadata", None)
+            if exclude_research:
+                meta = _load_metadata(raw_meta)
+                if not _include_metadata(meta, exclude_research):
+                    continue
+                item["source_context"] = meta.get("source_context", "production")
+            else:
+                item["_function_metadata_raw"] = raw_meta
             transitions.append(item)
 
         entities: dict[str, list[dict]] = {}
@@ -3536,6 +3540,14 @@ def cs_state(
                 }
             else:
                 shown_entities[ent] = trans
+
+        for trans in shown_entities.values():
+            for item in trans:
+                if "source_context" not in item:
+                    meta = _load_metadata(item.pop("_function_metadata_raw", None))
+                    item["source_context"] = meta.get("source_context", "production")
+                else:
+                    item.pop("_function_metadata_raw", None)
 
         hidden_entities = len(entity_names) - len(shown_entity_names)
         warnings_total = len(warnings)

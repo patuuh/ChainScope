@@ -1650,6 +1650,48 @@ class TestIndexing:
         assert uncapped["_summary"]["warnings_total"] == uncapped["_summary"]["warnings_shown"]
         assert uncapped["_summary"]["truncated"] is False
 
+    def test_state_caps_before_source_context_formatting(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            fn_id = f"Vault{i}.sol::Vault{i}.advance()"
+            db.insert_node(
+                id=fn_id,
+                label=f"advance{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+            for j in range(20):
+                db.insert_transition(f"State{i}", f"S{j}", f"S{j + 1}", fn_id)
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        state = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            max_entities=2,
+            max_transitions_per_entity=3,
+            max_warnings=0,
+        ))
+
+        assert state["_summary"]["transitions_total"] == 100
+        assert state["_summary"]["transitions_shown"] == 6
+        assert len(parsed) == 6
+        assert all(
+            item["source_context"] == "production"
+            for transitions in state["entities"].values()
+            for item in transitions
+        )
+
 
 class TestFileFiltering:
     def test_collect_files_prioritizes_protocol_sources_for_partial_builds(self, tmp_path):
