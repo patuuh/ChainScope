@@ -246,6 +246,88 @@ class TestIndexing:
         ]
         assert max(buffer_sizes) == 3
 
+    def test_summary_streams_rows_for_attack_surface(self, monkeypatch):
+        import mcp_server
+
+        node_rows = [
+            {
+                "id": "Vault.sol::Vault.entry()",
+                "label": "entry",
+                "type": "function",
+                "visibility": "external",
+                "file": "Vault.sol",
+                "signature": "entry()",
+                "metadata": json.dumps({"source_context": "production"}),
+            },
+            {
+                "id": "Vault.sol::Vault.total",
+                "label": "total",
+                "type": "state_var",
+                "visibility": "",
+                "file": "Vault.sol",
+                "signature": "",
+                "metadata": json.dumps({"source_context": "production"}),
+            },
+        ]
+        edge_rows = [
+            {
+                "source": "Vault.sol::Vault.entry()",
+                "target": "Vault.sol::Vault.total",
+                "relation": "writes_state",
+            }
+        ]
+        transition_rows = [
+            {
+                "function_id": "Vault.sol::Vault.entry()",
+                "metadata": json.dumps({"source_context": "production"}),
+            }
+        ]
+
+        class StreamingRows:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchall(self):
+                raise AssertionError("cs_summary rows should stream")
+
+        class SingleRow:
+            def fetchone(self):
+                return None
+
+        class FakeConn:
+            def execute(self, sql, params=()):
+                normalized = " ".join(sql.split())
+                if "FROM nodes" in normalized and "FROM graph_metadata" not in normalized:
+                    return StreamingRows(node_rows)
+                if "FROM edges" in normalized:
+                    return StreamingRows(edge_rows)
+                if "FROM state_transitions" in normalized:
+                    return StreamingRows(transition_rows)
+                if "FROM graph_metadata" in normalized:
+                    return SingleRow()
+                raise AssertionError(normalized)
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda db_path, timeout_seconds: FakeConn(),
+        )
+
+        summary = json.loads(mcp_server.cs_summary(db="stream.db", attack_surface=True, top=1))
+
+        assert summary["nodes"] == 2
+        assert summary["edges"] == 1
+        assert summary["transitions"] == 1
+        assert summary["entry_points"] == 1
+        assert summary["attack_surface"][0]["label"] == "entry"
+        assert summary["_summary"]["attack_surface"] == {"total": 1, "shown": 1, "truncated": False, "top": 1}
+
     def test_summary_warns_on_empty_unbuilt_graph(self, tmp_path):
         import mcp_server
 

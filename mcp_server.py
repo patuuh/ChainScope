@@ -931,9 +931,9 @@ def cs_summary(
     try:
         node_rows = conn.execute(
             "SELECT id, label, type, visibility, file, signature, metadata FROM nodes"
-        ).fetchall()
+        )
         allowed_ids: set[str] = set()
-        node_by_id: dict[str, dict] = {}
+        attack_surface_nodes: dict[str, dict] = {}
         type_counts: dict[str, int] = {}
         source_context_counts: dict[str, int] = {}
         files: set[str] = set()
@@ -945,31 +945,40 @@ def cs_summary(
                 continue
             row_dict = dict(row)
             allowed_ids.add(row["id"])
-            node_by_id[row["id"]] = row_dict
             files.add(row["file"])
             type_counts[row["type"]] = type_counts.get(row["type"], 0) + 1
             source_context = meta.get("source_context", "production")
             source_context_counts[source_context] = source_context_counts.get(source_context, 0) + 1
             if row["type"] == "function" and row["visibility"] in ("public", "external"):
                 entry_points += 1
+                if attack_surface:
+                    row_dict["_source_context"] = source_context
+                    attack_surface_nodes[row["id"]] = row_dict
 
         edge_rows = conn.execute(
             "SELECT source, target, relation FROM edges"
-        ).fetchall()
+        )
         rel_counts: dict[str, int] = {}
-        filtered_edges = []
+        edge_count = 0
+        adjacency: dict[str, list[str]] = {}
+        write_map: dict[str, int] = {}
         for row in edge_rows:
             if row["source"] not in allowed_ids or row["target"] not in allowed_ids:
                 continue
-            filtered_edges.append(row)
+            edge_count += 1
             rel_counts[row["relation"]] = rel_counts.get(row["relation"], 0) + 1
+            if attack_surface:
+                if row["relation"] in TRAVERSAL_RELATIONS:
+                    adjacency.setdefault(row["source"], []).append(row["target"])
+                if row["relation"] == "writes_state":
+                    write_map[row["source"]] = write_map.get(row["source"], 0) + 1
 
         transitions = 0
         for row in conn.execute("""
             SELECT st.function_id, n.metadata
             FROM state_transitions st
             LEFT JOIN nodes n ON st.function_id = n.id
-        """).fetchall():
+        """):
             meta = _load_metadata(row["metadata"])
             if _include_metadata(meta, exclude_research):
                 transitions += 1
@@ -979,7 +988,7 @@ def cs_summary(
             "database": db_path,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "nodes": len(allowed_ids),
-            "edges": len(filtered_edges),
+            "edges": edge_count,
             "transitions": transitions,
             "files": len(files),
             "functions": type_counts.get("function", 0),
@@ -1000,14 +1009,6 @@ def cs_summary(
             ]
 
         if attack_surface and allowed_ids:
-            adjacency: dict[str, list[str]] = {}
-            write_map: dict[str, int] = {}
-            for row in filtered_edges:
-                if row["relation"] in TRAVERSAL_RELATIONS:
-                    adjacency.setdefault(row["source"], []).append(row["target"])
-                if row["relation"] == "writes_state":
-                    write_map[row["source"]] = write_map.get(row["source"], 0) + 1
-
             def _reachable(start_id: str) -> set[str]:
                 reachable = {start_id}
                 queue = [start_id]
@@ -1023,10 +1024,7 @@ def cs_summary(
 
             surface = []
             surface_total = 0
-            for row in node_by_id.values():
-                if row["type"] != "function" or row["visibility"] not in ("public", "external"):
-                    continue
-                meta = _load_metadata(row["metadata"])
+            for row in attack_surface_nodes.values():
                 reachable = _reachable(row["id"])
                 write_count = sum(write_map.get(rid, 0) for rid in reachable)
                 surface_total += 1
@@ -1037,7 +1035,7 @@ def cs_summary(
                     "signature": row["signature"],
                     "reachable_count": len(reachable),
                     "state_writes": write_count,
-                    "source_context": meta.get("source_context", "production"),
+                    "source_context": row.get("_source_context", "production"),
                 }
                 _keep_sorted_result(
                     surface,
