@@ -140,6 +140,41 @@ class TestIndexing:
         assert summary["tool"] == "cs_summary"
         assert not db_path.exists()
 
+    def test_audit_reports_truncated_section_totals_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(3):
+            func_id = f"Vault{i}.sol::Vault{i}.set(uint256)"
+            state_id = f"Vault{i}.sol::Vault{i}.total"
+            db.insert_node(
+                id=func_id,
+                label=f"set{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+            )
+            db.insert_node(
+                id=state_id,
+                label="total",
+                type="state_var",
+                file=f"Vault{i}.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=1))
+        sections = audit["_summary"]["sections"]
+
+        assert audit["_summary"]["top"] == 1
+        assert audit["_summary"]["truncated"] is True
+        assert sections["attack_surface"] == {"total": 3, "shown": 1, "truncated": True}
+        assert sections["critical_hotspots"] == {"total": 3, "shown": 1, "truncated": True}
+        assert sections["access_control_gaps"] == {"total": 3, "shown": 1, "truncated": True}
+        assert sections["silent_state_changes"] == {"total": 3, "shown": 1, "truncated": True}
+        assert "attack_surface" in audit["_summary"]["truncated_sections"]
+        assert "cs_hotspots" in audit["_summary"]["_hint"]
+
     def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
         import mcp_server
 

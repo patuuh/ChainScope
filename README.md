@@ -242,6 +242,10 @@ Scanner category output from `cs_defi` and `cs_unsafe` is capped by
 `max_per_category` by default. The summary still reports full category totals;
 set `max_per_category=0` only when an exhaustive category dump is intentional.
 
+`cs_audit` is a top-N overview. Its `_summary` reports full section totals and
+which sections were truncated so agents can drill down with specialized tools
+instead of treating the overview as exhaustive.
+
 Broad `cs_state` output is also capped by entity groups, transitions per entity,
 and warnings. Prefer `entity=` when investigating one state machine, or set the
 state caps to `0` when you intentionally need every transition.
@@ -425,4 +429,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`410 passed`
+`411 passed`

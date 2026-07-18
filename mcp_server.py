@@ -297,6 +297,14 @@ def _cap_category_results(results: dict, max_per_category: int) -> dict[str, dic
     return truncated
 
 
+def _section_summary(total: int, shown: int) -> dict:
+    return {
+        "total": total,
+        "shown": shown,
+        "truncated": shown < total,
+    }
+
+
 def _summarize_cross_entries(entries, top: int) -> dict:
     top = max(top, 0)
     total = 0
@@ -578,7 +586,7 @@ def cs_help() -> str:
         ],
         "core_tools": {
             "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths.",
-            "cs_audit": "Full security report with attack surface, hotspots, taint paths, sinks, dead code, and access gaps.",
+            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections.",
         },
         "scanner_tools": {
             "cs_hotspots": "Composite risk scorer — all functions ranked with detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
@@ -976,6 +984,9 @@ def cs_audit(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
+    if top < 0:
+        top = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
@@ -1450,6 +1461,38 @@ def cs_audit(
         unsafe_counts = {k: detection_counts.get(k, 0) for k in unsafe_keys if detection_counts.get(k, 0) > 0}
         if unsafe_counts:
             report["unsafe_summary"] = unsafe_counts
+
+        sections = {
+            "attack_surface": _section_summary(len(attack_surface), len(report.get("attack_surface", []))),
+            "critical_hotspots": _section_summary(len(hotspots), len(report.get("critical_hotspots", []))),
+            "reentrancy": _section_summary(len(reent), len(report.get("reentrancy", []))),
+            "taint_paths": _section_summary(len(taint_results), len(report.get("taint_paths", []))),
+            "access_control_gaps": _section_summary(len(access_gaps), len(report.get("access_control_gaps", []))),
+            "silent_state_changes": _section_summary(len(silent), len(report.get("silent_state_changes", []))),
+            "dead_code.dead_internal": _section_summary(
+                len(dead_internal),
+                len(report["dead_code"]["dead_internal"]),
+            ),
+            "dead_code.direct_entry_points": _section_summary(
+                len(orphan_writers),
+                len(report["dead_code"]["direct_entry_points"]),
+            ),
+        }
+        truncated_sections = [
+            name for name, info in sections.items()
+            if info["truncated"]
+        ]
+        report["_summary"] = {
+            "top": top,
+            "query_scope": report["query_scope"],
+            "sections": sections,
+            "truncated_sections": truncated_sections,
+            "truncated": bool(truncated_sections),
+            "_hint": (
+                "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, "
+                "cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+            ) if truncated_sections else "",
+        }
 
         return json.dumps(report, indent=2)
     except sqlite3.OperationalError as exc:
