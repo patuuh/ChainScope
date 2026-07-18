@@ -1712,7 +1712,7 @@ class TestIndexing:
         assert unsafe["_summary"]["category_totals"] == {"command_execution": 1}
         assert unsafe["_summary"]["shown_findings"] == 1
         assert [item["function"] for item in unsafe["command_execution"]] == ["run_cmd_hit"]
-        assert len(parsed) == 6
+        assert len(parsed) == 2
 
     def test_scanners_index_only_capped_category_rows(self, tmp_db, monkeypatch):
         import mcp_server
@@ -1839,6 +1839,65 @@ class TestIndexing:
         assert unsafe["_summary"]["category_totals"] == {"command_execution": 12}
         assert len(unsafe["command_execution"]) == 3
         assert parsed == [unsafe_metadata[i] for i in (0, 1, 10)]
+
+    def test_scanners_skip_inactive_markers_before_metadata_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        false_defi = json.dumps({"timestamp_dependence": [], "large": ["x"] * 20})
+        nested_defi = json.dumps({"nested": {"timestamp_dependence": [{"line": 1}]}, "large": ["x"] * 20})
+        true_defi = json.dumps({"timestamp_dependence": [{"line": 3}], "source_context": "production"})
+        false_unsafe = json.dumps({"command_injection_risk": False, "large": ["x"] * 20})
+        nested_unsafe = json.dumps({"nested": {"command_injection_risk": [{"line": 2}]}, "large": ["x"] * 20})
+        true_unsafe = json.dumps({"command_injection_risk": [{"line": 3}], "source_context": "production"})
+
+        for label, raw in (
+            ("checkDeadline_false", false_defi),
+            ("checkDeadline_nested", nested_defi),
+            ("checkDeadline_hit", true_defi),
+        ):
+            db.insert_node(
+                id=f"Vault.sol::Vault.{label}(uint256)",
+                label=label,
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+                metadata=raw,
+            )
+        for label, raw in (
+            ("run_cmd_false", false_unsafe),
+            ("run_cmd_nested", nested_unsafe),
+            ("run_cmd_hit", true_unsafe),
+        ):
+            db.insert_node(
+                id=f"ops.py::{label}",
+                label=label,
+                type="function",
+                file="ops.py",
+                metadata=raw,
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        defi = json.loads(mcp_server.cs_defi(db=tmp_db, category="timestamp", max_per_category=10))
+        unsafe = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="command", max_per_category=10))
+
+        assert defi["_summary"]["category_totals"] == {"timestamp_dependence": 1}
+        assert [item["function"] for item in defi["timestamp_dependence"]] == ["checkDeadline_hit"]
+        assert unsafe["_summary"]["category_totals"] == {"command_execution": 1}
+        assert [item["function"] for item in unsafe["command_execution"]] == ["run_cmd_hit"]
+        assert false_defi not in parsed
+        assert nested_defi not in parsed
+        assert false_unsafe not in parsed
+        assert nested_unsafe not in parsed
+        assert parsed == [true_defi, true_unsafe]
 
     def test_scanners_parse_only_retained_production_rows(self, tmp_db, monkeypatch):
         import mcp_server

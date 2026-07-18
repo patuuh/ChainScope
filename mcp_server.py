@@ -877,21 +877,17 @@ def _metadata_rows_by_key(
             continue
         if exclude_research and _is_research_metadata_raw(raw):
             continue
-        retained_keys = [
+        active_keys = [
             key for key in matched
+            if _metadata_raw_value_truthy(raw, key)
+        ]
+        if not active_keys:
+            continue
+        retained_keys = [
+            key for key in active_keys
             if max_per_key == 0 or len(indexed[key]) < max_per_key
         ]
         meta = _load_metadata(raw) if retained_keys else None
-
-        def _key_active(key: str) -> bool:
-            if meta is not None:
-                return bool(meta.get(key))
-            return _metadata_raw_value_truthy(raw, key)
-
-        active_keys = [
-            key for key in matched
-            if _key_active(key)
-        ]
         for key in active_keys:
             totals[key] += 1
             if meta is not None and (max_per_key == 0 or len(indexed[key]) < max_per_key):
