@@ -1492,6 +1492,9 @@ def cs_audit(
                 }
 
         taint_results = []
+        taint_total = 0
+        taint_high_risk = 0
+        taint_sequence = 0
         if sink_ids:
             for row in all_funcs:
                 vis = row["visibility"]
@@ -1510,26 +1513,36 @@ def cs_audit(
                 reachable = _reachable(row["id"])
                 reached = reachable & sink_ids
                 if reached:
-                    sink_details = []
-                    for sid in sorted(reached)[:5]:
-                        si = sink_info.get(sid, {})
-                        sink_details.append({"sink": si.get("label", "?"), "type": si.get("type", "?")})
-                    taint_results.append({
-                        "entry": row["label"],
-                        "file": row["file"],
-                        "source_context": meta.get("source_context", "production"),
-                        "visibility": vis,
-                        "guarded": is_guarded,
-                        "reachable_sinks": len(reached),
-                        "sinks": sink_details,
-                        "risk": "HIGH" if not is_guarded else "MEDIUM",
-                    })
-        taint_results.sort(key=lambda x: (0 if x["risk"] == "HIGH" else 1, -x["reachable_sinks"]))
-        if taint_results:
-            report["taint_paths"] = taint_results[:top]
+                    risk = "HIGH" if not is_guarded else "MEDIUM"
+                    taint_total += 1
+                    if risk == "HIGH":
+                        taint_high_risk += 1
+                    if top > 0:
+                        sink_details = []
+                        for sid in sorted(reached)[:5]:
+                            si = sink_info.get(sid, {})
+                            sink_details.append({"sink": si.get("label", "?"), "type": si.get("type", "?")})
+                        _keep_sorted_result(
+                            taint_results,
+                            {
+                                "entry": row["label"],
+                                "file": row["file"],
+                                "source_context": meta.get("source_context", "production"),
+                                "visibility": vis,
+                                "guarded": is_guarded,
+                                "reachable_sinks": len(reached),
+                                "sinks": sink_details,
+                                "risk": risk,
+                            },
+                            (0 if risk == "HIGH" else 1, -len(reached), taint_sequence),
+                            top,
+                        )
+                    taint_sequence += 1
+        if taint_total:
+            report["taint_paths"] = _sorted_results(taint_results)
             report["taint_summary"] = {
-                "total": len(taint_results),
-                "high_risk": sum(1 for r in taint_results if r["risk"] == "HIGH"),
+                "total": taint_total,
+                "high_risk": taint_high_risk,
             }
 
         # --- 8. Sink reachability summary (formerly cs_sinks) ---
@@ -1617,6 +1630,8 @@ def cs_audit(
             emitters.add(r["source"])
 
         silent = []
+        silent_total = 0
+        silent_sequence = 0
         for fid, wcount in write_map.items():
             if fid in emitters:
                 continue
@@ -1629,16 +1644,17 @@ def cs_audit(
             if func["label"] == "constructor":
                 continue
             if func["visibility"] in ("external", "public"):
-                silent.append({
+                silent_total += 1
+                _keep_sorted_result(silent, {
                     "function": func["label"],
                     "file": func["file"],
                     "source_context": meta.get("source_context", "production"),
                     "state_writes": wcount,
-                })
-        silent.sort(key=lambda x: -x["state_writes"])
-        if silent:
-            report["silent_state_changes"] = silent[:top]
-            report["silent_total"] = len(silent)
+                }, (-wcount, silent_sequence), top)
+                silent_sequence += 1
+        if silent_total:
+            report["silent_state_changes"] = _sorted_results(silent)
+            report["silent_total"] = silent_total
 
         # --- 11. Dead code (formerly cs_deadcode) ---
         library_ids = set()
@@ -1722,9 +1738,9 @@ def cs_audit(
             "attack_surface": _section_summary(attack_surface_total, len(report.get("attack_surface", []))),
             "critical_hotspots": _section_summary(hotspot_total, len(report.get("critical_hotspots", []))),
             "reentrancy": _section_summary(reent_total, len(report.get("reentrancy", []))),
-            "taint_paths": _section_summary(len(taint_results), len(report.get("taint_paths", []))),
+            "taint_paths": _section_summary(taint_total, len(report.get("taint_paths", []))),
             "access_control_gaps": _section_summary(access_gaps_total, len(report.get("access_control_gaps", []))),
-            "silent_state_changes": _section_summary(len(silent), len(report.get("silent_state_changes", []))),
+            "silent_state_changes": _section_summary(silent_total, len(report.get("silent_state_changes", []))),
             "dead_code.dead_internal": _section_summary(
                 dead_internal_total,
                 len(report["dead_code"]["dead_internal"]),

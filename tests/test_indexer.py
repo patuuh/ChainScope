@@ -408,6 +408,64 @@ class TestIndexing:
         assert audit["dead_code"]["direct_entry_points_total"] == 12
         assert max(retained_sizes) == 2
 
+    def test_audit_retains_only_top_sorted_sections(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        sink_id = "Vault.sol::Vault.transfer(address,uint256)"
+        db.insert_node(
+            id=sink_id,
+            label="transfer",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=json.dumps({"is_sink": True, "sink_type": "fund_transfer"}),
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.total",
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+        )
+        for i in range(12):
+            func_id = f"Vault{i}.sol::Vault{i}.entry(uint256)"
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i:02d}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                signature="function entry(uint256 amount) external",
+            )
+            db.insert_edge(func_id, sink_id, "calls")
+            db.insert_edge(func_id, "Vault.sol::Vault.total", "writes_state")
+
+        real_keep_sorted = mcp_server._keep_sorted_result
+        taint_sizes = []
+        silent_sizes = []
+
+        def tracking_keep_sorted(buffer, item, sort_key, limit):
+            real_keep_sorted(buffer, item, sort_key, limit)
+            if isinstance(item, dict) and "entry" in item:
+                taint_sizes.append(len(buffer))
+            if isinstance(item, dict) and item.get("function", "").startswith("entry"):
+                silent_sizes.append(len(buffer))
+
+        monkeypatch.setattr(mcp_server, "_keep_sorted_result", tracking_keep_sorted)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=2))
+        sections = audit["_summary"]["sections"]
+
+        assert sections["taint_paths"] == {"total": 12, "shown": 2, "truncated": True}
+        assert sections["silent_state_changes"] == {"total": 12, "shown": 2, "truncated": True}
+        assert audit["taint_summary"] == {"total": 12, "high_risk": 12}
+        assert audit["silent_total"] == 12
+        assert [item["entry"] for item in audit["taint_paths"]] == ["entry00", "entry01"]
+        assert [item["function"] for item in audit["silent_state_changes"]] == ["entry00", "entry01"]
+        assert max(taint_sizes) == 2
+        assert max(silent_sizes) == 2
+
     def test_audit_taint_summary_reports_full_total(self, tmp_db):
         import mcp_server
 
