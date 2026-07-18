@@ -1956,6 +1956,45 @@ class TestIndexing:
         assert uncapped["_summary"]["warnings_total"] == uncapped["_summary"]["warnings_shown"]
         assert uncapped["_summary"]["truncated"] is False
 
+    def test_state_retains_only_capped_warnings(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(12):
+            fn_id = f"Vault{i}.sol::Vault{i}.advance()"
+            db.insert_node(
+                id=fn_id,
+                label=f"advance{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+            db.insert_transition(f"State{i}", "*", "Active", fn_id)
+
+        real_append = mcp_server._append_capped
+        warning_sizes = []
+
+        def tracking_append(items, item, total, limit):
+            updated = real_append(items, item, total, limit)
+            if isinstance(item, str):
+                warning_sizes.append(len(items))
+            return updated
+
+        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+
+        state = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            max_entities=0,
+            max_transitions_per_entity=0,
+            max_warnings=4,
+        ))
+
+        assert state["_summary"]["warnings_total"] > 4
+        assert state["_summary"]["warnings_shown"] == 4
+        assert len(state["warnings"]) == 4
+        assert max(warning_sizes) == 4
+
     def test_state_caps_before_source_context_formatting(self, tmp_db, monkeypatch):
         import mcp_server
 

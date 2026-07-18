@@ -495,6 +495,13 @@ def _collect_cross_entries(entries, max_results: int) -> tuple[list[dict], dict]
     }
 
 
+def _append_capped(items: list, item, total: int, limit: int) -> int:
+    total += 1
+    if limit == 0 or len(items) < limit:
+        items.append(item)
+    return total
+
+
 def _keep_ranked_result(heap: list, item: dict, score: int, sequence: int, limit: int):
     if limit <= 0:
         return
@@ -3517,6 +3524,12 @@ def cs_state(
             entities[ent].append(t)
 
         warnings = []
+        warnings_total = 0
+
+        def _add_warning(message: str):
+            nonlocal warnings_total
+            warnings_total = _append_capped(warnings, message, warnings_total, max_warnings)
+
         for ent, trans in entities.items():
             all_states = set()
             for t in trans:
@@ -3535,23 +3548,23 @@ def cs_state(
                     conditions = json.loads(t.get("conditions", "[]"))
                     func_label = t.get("function_label") or t["function_id"].split("::")[-1]
                     if t["to_state"] == "exists" and "no_validation" in conditions:
-                        warnings.append(
+                        _add_warning(
                             f"UNVALIDATED_WRITE: {func_label}() writes {ent} "
                             f"to store without input validation"
                         )
                     if t["to_state"] == "deleted" and "no_validation" in conditions:
-                        warnings.append(
+                        _add_warning(
                             f"UNVALIDATED_DELETE: {func_label}() deletes {ent} "
                             f"from store without input validation"
                         )
 
                 if has_set and not has_delete:
-                    warnings.append(
+                    _add_warning(
                         f"NO_DELETE_PATH: {ent} can be created (Set) but never "
                         f"deleted — potential state bloat"
                     )
                 if has_delete and not has_read:
-                    warnings.append(
+                    _add_warning(
                         f"DELETE_WITHOUT_READ: {ent} can be deleted but no Get "
                         f"operation found — verify deletion logic"
                     )
@@ -3560,7 +3573,7 @@ def cs_state(
                 for t in trans:
                     if t["from_state"] == "*":
                         func_label = t.get("function_label") or t["function_id"].split("::")[-1]
-                        warnings.append(
+                        _add_warning(
                             f"UNGUARDED: {func_label}() transitions {ent} to "
                             f"{t['to_state']} without checking current state"
                         )
@@ -3570,12 +3583,12 @@ def cs_state(
                 terminal_states = all_states - states_with_outgoing
                 for ts in terminal_states:
                     if any(t["to_state"] == ts for t in trans):
-                        warnings.append(f"TERMINAL: {ent}::{ts} has no outgoing transitions")
+                        _add_warning(f"TERMINAL: {ent}::{ts} has no outgoing transitions")
 
                 initial_candidates = states_with_outgoing - states_targeted
                 for us in initial_candidates:
                     if us not in states_targeted:
-                        warnings.append(
+                        _add_warning(
                             f"UNREACHABLE: {ent}::{us} has outgoing transitions "
                             f"but no incoming — may be unreachable after initialization"
                         )
@@ -3593,7 +3606,7 @@ def cs_state(
                                 c1 = json.loads(t1.get("conditions", "[]"))
                                 c2 = json.loads(t2.get("conditions", "[]"))
                                 if not c1 or not c2:
-                                    warnings.append(
+                                    _add_warning(
                                         f"TOGGLE: {ent} can toggle between "
                                         f"{pair[0]} <-> {pair[1]} — verify "
                                         f"this is intentional (potential griefing)"
@@ -3630,10 +3643,7 @@ def cs_state(
                     item.pop("_function_metadata_raw", None)
 
         hidden_entities = len(entity_names) - len(shown_entity_names)
-        warnings_total = len(warnings)
         shown_warnings = warnings
-        if max_warnings > 0 and len(warnings) > max_warnings:
-            shown_warnings = warnings[:max_warnings]
 
         truncated = bool(
             hidden_entities
