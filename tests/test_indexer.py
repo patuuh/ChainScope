@@ -4,6 +4,7 @@ import pytest
 from pathlib import Path
 from core.indexer import Indexer
 from core.indexer import classify_source_context
+from core.indexer import should_skip_dir_name
 from core.indexer import should_index_source_file
 from core.schema import GraphDB
 
@@ -125,6 +126,49 @@ class TestIndexing:
         assert classify_source_context("src/DeploymentRegistry.sol") == "production"
         assert should_index_source_file("ts-src/utils/deploy-usdt.ts") is False
         assert should_index_source_file("ts-src/utils/deploy-usdt.ts", include_research=True) is True
+
+    def test_skips_modern_generated_and_cache_dirs(self, tmp_path, tmp_db):
+        from core.project_profile import profile_repository
+
+        for dirname in (
+            ".next",
+            ".turbo",
+            ".pnpm",
+            ".gradle",
+            ".pytest_cache",
+            "typechain-types",
+        ):
+            assert should_skip_dir_name(dirname) is True
+            assert should_skip_dir_name(dirname, include_research=True) is True
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "Vault.sol").write_text(
+            "pragma solidity ^0.8.0; contract Vault { function set(uint256 x) external {} }"
+        )
+        for dirname in (".next", ".turbo", ".pnpm", ".gradle", ".pytest_cache", "typechain-types"):
+            generated = repo / dirname
+            generated.mkdir()
+            (generated / "Generated.ts").write_text(
+                "export function generated() { return 1; }",
+                encoding="utf-8",
+            )
+
+        profile = profile_repository(str(repo), top=5, include_research=True)
+        Indexer(str(repo), include_research=True).index(tmp_db)
+
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        try:
+            labels = {row["label"] for row in conn.execute("SELECT label FROM nodes WHERE type='function'")}
+        finally:
+            conn.close()
+
+        assert profile["source_files_supported"] == 1
+        assert profile["skipped_dirs"][".next"] == 1
+        assert profile["skipped_dirs"]["typechain-types"] == 1
+        assert "generated" not in labels
+        assert "set" in labels
 
     def test_index_skips_deploy_dirs_unless_research_enabled(self, tmp_path, tmp_db):
         repo = tmp_path / "repo"

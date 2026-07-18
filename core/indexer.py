@@ -28,8 +28,12 @@ IGNORE_DIRS = {
     "test-clients",  # Hedera test clients
     # Build output
     "dist", "bin", "obj", "coverage", "report", "reports",
+    ".cache", ".next", ".nuxt", ".svelte-kit", ".turbo", ".vite",
+    ".parcel-cache", ".pytest_cache", ".ruff_cache", ".mypy_cache",
+    ".tox", ".nox", ".gradle", ".mvn",
     # Package managers
     "vendor", ".cargo", "gitmodules", ".venv", "venv", "env", ".yarn",
+    ".npm", ".pnpm", ".pnpm-store", "bower_components", "jspm_packages",
     # Generated code directories
     "api",          # Cosmos SDK protobuf codegen
     "third_party",  # vendored third-party proto files
@@ -37,6 +41,7 @@ IGNORE_DIRS = {
     "bindings",     # generated contract/client bindings
     "gobindings",   # generated Go bindings
     "gen", "codegen", "func++",
+    "typechain", "typechain-types", "generated-types", "generated-sources",
 }
 
 NOISE_DIR_TOKENS = {
