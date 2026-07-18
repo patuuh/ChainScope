@@ -293,6 +293,81 @@ class TestIndexing:
             "truncated": True,
         }
 
+    def test_audit_uses_bounded_queries_for_reentrancy_and_sinks(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        sink_id = "Vault.sol::Vault.transfer(address,uint256)"
+        db.insert_node(
+            id=sink_id,
+            label="transfer",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({"is_sink": True, "sink_type": "fund_transfer"}),
+        )
+        for i in range(80):
+            func_id = f"Vault.sol::Vault.entry{i}(uint256)"
+            state_id = f"Vault.sol::Vault.total{i}"
+            guard_id = f"Vault.sol::Vault.onlyRole{i}"
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+                signature=f"function entry{i}(uint256 amount) external",
+                metadata=json.dumps({"reentrancy_risk": True}),
+            )
+            db.insert_node(
+                id=state_id,
+                label=f"total{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=guard_id,
+                label=f"onlyRole{i}",
+                type="guard",
+                file="Vault.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+            db.insert_edge(func_id, sink_id, "calls")
+            db.insert_edge(guard_id, func_id, "guards")
+
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(sql)
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        def counting_open(*args, **kwargs):
+            return CountingConnection(real_open(*args, **kwargs))
+
+        monkeypatch.setattr(mcp_server, "_open_query_connection", counting_open)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10))
+
+        assert audit["_summary"]["sections"]["reentrancy"] == {
+            "total": 80,
+            "shown": 10,
+            "truncated": True,
+        }
+        assert audit["reentrancy"][0]["modifiers"]
+        assert audit["taint_summary"]["total"] == 80
+        assert len(statements) <= 20
+        assert not any(
+            "WHERE e.target = ? AND e.relation = 'guards'" in " ".join(sql.split())
+            for sql in statements
+        )
+
     def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
         import mcp_server
 

@@ -467,4 +467,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`435 passed`
+`436 passed`

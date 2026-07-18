@@ -1220,19 +1220,32 @@ def cs_audit(
             write_targets.setdefault(r["source"], []).append(r["target"])
 
         guard_set = set()
+        guard_labels_by_target: dict[str, list[str]] = {}
         for r in conn.execute(
-            "SELECT DISTINCT target FROM edges WHERE relation='guards'"
+            """
+            SELECT e.target, n.label
+            FROM edges e LEFT JOIN nodes n ON e.source = n.id
+            WHERE e.relation='guards'
+            ORDER BY e.target, n.label
+            """
         ).fetchall():
             guard_set.add(r["target"])
+            if r["label"]:
+                guard_labels_by_target.setdefault(r["target"], []).append(r["label"])
 
         ext_call_map = _external_call_counts(conn, include_cpi=True)
 
         adj: dict[str, list[str]] = {}
+        call_rev_adj: dict[str, list[str]] = {}
+        called_targets: set[str] = set()
         for r in conn.execute(
-            "SELECT source, target FROM edges WHERE relation IN (?, ?, ?)",
+            "SELECT source, target, relation FROM edges WHERE relation IN (?, ?, ?)",
             TRAVERSAL_RELATIONS,
         ).fetchall():
             adj.setdefault(r["source"], []).append(r["target"])
+            if r["relation"] == "calls":
+                call_rev_adj.setdefault(r["target"], []).append(r["source"])
+                called_targets.add(r["target"])
 
         reachable_cache: dict[str, set[str]] = {}
 
@@ -1310,11 +1323,6 @@ def cs_audit(
         for row in all_funcs:
             meta = func_meta_cache.get(row["id"], {})
             if meta.get("reentrancy_risk"):
-                guards = conn.execute(
-                    "SELECT n.label FROM edges e JOIN nodes n ON e.source = n.id "
-                    "WHERE e.target = ? AND e.relation = 'guards'",
-                    (row["id"],)
-                ).fetchall()
                 reent.append({
                     "function": row["label"],
                     "file": row["file"],
@@ -1322,7 +1330,7 @@ def cs_audit(
                     "source_context": meta.get("source_context", "production"),
                     "type": "single_function",
                     "details": meta.get("reentrancy_details", ""),
-                    "modifiers": [g["label"] for g in guards],
+                    "modifiers": guard_labels_by_target.get(row["id"], []),
                 })
             for cr in meta.get("cross_reentrancy", []):
                 reent.append({
@@ -1398,12 +1406,6 @@ def cs_audit(
             for sid, si in sink_info.items():
                 st = si.get("type", "unknown")
                 sink_type_counts[st] = sink_type_counts.get(st, 0) + 1
-            # Build reverse adjacency for backward BFS
-            rev_adj: dict[str, list[str]] = {}
-            for r in conn.execute(
-                "SELECT source, target FROM edges WHERE relation = 'calls'"
-            ).fetchall():
-                rev_adj.setdefault(r["target"], []).append(r["source"])
             # Count how many unique functions can reach each sink type
             sink_reachable: dict[str, set] = {}
             for sid, si in sink_info.items():
@@ -1415,7 +1417,7 @@ def cs_audit(
                 queue = [sid]
                 while queue:
                     curr = queue.pop()
-                    for caller in rev_adj.get(curr, []):
+                    for caller in call_rev_adj.get(curr, []):
                         if caller not in visited:
                             visited.add(caller)
                             queue.append(caller)
@@ -1506,12 +1508,6 @@ def cs_audit(
             report["silent_total"] = len(silent)
 
         # --- 11. Dead code (formerly cs_deadcode) ---
-        called_targets = set()
-        for r in conn.execute(
-            "SELECT DISTINCT target FROM edges WHERE relation = 'calls'"
-        ).fetchall():
-            called_targets.add(r["target"])
-
         library_ids = set()
         for r in conn.execute(
             "SELECT id FROM nodes WHERE type = 'library'"
