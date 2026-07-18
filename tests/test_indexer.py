@@ -2720,6 +2720,58 @@ class TestIndexing:
         assert uncapped["_summary"]["warnings_total"] == uncapped["_summary"]["warnings_shown"]
         assert uncapped["_summary"]["truncated"] is False
 
+    def test_state_streams_transition_rows_for_broad_output(self, monkeypatch):
+        import mcp_server
+
+        rows = []
+        for i in range(3):
+            for j in range(4):
+                rows.append({
+                    "entity": f"State{i}",
+                    "from_state": "*" if j == 0 else f"S{j}",
+                    "to_state": f"S{j + 1}",
+                    "function_id": f"Vault{i}.sol::Vault{i}.advance()",
+                    "conditions": "[]",
+                    "function_file": f"Vault{i}.sol",
+                    "function_label": f"advance{i}",
+                    "function_metadata": json.dumps({"source_context": "production"}),
+                })
+
+        class StreamingRows:
+            def __iter__(self):
+                return iter(rows)
+
+            def fetchall(self):
+                raise AssertionError("cs_state transition rows should stream")
+
+        class FakeConn:
+            def execute(self, sql, params=()):
+                assert "FROM state_transitions" in sql
+                return StreamingRows()
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda db_path, timeout_seconds: FakeConn(),
+        )
+
+        state = json.loads(mcp_server.cs_state(
+            db="stream.db",
+            max_entities=1,
+            max_transitions_per_entity=2,
+            max_warnings=2,
+        ))
+
+        assert list(state["entities"]) == ["State0"]
+        assert len(state["entities"]["State0"]) == 2
+        assert state["_summary"]["entities_total"] == 3
+        assert state["_summary"]["transitions_total"] == 12
+        assert state["_summary"]["transitions_shown"] == 2
+        assert state["_summary"]["truncated"] is True
+
     def test_state_retains_only_capped_warnings(self, tmp_db, monkeypatch):
         import mcp_server
 

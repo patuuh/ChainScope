@@ -3667,43 +3667,28 @@ def cs_state(
                 ORDER BY st.entity, st.function_id, st.from_state, st.to_state
                 """,
                 (entity,)
-            ).fetchall()
+            )
         else:
             rows = conn.execute("""
                 SELECT st.*, n.file as function_file, n.label as function_label, n.metadata as function_metadata
                 FROM state_transitions st
                 LEFT JOIN nodes n ON st.function_id = n.id
                 ORDER BY st.entity, st.function_id, st.from_state, st.to_state
-            """).fetchall()
-
-        transitions = []
-        for row in rows:
-            item = dict(row)
-            raw_meta = item.pop("function_metadata", None)
-            if exclude_research:
-                meta = _load_metadata(raw_meta)
-                if not _include_metadata(meta, exclude_research):
-                    continue
-                item["source_context"] = meta.get("source_context", "production")
-            else:
-                item["_function_metadata_raw"] = raw_meta
-            transitions.append(item)
-
-        entities: dict[str, list[dict]] = {}
-        for t in transitions:
-            ent = t["entity"]
-            if ent not in entities:
-                entities[ent] = []
-            entities[ent].append(t)
+            """)
 
         warnings = []
         warnings_total = 0
+        entity_names: list[str] = []
+        entity_totals: dict[str, int] = {}
+        transitions_total = 0
+        shown_entities: dict[str, list[dict]] = {}
+        truncated_entities: dict[str, dict] = {}
 
         def _add_warning(message: str):
             nonlocal warnings_total
             warnings_total = _append_capped(warnings, message, warnings_total, max_warnings)
 
-        for ent, trans in entities.items():
+        def _analyze_entity(ent: str, trans: list[dict]):
             all_states = set()
             for t in trans:
                 if t["from_state"] != "*":
@@ -3785,27 +3770,50 @@ def cs_state(
                                         f"this is intentional (potential griefing)"
                                     )
 
-        entity_names = sorted(entities)
-        entity_totals = {name: len(entities[name]) for name in entity_names}
-        transitions_total = sum(entity_totals.values())
+        def _retain_entity(ent: str, trans: list[dict]):
+            nonlocal transitions_total
+            entity_names.append(ent)
+            entity_totals[ent] = len(trans)
+            transitions_total += len(trans)
+            if entity or max_entities == 0 or len(shown_entities) < max_entities:
+                if max_transitions_per_entity > 0 and len(trans) > max_transitions_per_entity:
+                    shown_entities[ent] = trans[:max_transitions_per_entity]
+                    truncated_entities[ent] = {
+                        "shown": max_transitions_per_entity,
+                        "total": len(trans),
+                        "hidden": len(trans) - max_transitions_per_entity,
+                    }
+                else:
+                    shown_entities[ent] = trans
 
-        shown_entity_names = entity_names
-        if not entity and max_entities > 0:
-            shown_entity_names = entity_names[:max_entities]
+        current_entity = None
+        current_transitions: list[dict] = []
 
-        shown_entities: dict[str, list[dict]] = {}
-        truncated_entities: dict[str, dict] = {}
-        for ent in shown_entity_names:
-            trans = entities[ent]
-            if max_transitions_per_entity > 0 and len(trans) > max_transitions_per_entity:
-                shown_entities[ent] = trans[:max_transitions_per_entity]
-                truncated_entities[ent] = {
-                    "shown": max_transitions_per_entity,
-                    "total": len(trans),
-                    "hidden": len(trans) - max_transitions_per_entity,
-                }
+        def _flush_current_entity():
+            if current_entity is None:
+                return
+            _analyze_entity(current_entity, current_transitions)
+            _retain_entity(current_entity, current_transitions)
+
+        for row in rows:
+            item = dict(row)
+            raw_meta = item.pop("function_metadata", None)
+            if exclude_research:
+                meta = _load_metadata(raw_meta)
+                if not _include_metadata(meta, exclude_research):
+                    continue
+                item["source_context"] = meta.get("source_context", "production")
             else:
-                shown_entities[ent] = trans
+                item["_function_metadata_raw"] = raw_meta
+            ent = item["entity"]
+            if current_entity is not None and ent != current_entity:
+                _flush_current_entity()
+                current_transitions = []
+            current_entity = ent
+            current_transitions.append(item)
+        _flush_current_entity()
+
+        shown_entity_names = list(shown_entities)
 
         for trans in shown_entities.values():
             for item in trans:
