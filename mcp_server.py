@@ -626,6 +626,30 @@ def _collect_mapped_items(items, mapper, max_items: int) -> tuple[list, dict]:
     return shown, _section_summary(total, len(shown))
 
 
+def _reverse_reachable_nodes(
+    reverse_adj: dict[str, list[str]],
+    node_id: str,
+    cache: dict[str, set[str]],
+    visiting: set[str] | None = None,
+) -> set[str]:
+    cached = cache.get(node_id)
+    if cached is not None:
+        return cached
+    if visiting is None:
+        visiting = set()
+    if node_id in visiting:
+        return {node_id}
+
+    visiting.add(node_id)
+    reachable = {node_id}
+    for predecessor in reverse_adj.get(node_id, []):
+        reachable |= _reverse_reachable_nodes(reverse_adj, predecessor, cache, visiting)
+    visiting.remove(node_id)
+
+    cache[node_id] = reachable
+    return reachable
+
+
 def _keep_ranked_result(heap: list, item: dict, score: int, sequence: int, limit: int):
     if limit <= 0:
         return
@@ -1734,20 +1758,16 @@ def cs_audit(
                 sink_type_counts[st] = sink_type_counts.get(st, 0) + 1
             # Count how many unique functions can reach each sink type
             sink_reachable: dict[str, set] = {}
+            reverse_reachable_cache: dict[str, set[str]] = {}
             for sid, si in sink_info.items():
                 st = si.get("type", "unknown")
                 if st not in sink_reachable:
                     sink_reachable[st] = set()
-                # Quick backward BFS from this sink
-                visited = {sid}
-                queue = [sid]
-                while queue:
-                    curr = queue.pop()
-                    for caller in call_rev_adj.get(curr, []):
-                        if caller not in visited:
-                            visited.add(caller)
-                            queue.append(caller)
-                sink_reachable[st] |= visited
+                sink_reachable[st] |= _reverse_reachable_nodes(
+                    call_rev_adj,
+                    sid,
+                    reverse_reachable_cache,
+                )
 
             report["sink_summary"] = {
                 "by_type": sink_type_counts,

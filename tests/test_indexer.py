@@ -813,6 +813,65 @@ class TestIndexing:
         assert audit["sink_summary"]["by_type"] == {"unknown": 2}
         assert prod_audit["sink_summary"]["by_type"] == {"unknown": 1}
 
+    def test_reverse_reachable_nodes_reuses_shared_caller_cache(self):
+        import mcp_server
+
+        class CountingAdj(dict):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.accesses = {}
+
+            def get(self, key, default=None):
+                self.accesses[key] = self.accesses.get(key, 0) + 1
+                return super().get(key, default)
+
+        reverse_adj = CountingAdj({
+            "sinkA": ["shared"],
+            "sinkB": ["shared"],
+            "shared": ["entry"],
+            "entry": [],
+        })
+        cache = {}
+
+        first = mcp_server._reverse_reachable_nodes(reverse_adj, "sinkA", cache)
+        second = mcp_server._reverse_reachable_nodes(reverse_adj, "sinkB", cache)
+
+        assert first == {"sinkA", "shared", "entry"}
+        assert second == {"sinkB", "shared", "entry"}
+        assert reverse_adj.accesses["shared"] == 1
+        assert reverse_adj.accesses["entry"] == 1
+
+    def test_audit_sink_summary_counts_shared_reachable_functions_once(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for fn_id, label in (
+            ("Vault.sol::Vault.entry(uint256)", "entry"),
+            ("Vault.sol::Vault.route(uint256)", "route"),
+            ("Vault.sol::Vault.sinkA(uint256)", "sinkA"),
+            ("Vault.sol::Vault.sinkB(uint256)", "sinkB"),
+        ):
+            metadata = {"source_context": "production"}
+            if label.startswith("sink"):
+                metadata.update({"is_sink": True, "sink_type": "fund_transfer"})
+            db.insert_node(
+                id=fn_id,
+                label=label,
+                type="function",
+                visibility="external" if label == "entry" else "internal",
+                file="Vault.sol",
+                signature=f"function {label}(uint256 amount)",
+                metadata=json.dumps(metadata),
+            )
+        db.insert_edge("Vault.sol::Vault.entry(uint256)", "Vault.sol::Vault.route(uint256)", "calls")
+        db.insert_edge("Vault.sol::Vault.route(uint256)", "Vault.sol::Vault.sinkA(uint256)", "calls")
+        db.insert_edge("Vault.sol::Vault.route(uint256)", "Vault.sol::Vault.sinkB(uint256)", "calls")
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10))
+
+        assert audit["sink_summary"]["by_type"] == {"fund_transfer": 2}
+        assert audit["sink_summary"]["reachable_functions"] == {"fund_transfer": 4}
+
     def test_hotspots_do_not_mark_inline_role_guard_as_no_access_control(self, tmp_path, tmp_db):
         import mcp_server
 
