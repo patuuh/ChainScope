@@ -41,6 +41,19 @@ class TestEndToEnd:
         assert result.returncode == 0
         assert "deposit" in result.stdout.lower() or "withdraw" in result.stdout.lower()
 
+    def test_summary_attack_surface_top(self):
+        result = run_tool("cs_summary.py", ["--db", self.db, "--attack-surface", "--top", "1", "--json"])
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert len(data["attack_surface"]) <= 1
+
+    def test_summary_missing_db_does_not_create_empty_graph(self, tmp_path):
+        missing_db = tmp_path / "missing.db"
+        result = run_tool("cs_summary.py", ["--db", str(missing_db)])
+        assert result.returncode == 1
+        assert "Unable to open graph database" in result.stderr
+        assert not missing_db.exists()
+
     def test_paths_deposit_to_withdraw(self):
         result = run_tool("cs_paths.py", ["--db", self.db, "--from", "deposit", "--to", "withdraw"])
         assert result.returncode == 0

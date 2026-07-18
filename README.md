@@ -292,6 +292,7 @@ The response still reports total sinks and type counts; set `max_results=0` or
 - `python cs_profile.py ...`
 - `python cs_build.py ...`
 - `python cs_summary.py ...`
+- `python cs_summary.py --attack-surface --top 10 ...`
 - `python cs_paths.py ...`
 - `python cs_paths.py --max-paths 0 --max-endpoint-matches 0 ...`
 - `python cs_trace.py ...`
@@ -446,4 +447,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`417 passed`
+`419 passed`
