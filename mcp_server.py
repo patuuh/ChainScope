@@ -291,25 +291,15 @@ def _top_counter(counter: dict[str, int], limit: int) -> list[dict]:
     ]
 
 
-def _cap_category_results(results: dict, max_per_category: int) -> dict[str, dict]:
-    """Cap list-valued result categories while preserving full category totals."""
-    if max_per_category < 0:
-        max_per_category = 0
-
+def _category_truncation(results: dict, category_totals: dict[str, int]) -> dict[str, dict]:
     truncated: dict[str, dict] = {}
-    if max_per_category == 0:
-        return truncated
-
-    for name, values in list(results.items()):
-        if name.startswith("_") or not isinstance(values, list):
-            continue
-        total = len(values)
-        if total > max_per_category:
-            results[name] = values[:max_per_category]
+    for name, total in category_totals.items():
+        shown = len(results.get(name, []))
+        if total > shown:
             truncated[name] = {
-                "shown": max_per_category,
+                "shown": shown,
                 "total": total,
-                "hidden": total - max_per_category,
+                "hidden": total - shown,
             }
     return truncated
 
@@ -318,10 +308,12 @@ def _metadata_rows_by_key(
     rows: list,
     keys: list[str],
     exclude_research: bool,
-) -> dict[str, list[tuple]]:
-    """Index node rows by metadata keys while parsing each matching row once."""
+    max_per_key: int = 0,
+) -> tuple[dict[str, list[tuple]], dict[str, int]]:
+    """Index capped metadata-key rows and full totals while parsing each row once."""
     needles = {key: f'"{key}"' for key in keys}
     indexed: dict[str, list[tuple]] = {key: [] for key in keys}
+    totals: dict[str, int] = {key: 0 for key in keys}
     for row in rows:
         raw = row["metadata"] or ""
         matched = [key for key, needle in needles.items() if needle in raw]
@@ -331,8 +323,10 @@ def _metadata_rows_by_key(
         if not _include_metadata(meta, exclude_research):
             continue
         for key in matched:
-            indexed[key].append((row, meta))
-    return indexed
+            totals[key] += 1
+            if max_per_key == 0 or len(indexed[key]) < max_per_key:
+                indexed[key].append((row, meta))
+    return indexed, totals
 
 
 def _section_summary(total: int, shown: int) -> dict:
@@ -1939,7 +1933,7 @@ def cs_defi(
             "SELECT id, label, file, line_start, visibility, signature, metadata "
             "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
         ).fetchall()
-        metadata_rows = _metadata_rows_by_key(function_rows, [
+        metadata_rows, metadata_totals = _metadata_rows_by_key(function_rows, [
             "timestamp_dependence",
             "unchecked_erc20",
             "oracle_risk",
@@ -1955,10 +1949,17 @@ def cs_defi(
             "cpi_reentrancy_risk",
             "transfer_sinks",
             "cross_contract_calls",
-        ], exclude_research)
+        ], exclude_research, max_per_category)
+        category_totals: dict[str, int] = {}
 
         def _function_rows_with(metadata_key: str) -> list[tuple]:
             return metadata_rows.get(metadata_key, [])
+
+        def _set_category(result_key: str, metadata_key: str, values: list):
+            total = metadata_totals.get(metadata_key, 0)
+            if total:
+                results[result_key] = values
+                category_totals[result_key] = total
 
         def _ctx(meta: dict) -> str:
             return meta.get("source_context", "production")
@@ -1973,8 +1974,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("timestamp_dependence", []),
                     "source_context": _ctx(meta),
                 })
-            if ts_fns:
-                results["timestamp_dependence"] = ts_fns
+            _set_category("timestamp_dependence", "timestamp_dependence", ts_fns)
 
         # --- Unchecked ERC20 returns ---
         if cat in ("all", "erc20"):
@@ -1986,8 +1986,7 @@ def cs_defi(
                     "line": r["line_start"], "unchecked_calls": meta.get("unchecked_erc20", []),
                     "source_context": _ctx(meta),
                 })
-            if erc_fns:
-                results["unchecked_erc20"] = erc_fns
+            _set_category("unchecked_erc20", "unchecked_erc20", erc_fns)
 
         # --- Oracle / price manipulation ---
         if cat in ("all", "oracle"):
@@ -1999,8 +1998,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("oracle_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if oracle_fns:
-                results["oracle_manipulation"] = oracle_fns
+            _set_category("oracle_manipulation", "oracle_risk", oracle_fns)
 
         # --- Signature replay ---
         if cat in ("all", "signature"):
@@ -2012,8 +2010,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("signature_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if sig_fns:
-                results["signature_replay"] = sig_fns
+            _set_category("signature_replay", "signature_risk", sig_fns)
 
         # --- Precision loss ---
         if cat in ("all", "precision"):
@@ -2025,8 +2022,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("precision_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if prec_fns:
-                results["precision_loss"] = prec_fns
+            _set_category("precision_loss", "precision_risk", prec_fns)
 
         # --- DoS risks ---
         if cat in ("all", "dos"):
@@ -2038,8 +2034,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("dos_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if dos_fns:
-                results["dos_risks"] = dos_fns
+            _set_category("dos_risks", "dos_risk", dos_fns)
 
         # --- Frontrunning surface ---
         if cat in ("all", "frontrun"):
@@ -2051,8 +2046,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("frontrun_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if fr_fns:
-                results["frontrunning"] = fr_fns
+            _set_category("frontrunning", "frontrun_risk", fr_fns)
 
         # --- Unsafe downcasts ---
         if cat in ("all", "downcast"):
@@ -2064,8 +2058,7 @@ def cs_defi(
                     "line": r["line_start"], "casts": meta.get("unsafe_downcast", []),
                     "source_context": _ctx(meta),
                 })
-            if dc_fns:
-                results["unsafe_downcasts"] = dc_fns
+            _set_category("unsafe_downcasts", "unsafe_downcast", dc_fns)
 
         # --- Flash loan callbacks ---
         if cat in ("all", "flashloan"):
@@ -2077,8 +2070,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("flash_loan_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if fl_fns:
-                results["flash_loan_risks"] = fl_fns
+            _set_category("flash_loan_risks", "flash_loan_risk", fl_fns)
 
         # --- Slippage / deadline missing ---
         if cat in ("all", "slippage"):
@@ -2090,8 +2082,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("slippage_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if sl_fns:
-                results["slippage_missing"] = sl_fns
+            _set_category("slippage_missing", "slippage_risk", sl_fns)
 
         # --- ERC callback reentrancy ---
         if cat in ("all", "callback"):
@@ -2103,8 +2094,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("erc_callback_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if cb_fns:
-                results["erc_callback_reentrancy"] = cb_fns
+            _set_category("erc_callback_reentrancy", "erc_callback_risk", cb_fns)
 
         # --- Anchor-specific risks ---
         if cat in ("all", "anchor"):
@@ -2116,8 +2106,7 @@ def cs_defi(
                     "line": r["line_start"], "risks": meta.get("anchor_risks", []),
                     "source_context": _ctx(meta),
                 })
-            if anch_fns:
-                results["anchor_risks"] = anch_fns
+            _set_category("anchor_risks", "anchor_risks", anch_fns)
 
         # --- CPI reentrancy (Anchor) ---
         if cat in ("all", "cpi_reentrancy"):
@@ -2129,8 +2118,7 @@ def cs_defi(
                     "line": r["line_start"],
                     "source_context": _ctx(meta),
                 })
-            if cpi_fns:
-                results["cpi_reentrancy"] = cpi_fns
+            _set_category("cpi_reentrancy", "cpi_reentrancy_risk", cpi_fns)
 
         # --- Cross-language transfer/cross-contract sinks ---
         if cat in ("all", "transfer"):
@@ -2143,8 +2131,7 @@ def cs_defi(
                     "language": meta.get("language", ""),
                     "source_context": _ctx(meta),
                 })
-            if transfer_fns:
-                results["transfer_sinks"] = transfer_fns
+            _set_category("transfer_sinks", "transfer_sinks", transfer_fns)
 
         if cat in ("all", "crosscontract"):
             rows = _function_rows_with("cross_contract_calls")
@@ -2156,13 +2143,11 @@ def cs_defi(
                     "language": meta.get("language", ""),
                     "source_context": _ctx(meta),
                 })
-            if cc_fns:
-                results["cross_contract_calls"] = cc_fns
+            _set_category("cross_contract_calls", "cross_contract_calls", cc_fns)
 
         # Summary
-        category_totals = {name: len(values) for name, values in results.items() if isinstance(values, list)}
         total = sum(category_totals.values())
-        truncated_categories = _cap_category_results(results, max_per_category)
+        truncated_categories = _category_truncation(results, category_totals)
         shown_total = sum(len(v) for v in results.values() if isinstance(v, list))
         results["_summary"] = {
             "total_findings": total,
@@ -2228,7 +2213,7 @@ def cs_unsafe(
             "SELECT id, label, file, line_start, visibility, signature, metadata "
             "FROM nodes WHERE type = 'function' ORDER BY file, line_start, id"
         ).fetchall()
-        metadata_rows = _metadata_rows_by_key(function_rows, [
+        metadata_rows, metadata_totals = _metadata_rows_by_key(function_rows, [
             "unsafe_blocks",
             "panic_paths",
             "potential_race",
@@ -2246,10 +2231,17 @@ def cs_unsafe(
             "resource_leaks",
             "unsafe_downcast",
             "dead_params",
-        ], exclude_research)
+        ], exclude_research, max_per_category)
+        category_totals: dict[str, int] = {}
 
         def _function_rows_with(metadata_key: str) -> list[tuple]:
             return metadata_rows.get(metadata_key, [])
+
+        def _set_category(result_key: str, metadata_key: str, values: list):
+            total = metadata_totals.get(metadata_key, 0)
+            if total:
+                results[result_key] = values
+                category_totals[result_key] = total
 
         def _include(meta: dict) -> bool:
             return not (exclude_research and _is_research_meta(meta))
@@ -2269,8 +2261,7 @@ def cs_unsafe(
                     "raw_pointers": meta.get("raw_pointers", False),
                     "source_context": _ctx(meta),
                 })
-            if unsafe_fns:
-                results["unsafe_blocks"] = unsafe_fns
+            _set_category("unsafe_blocks", "unsafe_blocks", unsafe_fns)
 
         # --- Panic/unwrap sinks (Rust) ---
         if cat in ("all", "panic"):
@@ -2282,8 +2273,7 @@ def cs_unsafe(
                     "panic_calls": meta.get("panic_paths", []),
                     "source_context": _ctx(meta),
                 })
-            if panic_fns:
-                results["panic_sinks"] = panic_fns
+            _set_category("panic_sinks", "panic_paths", panic_fns)
 
         # --- Race conditions (Go) ---
         if cat in ("all", "race"):
@@ -2297,8 +2287,7 @@ def cs_unsafe(
                     "goroutine_line": race_info.get("goroutine_line", 0),
                     "source_context": _ctx(meta),
                 })
-            if races:
-                results["race_conditions"] = races
+            _set_category("race_conditions", "potential_race", races)
 
         # --- FFI/transmute (Rust) ---
         if cat in ("all", "ffi"):
@@ -2307,13 +2296,17 @@ def cs_unsafe(
                 "WHERE metadata LIKE '%\"sink_type\": \"unsafe_ffi\"%'"
             ).fetchall()
             ffi_sinks = []
+            ffi_total = 0
             for r in sink_rows:
                 meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
-                ffi_sinks.append({"operation": r["label"], "file": r["file"], "source_context": _ctx(meta)})
-            if ffi_sinks:
+                ffi_total += 1
+                if max_per_category == 0 or len(ffi_sinks) < max_per_category:
+                    ffi_sinks.append({"operation": r["label"], "file": r["file"], "source_context": _ctx(meta)})
+            if ffi_total:
                 results["ffi_risks"] = ffi_sinks
+                category_totals["ffi_risks"] = ffi_total
 
         # --- Missing validation (both Rust and Go) ---
         if cat in ("all", "validation"):
@@ -2326,8 +2319,7 @@ def cs_unsafe(
                         "visibility": r["visibility"],
                         "source_context": _ctx(meta),
                     })
-            if no_val:
-                results["missing_validation"] = no_val
+            _set_category("missing_validation", "no_input_validation", no_val)
 
         # --- Wrapping arithmetic (Rust) ---
         if cat in ("all", "unsafe"):
@@ -2339,8 +2331,7 @@ def cs_unsafe(
                     "operations": meta.get("wrapping_arithmetic", []),
                     "source_context": _ctx(meta),
                 })
-            if wrap_fns:
-                results["wrapping_arithmetic"] = wrap_fns
+            _set_category("wrapping_arithmetic", "wrapping_arithmetic", wrap_fns)
 
         # --- Go: Unsafe type assertions ---
         if cat in ("all", "go", "type_assert"):
@@ -2352,8 +2343,7 @@ def cs_unsafe(
                     "assertions": meta.get("unsafe_type_assertions", []),
                     "source_context": _ctx(meta),
                 })
-            if ta_fns:
-                results["unsafe_type_assertions"] = ta_fns
+            _set_category("unsafe_type_assertions", "unsafe_type_assertions", ta_fns)
 
         # --- Go: SQL injection ---
         if cat in ("all", "go", "sql"):
@@ -2365,8 +2355,7 @@ def cs_unsafe(
                     "risks": meta.get("sql_injection_risk", []),
                     "source_context": _ctx(meta),
                 })
-            if sql_fns:
-                results["sql_injection"] = sql_fns
+            _set_category("sql_injection", "sql_injection_risk", sql_fns)
 
         # --- Deserialization sinks ---
         if cat in ("all", "java", "python", "js", "deser"):
@@ -2378,8 +2367,7 @@ def cs_unsafe(
                     "sinks": meta.get("deserialization_sinks", []),
                     "source_context": _ctx(meta),
                 })
-            if deser_fns:
-                results["deserialization"] = deser_fns
+            _set_category("deserialization", "deserialization_sinks", deser_fns)
 
         # --- Java: Reflection usage ---
         if cat in ("all", "java", "reflection"):
@@ -2391,8 +2379,7 @@ def cs_unsafe(
                     "operations": meta.get("reflection_usage", []),
                     "source_context": _ctx(meta),
                 })
-            if refl_fns:
-                results["reflection"] = refl_fns
+            _set_category("reflection", "reflection_usage", refl_fns)
 
         # --- Java: Injection sinks ---
         if cat in ("all", "java", "injection"):
@@ -2404,8 +2391,7 @@ def cs_unsafe(
                     "sinks": meta.get("injection_sinks", []),
                     "source_context": _ctx(meta),
                 })
-            if inj_fns:
-                results["injection"] = inj_fns
+            _set_category("injection", "injection_sinks", inj_fns)
 
         # --- Weak crypto ---
         if cat in ("all", "java", "python", "js", "crypto"):
@@ -2417,8 +2403,7 @@ def cs_unsafe(
                     "patterns": meta.get("weak_crypto", []),
                     "source_context": _ctx(meta),
                 })
-            if crypto_fns:
-                results["weak_crypto"] = crypto_fns
+            _set_category("weak_crypto", "weak_crypto", crypto_fns)
 
         # --- Python/TypeScript: command execution ---
         if cat in ("all", "python", "command"):
@@ -2431,8 +2416,7 @@ def cs_unsafe(
                     "language": meta.get("language", ""),
                     "source_context": _ctx(meta),
                 })
-            if cmd_fns:
-                results["command_execution"] = cmd_fns
+            _set_category("command_execution", "command_injection_risk", cmd_fns)
 
         # --- Python/TypeScript: private key material handling ---
         if cat in ("all", "python", "js", "keys"):
@@ -2444,8 +2428,7 @@ def cs_unsafe(
                     "language": meta.get("language", ""),
                     "source_context": _ctx(meta),
                 })
-            if key_fns:
-                results["private_key_material"] = key_fns
+            _set_category("private_key_material", "private_key_material", key_fns)
 
         # --- Java: Swallowed exceptions ---
         if cat in ("all", "java"):
@@ -2458,8 +2441,7 @@ def cs_unsafe(
                         "empty_catches": meta["swallowed_exceptions"],
                         "source_context": _ctx(meta),
                     })
-            if swallow_fns:
-                results["swallowed_exceptions"] = swallow_fns
+            _set_category("swallowed_exceptions", "swallowed_exceptions", swallow_fns)
 
         # --- Java: Resource leaks ---
         if cat in ("all", "java"):
@@ -2471,8 +2453,7 @@ def cs_unsafe(
                     "types": meta.get("resource_leaks", []),
                     "source_context": _ctx(meta),
                 })
-            if leak_fns:
-                results["resource_leaks"] = leak_fns
+            _set_category("resource_leaks", "resource_leaks", leak_fns)
 
         # --- Unsafe downcasts (Solidity) ---
         if cat in ("all", "downcast"):
@@ -2484,8 +2465,7 @@ def cs_unsafe(
                     "line": r["line_start"], "casts": meta.get("unsafe_downcast", []),
                     "source_context": _ctx(meta),
                 })
-            if dc_fns:
-                results["unsafe_downcasts"] = dc_fns
+            _set_category("unsafe_downcasts", "unsafe_downcast", dc_fns)
 
         # --- Dead parameters ---
         if cat in ("all", "dead_params"):
@@ -2498,13 +2478,11 @@ def cs_unsafe(
                     "unused_params": meta.get("dead_params", []),
                     "source_context": _ctx(meta),
                 })
-            if dp_fns:
-                results["dead_params"] = dp_fns
+            _set_category("dead_params", "dead_params", dp_fns)
 
         # Summary
-        category_totals = {name: len(values) for name, values in results.items() if isinstance(values, list)}
         total = sum(category_totals.values())
-        truncated_categories = _cap_category_results(results, max_per_category)
+        truncated_categories = _category_truncation(results, category_totals)
         shown_total = sum(len(v) for v in results.values() if isinstance(v, list))
         results["_summary"] = {
             "total_findings": total,

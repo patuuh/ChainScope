@@ -637,6 +637,62 @@ class TestIndexing:
         assert len(uncapped_unsafe["command_execution"]) == 5
         assert uncapped_unsafe["_summary"]["truncated"] is False
 
+    def test_scanners_index_only_capped_category_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(12):
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.checkDeadline(uint256)",
+                label=f"checkDeadline{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "timestamp_dependence": [{"line": i + 1}],
+                    "source_context": "production",
+                }),
+            )
+            db.insert_node(
+                id=f"ops{i}.py::run_cmd",
+                label=f"run_cmd_{i}",
+                type="function",
+                file=f"ops{i}.py",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "command_injection_risk": [{"line": i + 1}],
+                    "language": "python",
+                    "source_context": "production",
+                }),
+            )
+
+        real_index = mcp_server._metadata_rows_by_key
+        snapshots = []
+
+        def tracking_index(rows, keys, exclude_research, max_per_key=0):
+            indexed, totals = real_index(rows, keys, exclude_research, max_per_key)
+            snapshots.append({
+                "max_per_key": max_per_key,
+                "sizes": {key: len(values) for key, values in indexed.items() if values},
+                "totals": {key: total for key, total in totals.items() if total},
+            })
+            return indexed, totals
+
+        monkeypatch.setattr(mcp_server, "_metadata_rows_by_key", tracking_index)
+
+        defi = json.loads(mcp_server.cs_defi(db=tmp_db, category="timestamp", max_per_category=3))
+        unsafe = json.loads(mcp_server.cs_unsafe(db=tmp_db, category="command", max_per_category=3))
+
+        assert defi["_summary"]["category_totals"] == {"timestamp_dependence": 12}
+        assert unsafe["_summary"]["category_totals"] == {"command_execution": 12}
+        assert snapshots[0]["max_per_key"] == 3
+        assert snapshots[0]["sizes"] == {"timestamp_dependence": 3}
+        assert snapshots[0]["totals"] == {"timestamp_dependence": 12}
+        assert snapshots[1]["max_per_key"] == 3
+        assert snapshots[1]["sizes"] == {"command_injection_risk": 3}
+        assert snapshots[1]["totals"] == {"command_injection_risk": 12}
+
     def test_scanners_parse_matching_metadata_once_per_function(self, tmp_db, monkeypatch):
         import mcp_server
 
