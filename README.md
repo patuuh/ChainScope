@@ -278,7 +278,9 @@ name instead of silently picking the first match. Set `max_results=0` only when
 an exhaustive edge list is intentional.
 
 Broad `cs_sinks` output is capped by sink count and reachable callers per sink.
-The response still reports total sinks and type counts; set `max_results=0` or
+The response still reports total sinks and type counts. Full parsed sink
+metadata is omitted by default for MCP context; set `include_metadata=true` only
+when the raw sink metadata is needed. Set `max_results=0` or
 `max_callers_per_sink=0` only when exhaustive sink expansion is intentional.
 
 ## Query surface
@@ -324,6 +326,7 @@ The response still reports total sinks and type counts; set `max_results=0` or
 - `python cs_state.py --max-entities 0 --max-transitions-per-entity 0 --max-warnings 0 ...`
 - `python cs_sinks.py ...`
 - `python cs_sinks.py --max-results 0 --max-callers-per-sink 0 ...`
+- `python cs_sinks.py --include-metadata --json ...`
 
 ## Research mode
 
@@ -467,4 +470,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`480 passed`
+`481 passed`

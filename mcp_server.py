@@ -930,7 +930,7 @@ def cs_help() -> str:
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, and show_callers lists by max_callers_per_accessor.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls are capped by max_results; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
-            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink.",
+            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Sinks are capped by max_results and callers per sink by max_callers_per_sink; full sink metadata is opt-in with include_metadata.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
         "_tip": "All tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
@@ -2739,6 +2739,7 @@ def cs_sinks(
     timeout_seconds: int = 0,
     max_results: int = 100,
     max_callers_per_sink: int = 20,
+    include_metadata: bool = False,
 ) -> str:
     """List dangerous sink nodes and bounded caller reachability.
 
@@ -2754,6 +2755,7 @@ def cs_sinks(
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
         max_results: Maximum sinks to expand (0 disables)
         max_callers_per_sink: Maximum reachable callers per expanded sink (0 disables)
+        include_metadata: Include full parsed sink metadata in each sink result
     """
     if max_results < 0:
         max_results = 0
@@ -2787,7 +2789,7 @@ def cs_sinks(
             if not _include_metadata(meta, exclude_research):
                 continue
             by_type[current_type] = by_type.get(current_type, 0) + 1
-            total = _append_capped(sinks, {
+            sink_entry = {
                 "id": row["id"],
                 "label": row["label"],
                 "node_type": row["type"],
@@ -2798,8 +2800,10 @@ def cs_sinks(
                 "signature": row["signature"],
                 "sink_type": current_type,
                 "source_context": meta.get("source_context", "production"),
-                "metadata": meta,
-            }, total, max_results)
+            }
+            if include_metadata:
+                sink_entry["metadata"] = meta
+            total = _append_capped(sinks, sink_entry, total, max_results)
 
         shown_sinks = sinks
         sink_summary = _section_summary(total, len(shown_sinks))
@@ -2909,6 +2913,7 @@ def cs_sinks(
             "truncated": sink_summary["truncated"],
             "max_results": max_results,
             "max_callers_per_sink": max_callers_per_sink,
+            "include_metadata": include_metadata,
             "by_type": dict(sorted(by_type.items(), key=lambda item: (-item[1], item[0]))),
             "sinks": shown_sinks,
         }

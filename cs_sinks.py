@@ -10,7 +10,7 @@ app = typer.Typer()
 def _legacy_json_rows(result: dict) -> list[dict]:
     rows = []
     for sink in result.get("sinks", []):
-        rows.append({
+        row = {
             "sink_id": sink["id"],
             "sink_label": sink["label"],
             "sink_type": sink["sink_type"],
@@ -26,7 +26,10 @@ def _legacy_json_rows(result: dict) -> list[dict]:
                 }
                 for caller in sink.get("callers", [])
             ],
-        })
+        }
+        if "metadata" in sink:
+            row["metadata"] = sink["metadata"]
+        rows.append(row)
     return rows
 
 
@@ -38,6 +41,7 @@ def sinks(
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     max_results: int = typer.Option(100, "--max-results", help="Max sinks to expand (0 = all)"),
     max_callers_per_sink: int = typer.Option(20, "--max-callers-per-sink", help="Max reachable callers per sink (0 = all)"),
+    include_metadata: bool = typer.Option(False, "--include-metadata", help="Include full parsed sink metadata in JSON results"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     result = json.loads(mcp_server.cs_sinks(
@@ -47,6 +51,7 @@ def sinks(
         exclude_research=exclude_research,
         max_results=max_results,
         max_callers_per_sink=max_callers_per_sink,
+        include_metadata=include_metadata,
     ))
 
     if "error" in result:

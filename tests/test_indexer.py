@@ -1822,6 +1822,43 @@ class TestIndexing:
         ]
         assert max(sink_buffer_sizes) == 3
 
+    def test_sinks_omit_metadata_by_default_for_mcp_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.transfer()",
+            label="transfer",
+            type="function",
+            visibility="public",
+            file="Vault.sol",
+            metadata=json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+                "large": ["x"] * 50,
+            }),
+        )
+
+        compact = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+        ))
+        detailed = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            include_metadata=True,
+        ))
+
+        assert compact["include_metadata"] is False
+        assert compact["sinks"][0]["sink_type"] == "fund_transfer"
+        assert compact["sinks"][0]["source_context"] == "production"
+        assert "metadata" not in compact["sinks"][0]
+        assert detailed["include_metadata"] is True
+        assert detailed["sinks"][0]["metadata"]["large"] == ["x"] * 50
+
     def test_sinks_streams_rows_and_uncaps_callers_with_zero(self, tmp_db, monkeypatch):
         import mcp_server
 
