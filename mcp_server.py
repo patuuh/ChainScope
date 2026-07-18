@@ -502,6 +502,13 @@ def _append_capped(items: list, item, total: int, limit: int) -> int:
     return total
 
 
+def _append_top(items: list, item, total: int, top: int) -> int:
+    total += 1
+    if len(items) < top:
+        items.append(item)
+    return total
+
+
 def _collect_mapped_items(items, mapper, max_items: int) -> tuple[list, dict]:
     max_items = max(max_items, 0)
     total = 0
@@ -1444,10 +1451,11 @@ def cs_audit(
 
         # --- 6. Reentrancy findings (detailed, formerly cs_reentrancy) ---
         reent = []
+        reent_total = 0
         for row in all_funcs:
             meta = func_meta_cache.get(row["id"], {})
             if meta.get("reentrancy_risk"):
-                reent.append({
+                reent_total = _append_top(reent, {
                     "function": row["label"],
                     "file": row["file"],
                     "line": row["line_start"],
@@ -1455,9 +1463,9 @@ def cs_audit(
                     "type": "single_function",
                     "details": meta.get("reentrancy_details", ""),
                     "modifiers": guard_labels_by_target.get(row["id"], []),
-                })
+                }, reent_total, top)
             for cr in meta.get("cross_reentrancy", []):
-                reent.append({
+                reent_total = _append_top(reent, {
                     "function": row["label"],
                     "file": row["file"],
                     "line": row["line_start"],
@@ -1465,9 +1473,9 @@ def cs_audit(
                     "type": "cross_function",
                     "via": cr["via"],
                     "stale_vars": cr["stale_vars"],
-                })
-        if reent:
-            report["reentrancy"] = reent[:top]
+                }, reent_total, top)
+        if reent_total:
+            report["reentrancy"] = reent
 
         # --- 7. Taint paths (entry→sink) ---
         sink_ids = set()
@@ -1554,6 +1562,7 @@ def cs_audit(
 
         # --- 9. Access control gaps (formerly cs_access) ---
         access_gaps = []
+        access_gaps_total = 0
         for row in all_funcs:
             meta = func_meta_cache.get(row["id"], {})
             vis = row["visibility"]
@@ -1589,16 +1598,16 @@ def cs_audit(
                 continue
             wt = write_targets.get(row["id"], [])
             wvars = [t.split("::")[-1].split(".")[-1] for t in wt[:5]]
-            access_gaps.append({
+            access_gaps_total = _append_top(access_gaps, {
                 "function": row["label"],
                 "file": row["file"],
                 "source_context": meta.get("source_context", "production"),
                 "visibility": vis,
                 "state_writes": wvars,
-            })
-        if access_gaps:
-            report["access_control_gaps"] = access_gaps[:top]
-            report["access_gaps_total"] = len(access_gaps)
+            }, access_gaps_total, top)
+        if access_gaps_total:
+            report["access_control_gaps"] = access_gaps
+            report["access_gaps_total"] = access_gaps_total
 
         # --- 10. Silent state changes (formerly cs_events) ---
         emitters = set()
@@ -1639,7 +1648,9 @@ def cs_audit(
             library_ids.add(r["id"])
 
         dead_internal = []
+        dead_internal_total = 0
         orphan_writers = []
+        orphan_writers_total = 0
         for func in all_funcs:
             fid = func["id"]
             vis = func["visibility"]
@@ -1658,29 +1669,29 @@ def cs_audit(
                     parent_id = ""
                 if parent_id in library_ids:
                     continue
-                dead_internal.append({
+                dead_internal_total = _append_top(dead_internal, {
                     "function": func["label"],
                     "file": func["file"],
                     "source_context": meta.get("source_context", "production"),
                     "visibility": vis,
-                })
+                }, dead_internal_total, top)
             elif vis in ("external", "public"):
                 wt = write_targets.get(fid, [])
                 if wt and not meta.get("view") and not meta.get("pure"):
                     wvars = [t.split("::")[-1].split(".")[-1] for t in wt[:5]]
-                    orphan_writers.append({
+                    orphan_writers_total = _append_top(orphan_writers, {
                         "function": func["label"],
                         "file": func["file"],
                         "source_context": meta.get("source_context", "production"),
                         "visibility": vis,
                         "state_writes": wvars,
-                    })
+                    }, orphan_writers_total, top)
 
         report["dead_code"] = {
-            "dead_internal": dead_internal[:top],
-            "dead_internal_total": len(dead_internal),
-            "direct_entry_points": orphan_writers[:top],
-            "direct_entry_points_total": len(orphan_writers),
+            "dead_internal": dead_internal,
+            "dead_internal_total": dead_internal_total,
+            "direct_entry_points": orphan_writers,
+            "direct_entry_points_total": orphan_writers_total,
         }
 
         # --- 12. DeFi + Unsafe summary counts ---
@@ -1710,16 +1721,16 @@ def cs_audit(
         sections = {
             "attack_surface": _section_summary(attack_surface_total, len(report.get("attack_surface", []))),
             "critical_hotspots": _section_summary(hotspot_total, len(report.get("critical_hotspots", []))),
-            "reentrancy": _section_summary(len(reent), len(report.get("reentrancy", []))),
+            "reentrancy": _section_summary(reent_total, len(report.get("reentrancy", []))),
             "taint_paths": _section_summary(len(taint_results), len(report.get("taint_paths", []))),
-            "access_control_gaps": _section_summary(len(access_gaps), len(report.get("access_control_gaps", []))),
+            "access_control_gaps": _section_summary(access_gaps_total, len(report.get("access_control_gaps", []))),
             "silent_state_changes": _section_summary(len(silent), len(report.get("silent_state_changes", []))),
             "dead_code.dead_internal": _section_summary(
-                len(dead_internal),
+                dead_internal_total,
                 len(report["dead_code"]["dead_internal"]),
             ),
             "dead_code.direct_entry_points": _section_summary(
-                len(orphan_writers),
+                orphan_writers_total,
                 len(report["dead_code"]["direct_entry_points"]),
             ),
         }

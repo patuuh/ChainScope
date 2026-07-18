@@ -354,6 +354,60 @@ class TestIndexing:
         assert [item["function"] for item in audit["critical_hotspots"]] == ["set0", "set1"]
         assert max(heap_sizes) == 2
 
+    def test_audit_retains_only_top_append_sections(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(12):
+            func_id = f"Vault{i}.sol::Vault{i}.set(uint256)"
+            state_id = f"Vault{i}.sol::Vault{i}.total"
+            db.insert_node(
+                id=func_id,
+                label=f"set{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({"reentrancy_risk": True}),
+            )
+            db.insert_node(
+                id=state_id,
+                label="total",
+                type="state_var",
+                file=f"Vault{i}.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+            db.insert_node(
+                id=f"Vault{i}.sol::Vault{i}.helper()",
+                label=f"helper{i}",
+                type="function",
+                visibility="internal",
+                file=f"Vault{i}.sol",
+                line_start=100 + i,
+            )
+
+        real_append_top = mcp_server._append_top
+        retained_sizes = []
+
+        def tracking_append_top(items, item, total, top):
+            updated = real_append_top(items, item, total, top)
+            retained_sizes.append(len(items))
+            return updated
+
+        monkeypatch.setattr(mcp_server, "_append_top", tracking_append_top)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=2))
+        sections = audit["_summary"]["sections"]
+
+        assert sections["reentrancy"] == {"total": 12, "shown": 2, "truncated": True}
+        assert sections["access_control_gaps"] == {"total": 12, "shown": 2, "truncated": True}
+        assert sections["dead_code.dead_internal"] == {"total": 12, "shown": 2, "truncated": True}
+        assert sections["dead_code.direct_entry_points"] == {"total": 12, "shown": 2, "truncated": True}
+        assert audit["access_gaps_total"] == 12
+        assert audit["dead_code"]["dead_internal_total"] == 12
+        assert audit["dead_code"]["direct_entry_points_total"] == 12
+        assert max(retained_sizes) == 2
+
     def test_audit_taint_summary_reports_full_total(self, tmp_db):
         import mcp_server
 
