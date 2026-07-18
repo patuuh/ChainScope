@@ -132,10 +132,8 @@ def _find_node_ids_capped(
         matched_before_scope = False
         for row in conn.execute(sql, params):
             matched_before_scope = True
-            if exclude_research:
-                meta = _load_metadata(row["metadata"])
-                if not _include_metadata(meta, exclude_research):
-                    continue
+            if exclude_research and _is_research_metadata_raw(row["metadata"]):
+                continue
             total = _append_capped(ids, row["id"], total, retain_limit)
         if total or matched_before_scope:
             return ids, total, matched_before_scope
@@ -158,10 +156,8 @@ def _find_function_rows_capped(
             matched_before_scope = True
             item = dict(row)
             if exclude_research:
-                meta = _load_metadata(item.get("metadata"))
-                if not _include_metadata(meta, exclude_research):
+                if _is_research_metadata_raw(item.get("metadata")):
                     continue
-                item["_metadata_parsed"] = meta
             total = _append_capped(rows, item, total, retain_limit)
         if total or matched_before_scope:
             return rows, total, matched_before_scope
@@ -183,10 +179,8 @@ def _find_nodes_bounded(
             matched_before_scope = True
             item = dict(row)
             if exclude_research:
-                meta = _load_metadata(item.get("metadata"))
-                if not _include_metadata(meta, exclude_research):
+                if _is_research_metadata_raw(item.get("metadata")):
                     continue
-                item["_metadata_parsed"] = meta
             total = _append_capped(rows, item, total, retain_limit)
         if total or matched_before_scope:
             return rows, total, matched_before_scope
@@ -228,10 +222,8 @@ def _find_state_vars_bounded(
             matched_before_scope = True
             item = dict(row)
             if exclude_research:
-                meta = _load_metadata(item.get("metadata"))
-                if not _include_metadata(meta, exclude_research):
+                if _is_research_metadata_raw(item.get("metadata")):
                     continue
-                item["_metadata_parsed"] = meta
             total = _append_capped(rows, item, total, retain_limit)
         if total or matched_before_scope:
             return rows, total, matched_before_scope

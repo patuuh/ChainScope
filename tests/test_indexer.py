@@ -3682,7 +3682,9 @@ class TestIndexing:
             )
 
         real_append = mcp_server._append_capped
+        real_load = mcp_server._load_metadata
         match_buffer_sizes = []
+        parsed = []
 
         def tracking_append(items, item, total, limit):
             updated = real_append(items, item, total, limit)
@@ -3690,7 +3692,12 @@ class TestIndexing:
                 match_buffer_sizes.append(len(items))
             return updated
 
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
         monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
 
         lookup = json.loads(mcp_server.cs_lookup(
             name="transfer",
@@ -3705,6 +3712,7 @@ class TestIndexing:
         assert lookup["candidate_summary"] == {"total": 40, "shown": 4, "truncated": True}
         assert len(lookup["candidates"]) == 4
         assert max(match_buffer_sizes) == 4
+        assert len(parsed) == 2
 
     def test_lookup_batches_ambiguous_candidate_loads(self, tmp_db, monkeypatch):
         import mcp_server
@@ -4102,7 +4110,7 @@ class TestIndexing:
         assert prod_trace["query_scope"] == "production_only"
         assert prod_writer_contexts == {"set": "production"}
 
-    def test_trace_preserves_exact_match_stage_when_excluding_research(self, tmp_db):
+    def test_trace_preserves_exact_match_stage_when_excluding_research(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
@@ -4121,6 +4129,15 @@ class TestIndexing:
             metadata=json.dumps({"source_context": "production"}),
         )
 
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
         trace = json.loads(mcp_server.cs_trace(
             var="total",
             db=tmp_db,
@@ -4128,6 +4145,7 @@ class TestIndexing:
         ))
 
         assert trace == {"error": "No production state variable found matching 'total'"}
+        assert parsed == []
 
     def test_trace_caps_ambiguous_variables_for_llm_context(self, tmp_db):
         import mcp_server
@@ -4814,7 +4832,7 @@ class TestIndexing:
         assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
         assert any("e.source = ? AND e.relation IN" in sql for sql in statements)
 
-    def test_paths_preserves_exact_match_stage_when_excluding_research(self, tmp_db):
+    def test_paths_preserves_exact_match_stage_when_excluding_research(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
@@ -4840,6 +4858,15 @@ class TestIndexing:
             metadata=json.dumps({"source_context": "production"}),
         )
 
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
         paths = json.loads(mcp_server.cs_paths(
             from_label="start",
             to_label="finish",
@@ -4848,6 +4875,7 @@ class TestIndexing:
         ))
 
         assert paths == {"error": "No production node found matching 'start'"}
+        assert parsed == []
 
     def test_paths_cap_ambiguous_endpoints_for_llm_context(self, tmp_db):
         import mcp_server
