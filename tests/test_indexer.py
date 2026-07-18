@@ -1246,6 +1246,45 @@ class TestIndexing:
         assert parsed.count(prod_meta) == 1
         assert parsed.count(script_meta) == 0
 
+    def test_audit_exclude_research_skips_neutral_production_parse(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        prod_meta = json.dumps({"source_context": "production", "large": ["x"] * 20})
+        script_meta = json.dumps({"source_context": "script", "large": ["x"] * 20})
+        for i in range(20):
+            db.insert_node(
+                id=f"prod/Vault{i}.sol::Vault{i}.viewOnly()",
+                label=f"viewOnly{i}",
+                type="function",
+                visibility="external",
+                file=f"prod/Vault{i}.sol",
+                metadata=prod_meta,
+            )
+            db.insert_node(
+                id=f"scripts/Deploy{i}.sol::Deploy{i}.run()",
+                label=f"run{i}",
+                type="function",
+                visibility="external",
+                file=f"scripts/Deploy{i}.sol",
+                metadata=script_meta,
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10, exclude_research=True))
+
+        assert audit["stats"]["functions"] == 20
+        assert audit["source_context_summary"] == {"production": 20}
+        assert parsed == []
+
     def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
         import mcp_server
 

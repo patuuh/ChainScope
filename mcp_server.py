@@ -2174,8 +2174,7 @@ def cs_audit(
             meta = preloaded_function_meta.get(row["id"])
             raw_meta = row["metadata"]
             if meta is None and exclude_research:
-                meta = _load_metadata(row["metadata"])
-                if exclude_research and _is_research_meta(meta):
+                if _is_research_metadata_raw(raw_meta):
                     continue
             all_funcs.append(row)
             func_by_id[row["id"]] = row
