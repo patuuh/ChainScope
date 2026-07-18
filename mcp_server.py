@@ -13,6 +13,8 @@ import sys
 import logging
 import sqlite3
 import time
+import multiprocessing as mp
+import queue as queue_mod
 from pathlib import Path
 from urllib.parse import quote
 
@@ -147,6 +149,56 @@ def _include_metadata(meta: dict, exclude_research: bool) -> bool:
 TRAVERSAL_RELATIONS = ("calls", "flows_to", "inherits")
 
 
+def _query_open_error(tool: str, db_path: str, exc: sqlite3.Error) -> str:
+    """Return a consistent JSON error for graph query open failures."""
+    return json.dumps({
+        "error": f"Unable to open graph database '{db_path}': {exc}",
+        "tool": tool,
+    }, indent=2)
+
+
+def _query_sqlite_error(
+    tool: str,
+    exc: sqlite3.OperationalError,
+    timeout_seconds: int,
+    **fields,
+) -> str:
+    """Return a consistent JSON error for interrupted/failed graph queries."""
+    payload = dict(fields)
+    if "interrupted" in str(exc).lower():
+        payload.update({
+            "error": f"{tool} timed out after {timeout_seconds}s",
+            "timed_out": True,
+        })
+    else:
+        payload["error"] = f"SQLite error while running {tool}: {exc}"
+    return json.dumps(payload, indent=2)
+
+
+def _profile_repository_worker(
+    out_queue,
+    repo_path: str,
+    top: int,
+    strategy: str,
+    include_research: bool,
+) -> None:
+    """Run workspace profiling out-of-process so it can be hard-killed on timeout."""
+    try:
+        from core.project_profile import profile_repository
+
+        out_queue.put((
+            "ok",
+            profile_repository(
+                repo_path,
+                top=top,
+                strategy=strategy,
+                include_research=include_research,
+            ),
+        ))
+    except BaseException as exc:
+        out_queue.put(("error", f"{type(exc).__name__}: {exc}"))
+
+
 # ---------------------------------------------------------------------------
 # CORE TOOLS
 # ---------------------------------------------------------------------------
@@ -157,6 +209,7 @@ def cs_profile(
     top: int = 20,
     strategy: str = "balanced",
     include_research: bool = False,
+    timeout_seconds: int = DEFAULT_MCP_BUILD_TIMEOUT_SECONDS,
 ) -> str:
     """Profile a repository before building a graph.
 
@@ -170,7 +223,53 @@ def cs_profile(
         top: Number of top projects/extensions to return
         strategy: balanced (default) or bounty for exploit-surface-first ranking
         include_research: Include scripts/poc/fuzz/invariant/certora-style research artifacts
+        timeout_seconds: Hard MCP-side wall-clock budget. Returns an error instead of leaving a wedged server.
     """
+    repo = Path(repo_path)
+    if not repo.is_dir():
+        return json.dumps({
+            "error": f"Error: {repo_path} is not a directory",
+            "repo_path": repo_path,
+        }, indent=2)
+
+    if timeout_seconds and timeout_seconds > 0:
+        ctx_name = "fork" if "fork" in mp.get_all_start_methods() else mp.get_start_method()
+        ctx = mp.get_context(ctx_name)
+        out_queue = ctx.Queue(maxsize=1)
+        proc = ctx.Process(
+            target=_profile_repository_worker,
+            args=(out_queue, repo_path, top, strategy, include_research),
+            daemon=True,
+        )
+        proc.start()
+        proc.join(timeout_seconds)
+        if proc.is_alive():
+            proc.terminate()
+            proc.join(2)
+            if proc.is_alive():
+                proc.kill()
+                proc.join(2)
+            return json.dumps({
+                "error": f"cs_profile timed out after {timeout_seconds}s",
+                "repo_path": repo_path,
+                "strategy": strategy,
+                "include_research": include_research,
+                "timed_out": True,
+                "_hint": "Profile a narrower repo_path or increase timeout_seconds.",
+            }, indent=2)
+        try:
+            status, payload = out_queue.get_nowait()
+        except queue_mod.Empty:
+            status, payload = ("error", f"profile worker exited with code {proc.exitcode} and returned no result")
+        if status == "ok":
+            return json.dumps(payload, indent=2)
+        return json.dumps({
+            "error": f"cs_profile failed: {payload}",
+            "repo_path": repo_path,
+            "strategy": strategy,
+            "include_research": include_research,
+        }, indent=2)
+
     from core.project_profile import profile_repository
 
     return json.dumps(
@@ -490,7 +589,12 @@ def _score_function(row, meta, writes, ext_calls, guard_count):
 
 
 @mcp.tool()
-def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str:
+def cs_audit(
+    db: str = "",
+    top: int = 15,
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
     """Generate a comprehensive security audit report in one call.
 
     Combines: graph stats, attack surface, detection tallies, hotspot ranking,
@@ -504,14 +608,14 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
         db: Database path (default: graph.db)
         top: Max findings per category (default: 15)
         exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
-    from core.schema import GraphDB
-    from core.graph import Graph
-
     db_path = _resolve_db(db)
-    graph_db = GraphDB(db_path)
-    graph = Graph(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_audit", db_path, exc)
+
     try:
         report: dict = {}
 
@@ -546,7 +650,15 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
             "sinks": sink_count,
         }
         report["query_scope"] = "production_only" if exclude_research else "all_sources"
-        build_info = graph_db.get_metadata("build_info")
+        build_info = None
+        build_row = conn.execute(
+            "SELECT value FROM graph_metadata WHERE key = 'build_info'"
+        ).fetchone()
+        if build_row:
+            try:
+                build_info = json.loads(build_row["value"])
+            except Exception:
+                build_info = build_row["value"]
         if build_info:
             report["build_info"] = build_info
 
@@ -588,7 +700,7 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
         func_meta_cache: dict[str, dict] = {}
         func_by_id: dict[str, dict] = {}
         for row in all_funcs:
-            meta = json.loads(row["metadata"] or "{}")
+            meta = _load_metadata(row["metadata"])
             if exclude_research and _is_research_meta(meta):
                 continue
             func_meta_cache[row["id"]] = meta
@@ -629,10 +741,45 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
         ).fetchall():
             ext_call_map[r["source"]] = ext_call_map.get(r["source"], 0) + r["cnt"]
 
-        adj = graph._build_adjacency(conn)
+        adj: dict[str, list[str]] = {}
+        for r in conn.execute(
+            "SELECT source, target FROM edges WHERE relation IN (?, ?, ?)",
+            TRAVERSAL_RELATIONS,
+        ).fetchall():
+            adj.setdefault(r["source"], []).append(r["target"])
+
+        def _reachable(start_id: str) -> set[str]:
+            reachable = {start_id}
+            queue = [start_id]
+            pos = 0
+            while pos < len(queue):
+                current = queue[pos]
+                pos += 1
+                for neighbor in adj.get(current, []):
+                    if neighbor not in reachable:
+                        reachable.add(neighbor)
+                        queue.append(neighbor)
+            return reachable
 
         # --- 4. Attack surface (formerly in cs_summary) ---
-        attack_surface = graph.get_attack_surface()
+        attack_surface = []
+        for row in all_funcs:
+            if row["visibility"] not in ("public", "external"):
+                continue
+            if row["id"] not in func_meta_cache:
+                continue
+            reachable = _reachable(row["id"])
+            write_count = sum(write_map.get(rid, 0) for rid in reachable)
+            attack_surface.append({
+                "id": row["id"],
+                "label": row["label"],
+                "file": row["file"],
+                "signature": row["signature"],
+                "reachable_count": len(reachable),
+                "state_writes": write_count,
+                "metadata": row["metadata"],
+            })
+        attack_surface.sort(key=lambda x: x["state_writes"], reverse=True)
         if attack_surface:
             report["attack_surface"] = attack_surface[:top]
 
@@ -704,7 +851,7 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
         for s in conn.execute(
             "SELECT id, label, metadata FROM nodes WHERE metadata LIKE '%\"is_sink\"%'"
         ).fetchall():
-            smeta = json.loads(s["metadata"])
+            smeta = _load_metadata(s["metadata"])
             if smeta.get("is_sink"):
                 sink_ids.add(s["id"])
                 sink_info[s["id"]] = {
@@ -728,7 +875,7 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
                 if not (po >= 0 and pc > po + 1):
                     continue
                 is_guarded = row["id"] in guard_set
-                reachable = graph.get_reachable_nodes([row["id"]], adj=adj)
+                reachable = _reachable(row["id"])
                 reached = reachable & sink_ids
                 if reached:
                     sink_details = []
@@ -762,8 +909,11 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
                 st = si.get("type", "unknown")
                 sink_type_counts[st] = sink_type_counts.get(st, 0) + 1
             # Build reverse adjacency for backward BFS
-            rev_adj = graph._build_reverse_adjacency(conn)
-            node_map = graph._build_node_map(conn)
+            rev_adj: dict[str, list[str]] = {}
+            for r in conn.execute(
+                "SELECT source, target FROM edges WHERE relation = 'calls'"
+            ).fetchall():
+                rev_adj.setdefault(r["target"], []).append(r["source"])
             # Count how many unique functions can reach each sink type
             sink_reachable: dict[str, set] = {}
             for sid, si in sink_info.items():
@@ -948,6 +1098,14 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
             report["unsafe_summary"] = unsafe_counts
 
         return json.dumps(report, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_audit",
+            exc,
+            timeout_seconds,
+            top=top,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 
@@ -957,7 +1115,12 @@ def cs_audit(db: str = "", top: int = 15, exclude_research: bool = False) -> str
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
-def cs_hotspots(db: str = "", top: int = 30, exclude_research: bool = False) -> str:
+def cs_hotspots(
+    db: str = "",
+    top: int = 30,
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
     """Rank functions by composite risk score — highest-priority bug bounty targets.
 
     Scores each function based on overlapping risk indicators:
@@ -992,12 +1155,14 @@ def cs_hotspots(db: str = "", top: int = 30, exclude_research: bool = False) -> 
         db: Database path (default: graph.db)
         top: Number of top results to return (default: 30)
         exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
-    from core.schema import GraphDB
-
     db_path = _resolve_db(db)
-    graph_db = GraphDB(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_hotspots", db_path, exc)
+
     try:
         # Get all functions
         rows = conn.execute("""
@@ -1005,37 +1170,50 @@ def cs_hotspots(db: str = "", top: int = 30, exclude_research: bool = False) -> 
             FROM nodes WHERE type = 'function'
         """).fetchall()
 
+        write_map = {
+            r["source"]: r["cnt"]
+            for r in conn.execute("""
+                SELECT source, COUNT(*) as cnt
+                FROM edges
+                WHERE relation = 'writes_state'
+                GROUP BY source
+            """).fetchall()
+        }
+        ext_call_map = {
+            r["source"]: r["cnt"]
+            for r in conn.execute("""
+                SELECT source, COUNT(*) as cnt
+                FROM edges
+                WHERE relation = 'calls'
+                  AND attributes LIKE '%"unresolved"%'
+                  AND attributes NOT LIKE '%"internal_candidate"%'
+                GROUP BY source
+            """).fetchall()
+        }
+        guard_map = {
+            r["target"]: r["cnt"]
+            for r in conn.execute("""
+                SELECT target, COUNT(*) as cnt
+                FROM edges
+                WHERE relation = 'guards'
+                GROUP BY target
+            """).fetchall()
+        }
+
         scored = []
         for r in rows:
             if r["label"] in ("constructor", "fallback", "receive"):
                 continue
-            meta = json.loads(r["metadata"] or "{}")
+            meta = _load_metadata(r["metadata"])
             if exclude_research and _is_research_meta(meta):
                 continue
 
-            writes = conn.execute(
-                "SELECT COUNT(*) as cnt FROM edges "
-                "WHERE source = ? AND relation = 'writes_state'",
-                (r["id"],)
-            ).fetchone()["cnt"]
-
-            ext_calls = conn.execute(
-                "SELECT COUNT(*) as cnt FROM edges "
-                "WHERE source = ? AND relation = 'calls' "
-                "AND attributes LIKE '%\"unresolved\"%' "
-                "AND attributes NOT LIKE '%\"internal_candidate\"%'",
-                (r["id"],)
-            ).fetchone()["cnt"]
-
-            # Only query guards when needed (entry point with writes)
+            writes = write_map.get(r["id"], 0)
+            ext_calls = ext_call_map.get(r["id"], 0)
             guards = 0
             vis = r["visibility"]
             if vis in ("external", "public") and writes > 0:
-                guards = conn.execute(
-                    "SELECT COUNT(*) as cnt FROM edges "
-                    "WHERE target = ? AND relation = 'guards'",
-                    (r["id"],)
-                ).fetchone()["cnt"]
+                guards = guard_map.get(r["id"], 0)
 
             score, reasons = _score_function(r, meta, writes, ext_calls, guards)
 
@@ -1069,12 +1247,25 @@ def cs_hotspots(db: str = "", top: int = 30, exclude_research: bool = False) -> 
                 "query_scope": "production_only" if exclude_research else "all_sources",
             }
         }, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_hotspots",
+            exc,
+            timeout_seconds,
+            top=top,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 
 
 @mcp.tool()
-def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) -> str:
+def cs_defi(
+    db: str = "",
+    category: str = "",
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
     """Find DeFi-specific vulnerability patterns in Solidity contracts.
 
     Detects high-value bug bounty targets:
@@ -1097,15 +1288,25 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
         db: Database path (default: graph.db)
         category: Filter: timestamp, erc20, oracle, signature, precision, dos, frontrun, downcast, flashloan, slippage, callback, anchor, cpi_reentrancy, transfer, crosscontract, all (default: all)
         exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
-    from core.schema import GraphDB
-
     db_path = _resolve_db(db)
-    graph_db = GraphDB(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_defi", db_path, exc)
+
     try:
         cat = category.lower() if category else "all"
         results: dict = {}
+        function_rows = conn.execute(
+            "SELECT label, file, line_start, visibility, signature, metadata "
+            "FROM nodes WHERE type = 'function'"
+        ).fetchall()
+
+        def _function_rows_with(metadata_key: str) -> list:
+            needle = f'"{metadata_key}"'
+            return [r for r in function_rows if needle in (r["metadata"] or "")]
 
         def _include(meta: dict) -> bool:
             return not (exclude_research and _is_research_meta(meta))
@@ -1115,13 +1316,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Timestamp dependence ---
         if cat in ("all", "timestamp"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"timestamp_dependence\"%'"
-            ).fetchall()
+            rows = _function_rows_with("timestamp_dependence")
             ts_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 ts_fns.append({
@@ -1134,13 +1332,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Unchecked ERC20 returns ---
         if cat in ("all", "erc20"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"unchecked_erc20\"%'"
-            ).fetchall()
+            rows = _function_rows_with("unchecked_erc20")
             erc_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 erc_fns.append({
@@ -1153,13 +1348,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Oracle / price manipulation ---
         if cat in ("all", "oracle"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"oracle_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("oracle_risk")
             oracle_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 oracle_fns.append({
@@ -1172,13 +1364,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Signature replay ---
         if cat in ("all", "signature"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"signature_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("signature_risk")
             sig_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 sig_fns.append({
@@ -1191,13 +1380,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Precision loss ---
         if cat in ("all", "precision"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"precision_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("precision_risk")
             prec_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 prec_fns.append({
@@ -1210,13 +1396,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- DoS risks ---
         if cat in ("all", "dos"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"dos_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("dos_risk")
             dos_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 dos_fns.append({
@@ -1229,13 +1412,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Frontrunning surface ---
         if cat in ("all", "frontrun"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"frontrun_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("frontrun_risk")
             fr_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 fr_fns.append({
@@ -1248,13 +1428,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Unsafe downcasts ---
         if cat in ("all", "downcast"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"unsafe_downcast\"%'"
-            ).fetchall()
+            rows = _function_rows_with("unsafe_downcast")
             dc_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 dc_fns.append({
@@ -1267,13 +1444,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Flash loan callbacks ---
         if cat in ("all", "flashloan"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"flash_loan_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("flash_loan_risk")
             fl_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 fl_fns.append({
@@ -1286,13 +1460,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Slippage / deadline missing ---
         if cat in ("all", "slippage"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"slippage_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("slippage_risk")
             sl_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 sl_fns.append({
@@ -1305,13 +1476,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- ERC callback reentrancy ---
         if cat in ("all", "callback"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"erc_callback_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("erc_callback_risk")
             cb_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 cb_fns.append({
@@ -1324,13 +1492,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Anchor-specific risks ---
         if cat in ("all", "anchor"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"anchor_risks\"%'"
-            ).fetchall()
+            rows = _function_rows_with("anchor_risks")
             anch_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 anch_fns.append({
@@ -1343,13 +1508,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- CPI reentrancy (Anchor) ---
         if cat in ("all", "cpi_reentrancy"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"cpi_reentrancy_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("cpi_reentrancy_risk")
             cpi_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 cpi_fns.append({
@@ -1362,13 +1524,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
 
         # --- Cross-language transfer/cross-contract sinks ---
         if cat in ("all", "transfer"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"transfer_sinks\"%'"
-            ).fetchall()
+            rows = _function_rows_with("transfer_sinks")
             transfer_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 transfer_fns.append({
@@ -1381,13 +1540,10 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
                 results["transfer_sinks"] = transfer_fns
 
         if cat in ("all", "crosscontract"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"cross_contract_calls\"%'"
-            ).fetchall()
+            rows = _function_rows_with("cross_contract_calls")
             cc_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 cc_fns.append({
@@ -1408,12 +1564,25 @@ def cs_defi(db: str = "", category: str = "", exclude_research: bool = False) ->
         }
 
         return json.dumps(results, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_defi",
+            exc,
+            timeout_seconds,
+            category=cat,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 
 
 @mcp.tool()
-def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) -> str:
+def cs_unsafe(
+    db: str = "",
+    category: str = "",
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
     """Find Rust/Go/Java/Python/TypeScript/DSL security issues.
 
     Cross-language security scanner for non-Solidity codebases. Detects:
@@ -1427,15 +1596,25 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
         db: Database path (default: graph.db)
         category: Filter: unsafe, panic, race, ffi, validation, go, type_assert, sql, java, python, js, command, keys, deser, reflection, injection, crypto, downcast, dead_params, all (default: all)
         exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
-    from core.schema import GraphDB
-
     db_path = _resolve_db(db)
-    graph_db = GraphDB(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_unsafe", db_path, exc)
+
     try:
         cat = category.lower() if category else "all"
         results: dict = {}
+        function_rows = conn.execute(
+            "SELECT label, file, line_start, visibility, signature, metadata "
+            "FROM nodes WHERE type = 'function'"
+        ).fetchall()
+
+        def _function_rows_with(metadata_key: str) -> list:
+            needle = f'"{metadata_key}"'
+            return [r for r in function_rows if needle in (r["metadata"] or "")]
 
         def _include(meta: dict) -> bool:
             return not (exclude_research and _is_research_meta(meta))
@@ -1445,13 +1624,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Unsafe blocks (Rust) ---
         if cat in ("all", "unsafe"):
-            rows = conn.execute(
-                "SELECT label, file, signature, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"unsafe_blocks\"%'"
-            ).fetchall()
+            rows = _function_rows_with("unsafe_blocks")
             unsafe_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 unsafe_fns.append({
@@ -1466,13 +1642,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Panic/unwrap sinks (Rust) ---
         if cat in ("all", "panic"):
-            rows = conn.execute(
-                "SELECT label, file, signature, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"panic_paths\"%'"
-            ).fetchall()
+            rows = _function_rows_with("panic_paths")
             panic_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 panic_fns.append({
@@ -1485,13 +1658,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Race conditions (Go) ---
         if cat in ("all", "race"):
-            rows = conn.execute(
-                "SELECT label, file, signature, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"potential_race\"%'"
-            ).fetchall()
+            rows = _function_rows_with("potential_race")
             races = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 race_info = meta.get("potential_race", {})
@@ -1512,7 +1682,7 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
             ).fetchall()
             ffi_sinks = []
             for r in sink_rows:
-                meta = json.loads(r["metadata"] or "{}")
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 ffi_sinks.append({"operation": r["label"], "file": r["file"], "source_context": _ctx(meta)})
@@ -1521,13 +1691,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Missing validation (both Rust and Go) ---
         if cat in ("all", "validation"):
-            rows = conn.execute(
-                "SELECT label, file, signature, visibility, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"no_input_validation\"%'"
-            ).fetchall()
+            rows = _function_rows_with("no_input_validation")
             no_val = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 if meta.get("no_input_validation"):
@@ -1541,13 +1708,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Wrapping arithmetic (Rust) ---
         if cat in ("all", "unsafe"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"wrapping_arithmetic\"%'"
-            ).fetchall()
+            rows = _function_rows_with("wrapping_arithmetic")
             wrap_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 wrap_fns.append({
@@ -1560,13 +1724,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Go: Unsafe type assertions ---
         if cat in ("all", "go", "type_assert"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"unsafe_type_assertions\"%'"
-            ).fetchall()
+            rows = _function_rows_with("unsafe_type_assertions")
             ta_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 ta_fns.append({
@@ -1579,13 +1740,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Go: SQL injection ---
         if cat in ("all", "go", "sql"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"sql_injection_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("sql_injection_risk")
             sql_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 sql_fns.append({
@@ -1598,13 +1756,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Deserialization sinks ---
         if cat in ("all", "java", "python", "js", "deser"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"deserialization_sinks\"%'"
-            ).fetchall()
+            rows = _function_rows_with("deserialization_sinks")
             deser_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 deser_fns.append({
@@ -1617,13 +1772,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Java: Reflection usage ---
         if cat in ("all", "java", "reflection"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"reflection_usage\"%'"
-            ).fetchall()
+            rows = _function_rows_with("reflection_usage")
             refl_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 refl_fns.append({
@@ -1636,13 +1788,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Java: Injection sinks ---
         if cat in ("all", "java", "injection"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"injection_sinks\"%'"
-            ).fetchall()
+            rows = _function_rows_with("injection_sinks")
             inj_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 inj_fns.append({
@@ -1655,13 +1804,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Weak crypto ---
         if cat in ("all", "java", "python", "js", "crypto"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"weak_crypto\"%'"
-            ).fetchall()
+            rows = _function_rows_with("weak_crypto")
             crypto_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 crypto_fns.append({
@@ -1674,13 +1820,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Python/TypeScript: command execution ---
         if cat in ("all", "python", "command"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"command_injection_risk\"%'"
-            ).fetchall()
+            rows = _function_rows_with("command_injection_risk")
             cmd_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 cmd_fns.append({
@@ -1694,13 +1837,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Python/TypeScript: private key material handling ---
         if cat in ("all", "python", "js", "keys"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"private_key_material\"%'"
-            ).fetchall()
+            rows = _function_rows_with("private_key_material")
             key_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 key_fns.append({
@@ -1713,13 +1853,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Java: Swallowed exceptions ---
         if cat in ("all", "java"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"swallowed_exceptions\"%'"
-            ).fetchall()
+            rows = _function_rows_with("swallowed_exceptions")
             swallow_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 if meta.get("swallowed_exceptions", 0) > 0:
@@ -1733,13 +1870,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Java: Resource leaks ---
         if cat in ("all", "java"):
-            rows = conn.execute(
-                "SELECT label, file, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"resource_leaks\"%'"
-            ).fetchall()
+            rows = _function_rows_with("resource_leaks")
             leak_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 leak_fns.append({
@@ -1752,13 +1886,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Unsafe downcasts (Solidity) ---
         if cat in ("all", "downcast"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"unsafe_downcast\"%'"
-            ).fetchall()
+            rows = _function_rows_with("unsafe_downcast")
             dc_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 dc_fns.append({
@@ -1771,13 +1902,10 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
 
         # --- Dead parameters ---
         if cat in ("all", "dead_params"):
-            rows = conn.execute(
-                "SELECT label, file, line_start, visibility, metadata FROM nodes "
-                "WHERE type = 'function' AND metadata LIKE '%\"dead_params\"%'"
-            ).fetchall()
+            rows = _function_rows_with("dead_params")
             dp_fns = []
             for r in rows:
-                meta = json.loads(r["metadata"])
+                meta = _load_metadata(r["metadata"])
                 if not _include(meta):
                     continue
                 dp_fns.append({
@@ -1798,6 +1926,14 @@ def cs_unsafe(db: str = "", category: str = "", exclude_research: bool = False) 
         }
 
         return json.dumps(results, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_unsafe",
+            exc,
+            timeout_seconds,
+            category=cat,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 
@@ -1815,6 +1951,7 @@ def cs_paths(
     show_guards: bool = False,
     show_state: bool = False,
     exclude_research: bool = False,
+    timeout_seconds: int = 0,
 ) -> str:
     """Find call paths between two functions in the knowledge graph.
 
@@ -1829,17 +1966,24 @@ def cs_paths(
         show_guards: Annotate each hop with its modifier/guard protections
         show_state: Annotate each hop with state variable reads/writes
         exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
     from collections import deque
-    from core.schema import GraphDB
 
     db_path = _resolve_db(db)
-    graph_db = GraphDB(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_paths", db_path, exc)
+
     try:
         all_nodes = conn.execute(
             "SELECT id, label, metadata FROM nodes"
         ).fetchall()
+        node_labels = {row["id"]: row["label"] for row in all_nodes}
+        label_counts: dict[str, int] = {}
+        for label in node_labels.values():
+            label_counts[label] = label_counts.get(label, 0) + 1
         node_meta = {row["id"]: _load_metadata(row["metadata"]) for row in all_nodes}
         allowed_ids = {
             row["id"] for row in all_nodes
@@ -1873,18 +2017,10 @@ def cs_paths(
             adjacency.setdefault(row["source"], []).append(row["target"])
 
         def _label_for_node(node_id: str) -> str:
-            row = conn.execute(
-                "SELECT label FROM nodes WHERE id = ?",
-                (node_id,),
-            ).fetchone()
-            if not row:
+            label = node_labels.get(node_id)
+            if label is None:
                 return node_id
-            label = row["label"]
-            count = conn.execute(
-                "SELECT COUNT(*) as cnt FROM nodes WHERE label = ?",
-                (label,),
-            ).fetchone()["cnt"]
-            if count > 1:
+            if label_counts.get(label, 0) > 1:
                 return _qualified_label(node_id)
             return label
 
@@ -1976,12 +2112,27 @@ def cs_paths(
                         }
 
         return json.dumps(result, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_paths",
+            exc,
+            timeout_seconds,
+            from_label=from_label,
+            to_label=to_label,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 
 
 @mcp.tool()
-def cs_trace(var: str, db: str = "", show_callers: bool = False, exclude_research: bool = False) -> str:
+def cs_trace(
+    var: str,
+    db: str = "",
+    show_callers: bool = False,
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
     """Trace all functions that read or write a state variable.
 
     Essential for understanding who can modify critical state like balances,
@@ -1992,12 +2143,14 @@ def cs_trace(var: str, db: str = "", show_callers: bool = False, exclude_researc
         db: Database path (default: graph.db)
         show_callers: Include one level of callers for each accessor
         exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
-    from core.schema import GraphDB
-
     db_path = _resolve_db(db)
-    graph_db = GraphDB(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_trace", db_path, exc)
+
     try:
         rows = conn.execute(
             "SELECT id, label, file, signature, metadata FROM nodes WHERE label = ? AND type = 'state_var'",
@@ -2078,12 +2231,25 @@ def cs_trace(var: str, db: str = "", show_callers: bool = False, exclude_researc
             "writers": writers,
             "readers": readers,
         }, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_trace",
+            exc,
+            timeout_seconds,
+            var=var,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 
 
 @mcp.tool()
-def cs_cross(db: str = "", from_func: str = "", exclude_research: bool = False) -> str:
+def cs_cross(
+    db: str = "",
+    from_func: str = "",
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
     """Find cross-contract and cross-module calls (unresolved interfaces, delegatecall, CPI).
 
     These are trust boundary crossings — critical for identifying attack vectors
@@ -2093,55 +2259,77 @@ def cs_cross(db: str = "", from_func: str = "", exclude_research: bool = False) 
         db: Database path (default: graph.db)
         from_func: Trace from a specific function (empty = list all cross-contract calls)
         exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
-    from core.schema import GraphDB
-    from core.graph import Graph
-
     db_path = _resolve_db(db)
-    graph_db = GraphDB(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_cross", db_path, exc)
+
     try:
         if from_func:
             nodes = _find_nodes(conn, from_func)
             if not nodes:
                 return json.dumps({"error": f"No function found matching '{from_func}'"})
 
-            graph = Graph(db_path)
+            all_nodes = conn.execute(
+                "SELECT id, label, file, metadata FROM nodes"
+            ).fetchall()
+            node_by_id = {row["id"]: dict(row) for row in all_nodes}
+            node_meta = {row["id"]: _load_metadata(row["metadata"]) for row in all_nodes}
+            allowed_ids = {
+                row["id"] for row in all_nodes
+                if _include_metadata(node_meta[row["id"]], exclude_research)
+            }
+
             start_id = None
             for node in nodes:
-                row = conn.execute(
-                    "SELECT metadata FROM nodes WHERE id = ?",
-                    (node["id"],)
-                ).fetchone()
-                if row and _include_metadata(_load_metadata(row["metadata"]), exclude_research):
+                if node["id"] in allowed_ids:
                     start_id = node["id"]
                     break
             if start_id is None:
                 return json.dumps({"error": f"No production function found matching '{from_func}'"})
-            reachable = graph.get_reachable_nodes([start_id])
+
+            adjacency: dict[str, list[str]] = {}
+            for row in conn.execute(
+                "SELECT source, target FROM edges WHERE relation IN (?, ?, ?)",
+                TRAVERSAL_RELATIONS,
+            ).fetchall():
+                if row["source"] not in allowed_ids or row["target"] not in allowed_ids:
+                    continue
+                adjacency.setdefault(row["source"], []).append(row["target"])
+
+            reachable = {start_id}
+            queue = [start_id]
+            pos = 0
+            while pos < len(queue):
+                current = queue[pos]
+                pos += 1
+                for neighbor in adjacency.get(current, []):
+                    if neighbor not in reachable:
+                        reachable.add(neighbor)
+                        queue.append(neighbor)
+
+            call_edges_by_source: dict[str, list[dict]] = {}
+            for row in conn.execute(
+                "SELECT source, target, attributes FROM edges WHERE relation = 'calls'"
+            ).fetchall():
+                if row["source"] in reachable:
+                    call_edges_by_source.setdefault(row["source"], []).append(dict(row))
 
             cross_boundary = []
             for node_id in reachable:
-                source_row = conn.execute(
-                    "SELECT label, file, metadata FROM nodes WHERE id = ?",
-                    (node_id,)
-                ).fetchone()
-                source_meta = _load_metadata(source_row["metadata"]) if source_row else {}
-                if source_row and not _include_metadata(source_meta, exclude_research):
-                    continue
-                edges = conn.execute(
-                    "SELECT target, attributes FROM edges WHERE source = ? AND relation = 'calls'",
-                    (node_id,)
-                ).fetchall()
+                source_row = node_by_id.get(node_id)
+                source_meta = node_meta.get(node_id, {})
+                edges = call_edges_by_source.get(node_id, [])
                 for edge in edges:
-                    attrs = json.loads(edge["attributes"])
+                    attrs = _load_metadata(edge["attributes"])
                     if ((attrs.get("unresolved") and not attrs.get("internal_candidate"))
                             or attrs.get("sink") or attrs.get("cross_boundary")):
-                        target = conn.execute(
-                            "SELECT label, file, metadata FROM nodes WHERE id = ?", (edge["target"],)
-                        ).fetchone()
-                        target_meta = _load_metadata(target["metadata"]) if target else {}
-                        if target and not _include_metadata(target_meta, exclude_research):
+                        target = node_by_id.get(edge["target"])
+                        target_meta = node_meta.get(edge["target"], {})
+                        if target and edge["target"] not in allowed_ids:
                             continue
                         cross_boundary.append({
                             "source": {
@@ -2189,12 +2377,25 @@ def cs_cross(db: str = "", from_func: str = "", exclude_research: bool = False) 
                 results.append(entry)
 
             return json.dumps(results, indent=2, default=str)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_cross",
+            exc,
+            timeout_seconds,
+            from_func=from_func,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 
 
 @mcp.tool()
-def cs_state(db: str = "", entity: str = "", exclude_research: bool = False) -> str:
+def cs_state(
+    db: str = "",
+    entity: str = "",
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
     """Analyze state machine transitions and flag security issues.
 
     For Solidity: detects unguarded enum transitions, terminal states, missing transitions.
@@ -2205,12 +2406,14 @@ def cs_state(db: str = "", entity: str = "", exclude_research: bool = False) -> 
         db: Database path (default: graph.db)
         entity: Filter by entity name (e.g. "VaultState" or "Audience"). Empty = show all.
         exclude_research: Exclude transitions originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
-    from core.schema import GraphDB
-
     db_path = _resolve_db(db)
-    graph_db = GraphDB(db_path)
-    conn = graph_db.get_connection()
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_state", db_path, exc)
+
     try:
         if entity:
             rows = conn.execute(
@@ -2333,6 +2536,14 @@ def cs_state(db: str = "", entity: str = "", exclude_research: bool = False) -> 
             "warnings": warnings,
             "query_scope": "production_only" if exclude_research else "all_sources",
         }, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_state",
+            exc,
+            timeout_seconds,
+            entity=entity,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
     finally:
         conn.close()
 
