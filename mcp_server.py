@@ -304,6 +304,7 @@ def _include_metadata(meta: dict, exclude_research: bool) -> bool:
 
 
 TRAVERSAL_RELATIONS = ("calls", "flows_to", "inherits")
+SQLITE_IN_CHUNK_SIZE = 900
 
 
 def _attr_enabled(value) -> bool:
@@ -331,18 +332,44 @@ def _is_trust_boundary_call(attrs: dict) -> bool:
     )
 
 
+def _chunked_ids(ids: set[str]):
+    ordered = sorted(ids)
+    for idx in range(0, len(ordered), SQLITE_IN_CHUNK_SIZE):
+        yield ordered[idx:idx + SQLITE_IN_CHUNK_SIZE]
+
+
 def _write_counts_for_sources(conn, source_ids: set[str] | None = None) -> dict[str, int]:
     """Count writes per source, optionally skipping sources outside scope."""
     if source_ids is not None and not source_ids:
         return {}
     counts: dict[str, int] = {}
-    for row in conn.execute(
-        "SELECT source FROM edges WHERE relation = 'writes_state'"
-    ):
-        source = row["source"]
-        if source_ids is not None and source not in source_ids:
-            continue
-        counts[source] = counts.get(source, 0) + 1
+    if source_ids is None:
+        queries = [(
+            """
+            SELECT source, COUNT(*) AS cnt
+            FROM edges
+            WHERE relation = 'writes_state'
+            GROUP BY source
+            """,
+            (),
+        )]
+    else:
+        queries = []
+        for chunk in _chunked_ids(source_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            queries.append((
+                f"""
+                SELECT source, COUNT(*) AS cnt
+                FROM edges
+                WHERE source IN ({placeholders}) AND relation = 'writes_state'
+                GROUP BY source
+                """,
+                tuple(chunk),
+            ))
+
+    for sql, params in queries:
+        for row in conn.execute(sql, params):
+            counts[row["source"]] = counts.get(row["source"], 0) + row["cnt"]
     return counts
 
 
@@ -354,22 +381,29 @@ def _external_call_counts(
     """Count true external calls per source without trusting JSON key presence."""
     if source_ids is not None and not source_ids:
         return {}
-    query = (
-        "SELECT source, attributes FROM edges WHERE relation = 'calls' "
-        "AND (attributes LIKE '%\"unresolved\"%'"
-    )
-    if include_cpi:
-        query += " OR attributes LIKE '%\"cpi\"%'"
-    query += ")"
+    if source_ids is None:
+        source_filters = [("", ())]
+    else:
+        source_filters = []
+        for chunk in _chunked_ids(source_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            source_filters.append((f"source IN ({placeholders}) AND ", tuple(chunk)))
 
     counts: dict[str, int] = {}
-    for row in conn.execute(query):
-        source = row["source"]
-        if source_ids is not None and source not in source_ids:
-            continue
-        attrs = _load_metadata(row["attributes"])
-        if _is_unresolved_external_call(attrs) or (include_cpi and _attr_enabled(attrs.get("cpi"))):
-            counts[source] = counts.get(source, 0) + 1
+    for source_filter, params in source_filters:
+        query = (
+            "SELECT source, attributes FROM edges "
+            f"WHERE {source_filter}relation = 'calls' "
+            "AND (attributes LIKE '%\"unresolved\"%'"
+        )
+        if include_cpi:
+            query += " OR attributes LIKE '%\"cpi\"%'"
+        query += ")"
+        for row in conn.execute(query, params):
+            attrs = _load_metadata(row["attributes"])
+            if _is_unresolved_external_call(attrs) or (include_cpi and _attr_enabled(attrs.get("cpi"))):
+                source = row["source"]
+                counts[source] = counts.get(source, 0) + 1
     return counts
 
 
@@ -391,24 +425,31 @@ def _guard_counts_for_writable_entries(
         else ""
     )
     counts: dict[str, int] = {}
-    for row in conn.execute(f"""
-        SELECT g.target, COUNT(*) AS cnt
-        FROM edges AS g{guard_index}
-        JOIN nodes AS n ON g.target = n.id
-        WHERE g.relation = 'guards'
-          AND n.type = 'function'
-          AND n.visibility IN ('external', 'public')
-          AND EXISTS (
-            SELECT 1
-            FROM edges AS w{write_index}
-            WHERE w.source = g.target AND w.relation = 'writes_state'
-          )
-        GROUP BY g.target
-    """):
-        target = row["target"]
-        if source_ids is not None and target not in source_ids:
-            continue
-        counts[target] = row["cnt"]
+    if source_ids is None:
+        target_filters = [("", ())]
+    else:
+        target_filters = []
+        for chunk in _chunked_ids(source_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            target_filters.append((f"AND g.target IN ({placeholders})", tuple(chunk)))
+
+    for target_filter, params in target_filters:
+        for row in conn.execute(f"""
+            SELECT g.target, COUNT(*) AS cnt
+            FROM edges AS g{guard_index}
+            JOIN nodes AS n ON g.target = n.id
+            WHERE g.relation = 'guards'
+              AND n.type = 'function'
+              AND n.visibility IN ('external', 'public')
+              {target_filter}
+              AND EXISTS (
+                SELECT 1
+                FROM edges AS w{write_index}
+                WHERE w.source = g.target AND w.relation = 'writes_state'
+              )
+            GROUP BY g.target
+        """, params):
+            counts[row["target"]] = counts.get(row["target"], 0) + row["cnt"]
     return counts
 
 

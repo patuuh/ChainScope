@@ -2804,19 +2804,22 @@ class TestIndexing:
     def test_hotspots_edge_counts_skip_out_of_scope_sources(self, monkeypatch):
         import mcp_server
 
+        statements = []
+
         class FakeConn:
             def execute(self, sql, *args, **kwargs):
+                statements.append((sql, args))
+                params = set(args[0]) if args else set()
                 if "writes_state" in sql:
-                    return [
-                        {"source": "keep"},
-                        {"source": "skip"},
-                        {"source": "keep"},
-                    ]
+                    if params == {"keep"}:
+                        return [{"source": "keep", "cnt": 2}]
+                    return [{"source": "keep", "cnt": 2}, {"source": "skip", "cnt": 1}]
                 if "relation = 'calls'" in sql:
-                    return [
+                    rows = [
                         {"source": "keep", "attributes": json.dumps({"unresolved": True})},
                         {"source": "skip", "attributes": json.dumps({"unresolved": True})},
                     ]
+                    return [row for row in rows if not params or row["source"] in params]
                 raise AssertionError(f"unexpected query: {sql}")
 
         parsed_attrs = []
@@ -2832,6 +2835,8 @@ class TestIndexing:
         assert mcp_server._write_counts_for_sources(FakeConn(), source_ids) == {"keep": 2}
         assert mcp_server._external_call_counts(FakeConn(), source_ids=source_ids) == {"keep": 1}
         assert parsed_attrs == [json.dumps({"unresolved": True})]
+        assert any("source IN" in sql and "GROUP BY source" in sql for sql, _ in statements)
+        assert any("source IN" in sql and "relation = 'calls'" in sql for sql, _ in statements)
 
     def test_hotspots_streams_aggregate_rows(self, tmp_db, monkeypatch):
         import mcp_server
