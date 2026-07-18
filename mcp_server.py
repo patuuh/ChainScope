@@ -378,6 +378,44 @@ def _cross_entry_attrs(entry: dict) -> dict:
     return _load_metadata(attrs)
 
 
+def _node_for_id(conn, node_id: str, node_cache: dict[str, dict | None]) -> dict | None:
+    if node_id not in node_cache:
+        row = conn.execute(
+            "SELECT id, label, type, file, metadata FROM nodes WHERE id = ?",
+            (node_id,),
+        ).fetchone()
+        node_cache[node_id] = dict(row) if row else None
+    return node_cache[node_id]
+
+
+def _iter_reachable_traversal_targets(conn, source_id: str):
+    return conn.execute(
+        """
+        SELECT e.target
+        FROM edges AS e INDEXED BY idx_edges_source_relation
+        WHERE e.source = ? AND e.relation IN (?, ?, ?)
+        ORDER BY e.target
+        """,
+        (source_id, *TRAVERSAL_RELATIONS),
+    )
+
+
+def _iter_trust_boundary_call_edges_from_source(conn, source_id: str):
+    return conn.execute(
+        """
+        SELECT e.source, e.target, e.attributes
+        FROM edges AS e INDEXED BY idx_edges_source_relation
+        WHERE e.source = ? AND e.relation = 'calls' AND (
+            e.attributes LIKE '%"unresolved"%'
+            OR e.attributes LIKE '%"sink"%'
+            OR e.attributes LIKE '%"cross_boundary"%'
+        )
+        ORDER BY e.target
+        """,
+        (source_id,),
+    )
+
+
 def _compact_cross_entry(entry: dict) -> dict:
     attrs = _cross_entry_attrs(entry)
     if isinstance(entry.get("source"), dict):
@@ -3597,40 +3635,23 @@ def cs_cross(
                     )
                 return json.dumps(response, indent=2)
 
-            node_rows = conn.execute(
-                "SELECT id, label, type, file, metadata FROM nodes"
-            )
-            node_by_id: dict[str, dict] = {}
+            node_by_id: dict[str, dict | None] = {
+                matching_starts[0]["id"]: matching_starts[0],
+            }
             node_meta: dict[str, dict] = {}
-            allowed_ids: set[str] = set()
-            for row in node_rows:
-                node_by_id[row["id"]] = dict(row)
-                if exclude_research:
-                    meta = _load_metadata(row["metadata"])
-                    node_meta[row["id"]] = meta
-                    if _include_metadata(meta, exclude_research):
-                        allowed_ids.add(row["id"])
-                else:
-                    allowed_ids.add(row["id"])
+            parsed_start_meta = matching_starts[0].get("_metadata_parsed")
+            if parsed_start_meta is not None:
+                node_meta[matching_starts[0]["id"]] = parsed_start_meta
 
             def _metadata_for_node(node_id: str) -> dict:
                 meta = node_meta.get(node_id)
                 if meta is None:
-                    row = node_by_id.get(node_id)
+                    row = _node_for_id(conn, node_id, node_by_id)
                     meta = _load_metadata(row.get("metadata") if row else None)
                     node_meta[node_id] = meta
                 return meta
 
             start_id = matching_starts[0]["id"]
-
-            adjacency: dict[str, list[str]] = {}
-            for row in conn.execute(
-                "SELECT source, target FROM edges WHERE relation IN (?, ?, ?)",
-                TRAVERSAL_RELATIONS,
-            ):
-                if row["source"] not in allowed_ids or row["target"] not in allowed_ids:
-                    continue
-                adjacency.setdefault(row["source"], []).append(row["target"])
 
             reachable = {start_id}
             queue = [start_id]
@@ -3638,40 +3659,44 @@ def cs_cross(
             while pos < len(queue):
                 current = queue[pos]
                 pos += 1
-                for neighbor in adjacency.get(current, []):
-                    if neighbor not in reachable:
-                        reachable.add(neighbor)
-                        queue.append(neighbor)
+                for row in _iter_reachable_traversal_targets(conn, current):
+                    target_id = row["target"]
+                    if target_id in reachable:
+                        continue
+                    target_node = _node_for_id(conn, target_id, node_by_id)
+                    if not target_node:
+                        continue
+                    if exclude_research and not _include_metadata(_metadata_for_node(target_id), exclude_research):
+                        continue
+                    reachable.add(target_id)
+                    queue.append(target_id)
 
             shown_calls = []
             total = 0
-            for row in conn.execute(
-                "SELECT source, target, attributes FROM edges WHERE relation = 'calls'"
-            ):
-                if row["source"] not in reachable:
-                    continue
-                attrs = _load_metadata(row["attributes"])
-                if not _is_trust_boundary_call(attrs):
-                    continue
-                target = node_by_id.get(row["target"])
-                if target and row["target"] not in allowed_ids:
-                    continue
-                source_row = node_by_id.get(row["source"])
-                source_meta = _metadata_for_node(row["source"])
-                target_meta = _metadata_for_node(row["target"]) if target else {}
-                total = _append_capped(shown_calls, {
-                    "source": {
-                        "label": source_row["label"],
-                        "file": source_row["file"],
-                        "source_context": source_meta.get("source_context", "production"),
-                    } if source_row else {"label": row["source"]},
-                    "target": {
-                        "label": target["label"],
-                        "file": target["file"],
-                        "source_context": target_meta.get("source_context", "production"),
-                    } if target else {"label": row["target"]},
-                    "attributes": attrs,
-                }, total, max_results)
+            for source_id in sorted(reachable):
+                for row in _iter_trust_boundary_call_edges_from_source(conn, source_id):
+                    attrs = _load_metadata(row["attributes"])
+                    if not _is_trust_boundary_call(attrs):
+                        continue
+                    target = _node_for_id(conn, row["target"], node_by_id)
+                    if target and exclude_research and not _include_metadata(_metadata_for_node(row["target"]), exclude_research):
+                        continue
+                    source_row = _node_for_id(conn, row["source"], node_by_id)
+                    source_meta = _metadata_for_node(row["source"])
+                    target_meta = _metadata_for_node(row["target"]) if target else {}
+                    total = _append_capped(shown_calls, {
+                        "source": {
+                            "label": source_row["label"],
+                            "file": source_row["file"],
+                            "source_context": source_meta.get("source_context", "production"),
+                        } if source_row else {"label": row["source"]},
+                        "target": {
+                            "label": target["label"],
+                            "file": target["file"],
+                            "source_context": target_meta.get("source_context", "production"),
+                        } if target else {"label": row["target"]},
+                        "attributes": attrs,
+                    }, total, max_results)
             truncated = len(shown_calls) < total
         else:
             shown_calls, call_summary = _collect_cross_entries(

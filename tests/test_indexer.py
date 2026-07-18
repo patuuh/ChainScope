@@ -1716,6 +1716,89 @@ class TestIndexing:
         assert cross["shown"] == 1
         assert cross["calls"][0]["source"]["label"] == "ping"
 
+    def test_cross_from_func_walks_only_reachable_sources_with_index(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.ping(address)"
+        helper_id = "Vault.sol::Vault.helper()"
+        db.insert_node(
+            id=start_id,
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id=helper_id,
+            label="helper",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+        )
+        db.insert_edge(
+            source=start_id,
+            target=helper_id,
+            relation="calls",
+            attributes=json.dumps({}),
+        )
+        db.insert_edge(
+            source=helper_id,
+            target="External.doThing()",
+            relation="calls",
+            attributes=json.dumps({"unresolved": True}),
+        )
+        for i in range(40):
+            db.insert_node(
+                id=f"Unrelated{i:02d}.sol::Unrelated{i:02d}.call()",
+                label=f"call{i}",
+                type="function",
+                visibility="external",
+                file=f"Unrelated{i:02d}.sol",
+            )
+            db.insert_edge(
+                source=f"Unrelated{i:02d}.sol::Unrelated{i:02d}.call()",
+                target=f"External{i:02d}.doThing()",
+                relation="calls",
+                attributes=json.dumps({"unresolved": True}),
+            )
+
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                if normalized == "SELECT id, label, type, file, metadata FROM nodes":
+                    raise AssertionError("cs_cross(from_func) should not preload all nodes")
+                if normalized == "SELECT source, target FROM edges WHERE relation IN (?, ?, ?)":
+                    raise AssertionError("cs_cross(from_func) should not scan all traversal edges")
+                if normalized == "SELECT source, target, attributes FROM edges WHERE relation = 'calls'":
+                    raise AssertionError("cs_cross(from_func) should not scan all call edges")
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, from_func="ping"))
+
+        assert cross["total"] == 1
+        assert cross["shown"] == 1
+        assert cross["calls"][0]["source"]["label"] == "helper"
+        assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
+        assert any("e.source = ? AND e.relation IN" in sql for sql in statements)
+        assert any("e.source = ? AND e.relation = 'calls'" in sql for sql in statements)
+
     def test_cross_from_func_ignores_non_function_candidates(self, tmp_db):
         import mcp_server
 
