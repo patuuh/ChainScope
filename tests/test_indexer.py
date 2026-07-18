@@ -405,7 +405,9 @@ class TestIndexing:
             db.insert_edge(f"Vault.sol::Vault.onlyOwner{i}", func_id, "guards")
 
         real_open = mcp_server._open_query_connection
+        real_load = mcp_server._load_metadata
         statements = []
+        parsed = []
 
         class CountingConnection:
             def __init__(self, conn):
@@ -429,6 +431,12 @@ class TestIndexing:
             lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
         )
 
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
         summary = json.loads(mcp_server.cs_summary(db=tmp_db, attack_surface=True, top=2))
 
         assert summary["_summary"]["attack_surface"] == {
@@ -447,6 +455,7 @@ class TestIndexing:
             and "GROUP BY e.source" in sql
             for sql in statements
         )
+        assert parsed == []
 
     def test_summary_streams_rows_for_attack_surface(self, monkeypatch):
         import mcp_server
@@ -5047,6 +5056,45 @@ class TestIndexing:
             item["source_context"] == "production"
             for transitions in state["entities"].values()
             for item in transitions
+        )
+
+    def test_state_skips_untagged_source_context_parses(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        fn_id = "Vault.sol::Vault.advance()"
+        db.insert_node(
+            id=fn_id,
+            label="advance",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({}),
+        )
+        for i in range(3):
+            db.insert_transition("VaultState", f"S{i}", f"S{i + 1}", fn_id, conditions='["onlyOwner"]')
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        state = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            entity="VaultState",
+            max_transitions_per_entity=0,
+            max_warnings=0,
+        ))
+
+        assert state["_summary"]["transitions_shown"] == 3
+        assert parsed == []
+        assert all(
+            item["source_context"] == "production"
+            for item in state["entities"]["VaultState"]
         )
 
 

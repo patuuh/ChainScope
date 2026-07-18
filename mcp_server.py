@@ -1497,8 +1497,7 @@ def cs_summary(
                     """
                 ):
                     row_dict = dict(row)
-                    meta = _load_metadata(row["metadata"])
-                    row_dict["_source_context"] = meta.get("source_context", "production")
+                    row_dict["_source_context"] = _metadata_source_context(row["metadata"])
                     attack_surface_nodes[row["id"]] = row_dict
 
                 adjacency: dict[str, list[str]] = {}
@@ -4582,8 +4581,9 @@ def cs_state(
         for trans in shown_entities.values():
             for item in trans:
                 if "source_context" not in item:
-                    meta = _load_metadata(item.pop("_function_metadata_raw", None))
-                    item["source_context"] = meta.get("source_context", "production")
+                    item["source_context"] = _metadata_source_context(
+                        item.pop("_function_metadata_raw", None)
+                    )
                 else:
                     item.pop("_function_metadata_raw", None)
                 item.pop("_conditions_parsed", None)
