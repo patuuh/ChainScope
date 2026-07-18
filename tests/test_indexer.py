@@ -187,6 +187,65 @@ class TestIndexing:
         assert summary["source_context_summary"]
         assert len(summary["attack_surface"]) <= 3
 
+    def test_summary_default_uses_aggregate_health_counts(self, sol_repo, tmp_db, monkeypatch):
+        import mcp_server
+
+        indexer = Indexer(sol_repo, include_research=True)
+        indexer.index(tmp_db)
+
+        db = GraphDB(tmp_db)
+        conn = db.get_connection()
+        try:
+            node_ids = {row["id"] for row in conn.execute("SELECT id FROM nodes")}
+            expected_nodes = len(node_ids)
+            expected_edges = sum(
+                1
+                for row in conn.execute("SELECT source, target FROM edges")
+                if row["source"] in node_ids and row["target"] in node_ids
+            )
+            expected_transitions = conn.execute(
+                "SELECT COUNT(*) FROM state_transitions"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                if normalized == "SELECT id, label, type, visibility, file, signature, metadata FROM nodes":
+                    raise AssertionError("default cs_summary should not stream full node rows")
+                if normalized == "SELECT source, target, relation FROM edges":
+                    raise AssertionError("default cs_summary should not stream full edge rows")
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        summary = json.loads(mcp_server.cs_summary(db=tmp_db))
+
+        assert summary["nodes"] == expected_nodes
+        assert summary["edges"] == expected_edges
+        assert summary["transitions"] == expected_transitions
+        assert summary["functions"] > 0
+        assert summary["source_context_summary"]
+        assert "attack_surface" not in summary
+        assert any("SELECT COUNT(*) FROM nodes" in sql for sql in statements)
+        assert any("GROUP BY type" in sql for sql in statements)
+        assert any("GROUP BY e.relation" in sql for sql in statements)
+
     def test_summary_reports_attack_surface_truncation(self, tmp_db):
         import mcp_server
 

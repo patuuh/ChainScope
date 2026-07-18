@@ -499,6 +499,30 @@ def _section_summary(total: int, shown: int) -> dict:
     }
 
 
+def _single_count(conn, sql: str, params: tuple = ()) -> int:
+    return conn.execute(sql, params).fetchone()[0]
+
+
+def _count_rows(conn, sql: str, key_column: str = "key") -> dict[str, int]:
+    return {
+        row[key_column]: row["cnt"]
+        for row in conn.execute(sql)
+    }
+
+
+def _sorted_count_mapping(counter: dict[str, int]) -> dict[str, int]:
+    return dict(sorted(counter.items(), key=lambda item: (-item[1], item[0])))
+
+
+def _source_context_counts(conn) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in conn.execute("SELECT metadata FROM nodes"):
+        meta = _load_metadata(row["metadata"])
+        source_context = meta.get("source_context", "production")
+        counts[source_context] = counts.get(source_context, 0) + 1
+    return counts
+
+
 def _cap_items(items: list, max_items: int) -> tuple[list, dict]:
     if max_items > 0 and len(items) > max_items:
         return items[:max_items], {
@@ -1057,6 +1081,58 @@ def cs_summary(
         return _query_open_error("cs_summary", db_path, exc)
 
     try:
+        if not attack_surface and not exclude_research:
+            build_info = _load_build_info(conn)
+            type_counts = _count_rows(
+                conn,
+                "SELECT type AS key, COUNT(*) as cnt FROM nodes GROUP BY type",
+            )
+            rel_counts = _count_rows(
+                conn,
+                """
+                SELECT e.relation AS key, COUNT(*) as cnt
+                FROM edges e
+                JOIN nodes s ON e.source = s.id
+                JOIN nodes t ON e.target = t.id
+                GROUP BY e.relation
+                """,
+            )
+            data = {
+                "database": db_path,
+                "query_scope": "all_sources",
+                "nodes": _single_count(conn, "SELECT COUNT(*) FROM nodes"),
+                "edges": _single_count(
+                    conn,
+                    """
+                    SELECT COUNT(*)
+                    FROM edges e
+                    JOIN nodes s ON e.source = s.id
+                    JOIN nodes t ON e.target = t.id
+                    """,
+                ),
+                "transitions": _single_count(conn, "SELECT COUNT(*) FROM state_transitions"),
+                "files": _single_count(conn, "SELECT COUNT(DISTINCT file) FROM nodes"),
+                "functions": type_counts.get("function", 0),
+                "state_vars": type_counts.get("state_var", 0),
+                "entry_points": _single_count(
+                    conn,
+                    "SELECT COUNT(*) FROM nodes WHERE type = 'function' AND visibility IN ('public', 'external')",
+                ),
+                "node_types": _sorted_count_mapping(type_counts),
+                "edge_relations": _sorted_count_mapping(rel_counts),
+                "source_context_summary": _sorted_count_mapping(_source_context_counts(conn)),
+                "build_info": build_info,
+            }
+
+            hint = _empty_graph_hint(db_path, build_info)
+            if hint and data["nodes"] == 0:
+                data["_warning"] = hint
+                data["_next_steps"] = [
+                    "Run cs_build(repo_path=..., db=...) to populate this graph.",
+                    "If you already built a graph, verify that the db argument points at the populated graph.db.",
+                ]
+            return json.dumps(data, indent=2)
+
         node_rows = conn.execute(
             "SELECT id, label, type, visibility, file, signature, metadata FROM nodes"
         )
@@ -1122,9 +1198,9 @@ def cs_summary(
             "functions": type_counts.get("function", 0),
             "state_vars": type_counts.get("state_var", 0),
             "entry_points": entry_points,
-            "node_types": dict(sorted(type_counts.items(), key=lambda item: (-item[1], item[0]))),
-            "edge_relations": dict(sorted(rel_counts.items(), key=lambda item: (-item[1], item[0]))),
-            "source_context_summary": dict(sorted(source_context_counts.items(), key=lambda item: (-item[1], item[0]))),
+            "node_types": _sorted_count_mapping(type_counts),
+            "edge_relations": _sorted_count_mapping(rel_counts),
+            "source_context_summary": _sorted_count_mapping(source_context_counts),
             "build_info": build_info,
         }
 
