@@ -270,7 +270,9 @@ set `max_per_category=0` only when an exhaustive category dump is intentional.
 which sections were truncated so agents can drill down with specialized tools
 instead of treating the overview as exhaustive. Raw attack-surface metadata is
 omitted by default for MCP context; set `include_metadata=true` only when that
-raw JSON is needed.
+raw JSON is needed. Detailed dead-code rows are also omitted by default; set
+`include_dead_code_details=true` when dead-code investigation is the current
+task.
 
 Broad `cs_hotspots` scans are SQL-prefiltered to likely scoring candidates
 before Python computes final risk scores. This keeps normal broad scans usable

@@ -51,6 +51,8 @@ class TestIndexing:
         assert "do not self-timeout by default" in help_payload["timeout_policy"]
         assert "timeout_seconds is opt-in" in help_payload["core_tools"]["cs_summary"]
         assert "timeout_seconds are opt-in" in help_payload["core_tools"]["cs_audit"]
+        assert inspect.signature(mcp_server.cs_audit).parameters["include_dead_code_details"].default is False
+        assert "detailed dead-code rows" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_lookup).parameters["max_metadata_bytes"].default == 4096
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50
@@ -951,13 +953,27 @@ class TestIndexing:
         db.insert_edge(func_id, state_id, "writes_state")
 
         compact = json.loads(mcp_server.cs_audit(db=tmp_db, top=1))
-        detailed = json.loads(mcp_server.cs_audit(db=tmp_db, top=1, include_metadata=True))
+        detailed = json.loads(mcp_server.cs_audit(
+            db=tmp_db,
+            top=1,
+            include_metadata=True,
+            include_dead_code_details=True,
+        ))
 
         assert compact["_summary"]["include_metadata"] is False
+        assert compact["_summary"]["include_dead_code_details"] is False
         assert compact["attack_surface"][0]["label"] == "set"
         assert "metadata" not in compact["attack_surface"][0]
+        assert "direct_entry_points" not in compact["dead_code"]
+        assert compact["_summary"]["sections"]["dead_code.direct_entry_points"] == {
+            "total": 1,
+            "shown": 0,
+            "truncated": True,
+        }
         assert detailed["_summary"]["include_metadata"] is True
+        assert detailed["_summary"]["include_dead_code_details"] is True
         assert json.loads(detailed["attack_surface"][0]["metadata"])["large"] == ["x"] * 50
+        assert detailed["dead_code"]["direct_entry_points"][0]["function"] == "set"
 
     def test_audit_counts_only_enabled_sink_markers(self, tmp_db, monkeypatch):
         import mcp_server
@@ -1111,7 +1127,7 @@ class TestIndexing:
 
         monkeypatch.setattr(mcp_server, "_append_top", tracking_append_top)
 
-        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=2))
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=2, include_dead_code_details=True))
         sections = audit["_summary"]["sections"]
 
         assert sections["reentrancy"] == {"total": 12, "shown": 2, "truncated": True}

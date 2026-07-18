@@ -1593,7 +1593,7 @@ def cs_help() -> str:
         ],
         "core_tools": {
             "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths; timeout_seconds is opt-in.",
-            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata and timeout_seconds are opt-in.",
+            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata, detailed dead-code rows, and timeout_seconds are opt-in.",
             "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build.",
             "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
         },
@@ -2201,6 +2201,7 @@ def cs_audit(
     exclude_research: bool = False,
     timeout_seconds: int = 0,
     include_metadata: bool = False,
+    include_dead_code_details: bool = False,
 ) -> str:
     """Generate a comprehensive security audit report in one call.
 
@@ -2217,6 +2218,7 @@ def cs_audit(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
         include_metadata: Include raw metadata JSON in attack-surface rows
+        include_dead_code_details: Include detailed dead-code rows instead of totals only
     """
     if top < 0:
         top = 0
@@ -2779,30 +2781,39 @@ def cs_audit(
                     parent_id = ""
                 if parent_id in library_ids:
                     continue
-                dead_internal_total = _append_top(dead_internal, {
+                dead_item = {
                     "function": func["label"],
                     "file": func["file"],
                     "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
                     "visibility": vis,
-                }, dead_internal_total, top)
+                }
+                if include_dead_code_details:
+                    dead_internal_total = _append_top(dead_internal, dead_item, dead_internal_total, top)
+                else:
+                    dead_internal_total += 1
             elif vis in ("external", "public"):
                 wt = write_targets.get(fid, [])
                 if wt and not meta.get("view") and not meta.get("pure"):
                     wvars = [t.split("::")[-1].split(".")[-1] for t in wt[:5]]
-                    orphan_writers_total = _append_top(orphan_writers, {
+                    orphan_item = {
                         "function": func["label"],
                         "file": func["file"],
                         "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
                         "visibility": vis,
                         "state_writes": wvars,
-                    }, orphan_writers_total, top)
+                    }
+                    if include_dead_code_details:
+                        orphan_writers_total = _append_top(orphan_writers, orphan_item, orphan_writers_total, top)
+                    else:
+                        orphan_writers_total += 1
 
         report["dead_code"] = {
-            "dead_internal": dead_internal,
             "dead_internal_total": dead_internal_total,
-            "direct_entry_points": orphan_writers,
             "direct_entry_points_total": orphan_writers_total,
         }
+        if include_dead_code_details:
+            report["dead_code"]["dead_internal"] = dead_internal
+            report["dead_code"]["direct_entry_points"] = orphan_writers
 
         # --- 12. DeFi + Unsafe summary counts ---
         defi_keys = [
@@ -2837,11 +2848,11 @@ def cs_audit(
             "silent_state_changes": _section_summary(silent_total, len(report.get("silent_state_changes", []))),
             "dead_code.dead_internal": _section_summary(
                 dead_internal_total,
-                len(report["dead_code"]["dead_internal"]),
+                len(report["dead_code"].get("dead_internal", [])),
             ),
             "dead_code.direct_entry_points": _section_summary(
                 orphan_writers_total,
-                len(report["dead_code"]["direct_entry_points"]),
+                len(report["dead_code"].get("direct_entry_points", [])),
             ),
         }
         truncated_sections = [
@@ -2852,6 +2863,7 @@ def cs_audit(
             "top": top,
             "query_scope": report["query_scope"],
             "include_metadata": include_metadata,
+            "include_dead_code_details": include_dead_code_details,
             "sections": sections,
             "truncated_sections": truncated_sections,
             "truncated": bool(truncated_sections),
