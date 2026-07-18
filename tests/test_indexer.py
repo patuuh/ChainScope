@@ -99,6 +99,46 @@ class TestIndexing:
         assert "build_info" in report
         assert report["build_info"]["include_research"] is True
 
+    def test_summary_is_cheap_graph_health_check(self, sol_repo, tmp_db):
+        import mcp_server
+
+        indexer = Indexer(sol_repo, include_research=True)
+        stats = indexer.index(tmp_db)
+
+        summary = json.loads(mcp_server.cs_summary(db=tmp_db, attack_surface=True, top=3))
+
+        assert summary["nodes"] == stats["nodes"]
+        assert summary["functions"] > 0
+        assert summary["edges"] > 0
+        assert summary["build_info"]["files_indexed"] == stats["files_indexed"]
+        assert summary["source_context_summary"]
+        assert len(summary["attack_surface"]) <= 3
+
+    def test_summary_warns_on_empty_unbuilt_graph(self, tmp_path):
+        import mcp_server
+
+        db_path = tmp_path / "empty.db"
+        db = GraphDB(str(db_path))
+
+        summary = json.loads(mcp_server.cs_summary(db=db.db_path))
+
+        assert summary["nodes"] == 0
+        assert summary["edges"] == 0
+        assert summary["build_info"] is None
+        assert "cs_build" in summary["_warning"]
+        assert summary["_next_steps"]
+
+    def test_summary_missing_db_does_not_create_empty_graph(self, tmp_path):
+        import mcp_server
+
+        db_path = tmp_path / "missing.db"
+
+        summary = json.loads(mcp_server.cs_summary(db=str(db_path)))
+
+        assert "error" in summary
+        assert summary["tool"] == "cs_summary"
+        assert not db_path.exists()
+
     def test_audit_and_hotspots_surface_source_context(self, tmp_path, tmp_db):
         import mcp_server
 

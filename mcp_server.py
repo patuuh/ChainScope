@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """ChainScope MCP Server — exposes web3 knowledge graph tools to AI agents.
 
-Consolidated tool set (12 tools):
-  Core:        cs_profile, cs_build, cs_help, cs_audit
+Consolidated tool set (13 tools):
+  Core:        cs_profile, cs_build, cs_help, cs_summary, cs_audit
   Scanners:    cs_hotspots, cs_defi, cs_unsafe
   Exploration: cs_paths, cs_trace, cs_cross, cs_state, cs_lookup
 """
@@ -147,6 +147,29 @@ def _include_metadata(meta: dict, exclude_research: bool) -> bool:
 
 
 TRAVERSAL_RELATIONS = ("calls", "flows_to", "inherits")
+
+
+def _load_build_info(conn) -> object | None:
+    """Load persisted build metadata without constructing a write-capable GraphDB."""
+    row = conn.execute(
+        "SELECT value FROM graph_metadata WHERE key = 'build_info'"
+    ).fetchone()
+    if not row:
+        return None
+    try:
+        return json.loads(row["value"])
+    except Exception:
+        return row["value"]
+
+
+def _empty_graph_hint(db_path: str, build_info: object | None) -> str | None:
+    """Explain the common empty-graph state to LLM callers."""
+    if build_info:
+        return None
+    return (
+        f"Graph '{db_path}' has no build metadata. If counts are zero, run "
+        "cs_build(repo_path=..., db=...) first or verify that db points at the intended graph."
+    )
 
 
 def _query_open_error(tool: str, db_path: str, exc: sqlite3.Error) -> str:
@@ -364,9 +387,14 @@ def cs_help() -> str:
         "workflow": [
             "1. cs_profile(repo_path) — optional but recommended for large/mixed workspaces.",
             "2. cs_build(repo_path) — REQUIRED before graph queries. Builds the knowledge graph.",
-            "3. cs_audit() — Full security report: stats, hotspots, reentrancy, taint, sinks, events, deadcode, access gaps.",
-            "4. Drill into specific areas with specialized tools below.",
+            "3. cs_summary() — Cheap graph health/stats check before broad scanning.",
+            "4. cs_audit() — Full security report: stats, hotspots, reentrancy, taint, sinks, events, deadcode, access gaps.",
+            "5. Drill into specific areas with specialized tools below.",
         ],
+        "core_tools": {
+            "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths.",
+            "cs_audit": "Full security report with attack surface, hotspots, taint paths, sinks, dead code, and access gaps.",
+        },
         "scanner_tools": {
             "cs_hotspots": "Composite risk scorer — all functions ranked with detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
             "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter.",
@@ -381,6 +409,158 @@ def cs_help() -> str:
         },
         "_tip": "All tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
     }, indent=2)
+
+
+@mcp.tool()
+def cs_summary(
+    db: str = "",
+    attack_surface: bool = False,
+    top: int = 20,
+    exclude_research: bool = False,
+    timeout_seconds: int = 0,
+) -> str:
+    """Summarize graph health and high-level structure.
+
+    Cheap first query after cs_build. This is intentionally smaller than
+    cs_audit so LLM agents can validate the DB path, build metadata, source
+    scope, and graph size before spending context on detailed findings.
+
+    Args:
+        db: Database path (default: graph.db)
+        attack_surface: Include top external/public functions by reachable state writes
+        top: Maximum attack-surface rows to return
+        exclude_research: Exclude nodes originating from research-mode files
+        timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+    """
+    db_path = _resolve_db(db)
+    try:
+        conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
+    except sqlite3.Error as exc:
+        return _query_open_error("cs_summary", db_path, exc)
+
+    try:
+        node_rows = conn.execute(
+            "SELECT id, label, type, visibility, file, signature, metadata FROM nodes"
+        ).fetchall()
+        allowed_ids: set[str] = set()
+        node_by_id: dict[str, dict] = {}
+        type_counts: dict[str, int] = {}
+        source_context_counts: dict[str, int] = {}
+        files: set[str] = set()
+        entry_points = 0
+
+        for row in node_rows:
+            meta = _load_metadata(row["metadata"])
+            if not _include_metadata(meta, exclude_research):
+                continue
+            row_dict = dict(row)
+            allowed_ids.add(row["id"])
+            node_by_id[row["id"]] = row_dict
+            files.add(row["file"])
+            type_counts[row["type"]] = type_counts.get(row["type"], 0) + 1
+            source_context = meta.get("source_context", "production")
+            source_context_counts[source_context] = source_context_counts.get(source_context, 0) + 1
+            if row["type"] == "function" and row["visibility"] in ("public", "external"):
+                entry_points += 1
+
+        edge_rows = conn.execute(
+            "SELECT source, target, relation FROM edges"
+        ).fetchall()
+        rel_counts: dict[str, int] = {}
+        filtered_edges = []
+        for row in edge_rows:
+            if row["source"] not in allowed_ids or row["target"] not in allowed_ids:
+                continue
+            filtered_edges.append(row)
+            rel_counts[row["relation"]] = rel_counts.get(row["relation"], 0) + 1
+
+        transitions = 0
+        for row in conn.execute("""
+            SELECT st.function_id, n.metadata
+            FROM state_transitions st
+            LEFT JOIN nodes n ON st.function_id = n.id
+        """).fetchall():
+            meta = _load_metadata(row["metadata"])
+            if _include_metadata(meta, exclude_research):
+                transitions += 1
+
+        build_info = _load_build_info(conn)
+        data = {
+            "database": db_path,
+            "query_scope": "production_only" if exclude_research else "all_sources",
+            "nodes": len(allowed_ids),
+            "edges": len(filtered_edges),
+            "transitions": transitions,
+            "files": len(files),
+            "functions": type_counts.get("function", 0),
+            "state_vars": type_counts.get("state_var", 0),
+            "entry_points": entry_points,
+            "node_types": dict(sorted(type_counts.items(), key=lambda item: (-item[1], item[0]))),
+            "edge_relations": dict(sorted(rel_counts.items(), key=lambda item: (-item[1], item[0]))),
+            "source_context_summary": dict(sorted(source_context_counts.items(), key=lambda item: (-item[1], item[0]))),
+            "build_info": build_info,
+        }
+
+        hint = _empty_graph_hint(db_path, build_info)
+        if hint and data["nodes"] == 0:
+            data["_warning"] = hint
+            data["_next_steps"] = [
+                "Run cs_build(repo_path=..., db=...) to populate this graph.",
+                "If you already built a graph, verify that the db argument points at the populated graph.db.",
+            ]
+
+        if attack_surface and allowed_ids:
+            adjacency: dict[str, list[str]] = {}
+            write_map: dict[str, int] = {}
+            for row in filtered_edges:
+                if row["relation"] in TRAVERSAL_RELATIONS:
+                    adjacency.setdefault(row["source"], []).append(row["target"])
+                if row["relation"] == "writes_state":
+                    write_map[row["source"]] = write_map.get(row["source"], 0) + 1
+
+            def _reachable(start_id: str) -> set[str]:
+                reachable = {start_id}
+                queue = [start_id]
+                pos = 0
+                while pos < len(queue):
+                    current = queue[pos]
+                    pos += 1
+                    for neighbor in adjacency.get(current, []):
+                        if neighbor not in reachable:
+                            reachable.add(neighbor)
+                            queue.append(neighbor)
+                return reachable
+
+            surface = []
+            for row in node_by_id.values():
+                if row["type"] != "function" or row["visibility"] not in ("public", "external"):
+                    continue
+                meta = _load_metadata(row["metadata"])
+                reachable = _reachable(row["id"])
+                write_count = sum(write_map.get(rid, 0) for rid in reachable)
+                surface.append({
+                    "id": row["id"],
+                    "label": row["label"],
+                    "file": row["file"],
+                    "signature": row["signature"],
+                    "reachable_count": len(reachable),
+                    "state_writes": write_count,
+                    "source_context": meta.get("source_context", "production"),
+                })
+            surface.sort(key=lambda item: (-item["state_writes"], item["file"], item["label"]))
+            data["attack_surface"] = surface[:top]
+
+        return json.dumps(data, indent=2)
+    except sqlite3.OperationalError as exc:
+        return _query_sqlite_error(
+            "cs_summary",
+            exc,
+            timeout_seconds,
+            top=top,
+            query_scope="production_only" if exclude_research else "all_sources",
+        )
+    finally:
+        conn.close()
 
 
 import os as _os
@@ -650,15 +830,7 @@ def cs_audit(
             "sinks": sink_count,
         }
         report["query_scope"] = "production_only" if exclude_research else "all_sources"
-        build_info = None
-        build_row = conn.execute(
-            "SELECT value FROM graph_metadata WHERE key = 'build_info'"
-        ).fetchone()
-        if build_row:
-            try:
-                build_info = json.loads(build_row["value"])
-            except Exception:
-                build_info = build_row["value"]
+        build_info = _load_build_info(conn)
         if build_info:
             report["build_info"] = build_info
 

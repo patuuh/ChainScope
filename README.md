@@ -140,8 +140,9 @@ When Codex or Claude starts in a blockchain repo with the ChainScope MCP config 
 Typical tool flow:
 1. `cs_profile` to choose the right target
 2. `cs_build` to create the graph
-3. `cs_audit` or `cs_hotspots` to rank the attack surface
-4. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate the structure
+3. `cs_summary` to confirm graph health, build metadata, and scope
+4. `cs_audit` or `cs_hotspots` to rank the attack surface
+5. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate the structure
 
 `graph.db` is written to the current working directory unless you pass `--db`. After `.mcp.json` changes, start a fresh Codex session so the tool list reloads. In Claude Code, `/mcp` is the quickest way to confirm that the server is connected.
 
@@ -169,6 +170,8 @@ cs_profile
 pick target repo or package
    ->
 cs_build
+   ->
+cs_summary
    ->
 cs_hotspots / cs_audit
    ->
@@ -211,9 +214,10 @@ python cs_state.py --db graph.db --all
 For agents, the usual loop is:
 1. `cs_profile` to choose the right subrepo
 2. `cs_build` to create the graph
-3. `cs_hotspots` or `cs_audit` via MCP to identify promising surfaces
-4. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate structure
-5. direct source reading only where the graph indicates it matters
+3. `cs_summary` via MCP to confirm the DB is populated and scoped correctly
+4. `cs_hotspots` or `cs_audit` via MCP to identify promising surfaces
+5. `cs_paths`, `cs_trace`, `cs_cross`, and `cs_state` to validate structure
+6. direct source reading only where the graph indicates it matters
 
 ## Query surface
 
@@ -384,4 +388,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`393 passed`
+`401 passed`
