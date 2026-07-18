@@ -164,11 +164,10 @@ def _find_state_vars_bounded(
     return [], 0, False
 
 
-def _fetch_nodes_by_ids(conn, node_ids: list[str]) -> list[dict]:
-    """Fetch full node rows in batches while preserving input order."""
+def _iter_nodes_by_ids(conn, node_ids: list[str]):
+    """Yield full node rows in batches while preserving input order."""
     if not node_ids:
-        return []
-    rows_by_id: dict[str, dict] = {}
+        return
     columns = (
         "id, label, type, visibility, file, line_start, line_end, "
         "signature, metadata"
@@ -176,13 +175,21 @@ def _fetch_nodes_by_ids(conn, node_ids: list[str]) -> list[dict]:
     for start in range(0, len(node_ids), 500):
         batch = node_ids[start:start + 500]
         placeholders = ",".join("?" for _ in batch)
+        rows_by_id: dict[str, dict] = {}
         rows = conn.execute(
             f"SELECT {columns} FROM nodes WHERE id IN ({placeholders})",
             batch,
         ).fetchall()
         for row in rows:
             rows_by_id[row["id"]] = dict(row)
-    return [rows_by_id[node_id] for node_id in node_ids if node_id in rows_by_id]
+        for node_id in batch:
+            if node_id in rows_by_id:
+                yield rows_by_id[node_id]
+
+
+def _fetch_nodes_by_ids(conn, node_ids: list[str]) -> list[dict]:
+    """Fetch full node rows in batches while preserving input order."""
+    return list(_iter_nodes_by_ids(conn, node_ids))
 
 
 def _qualified_label(node_id: str) -> str:
@@ -3902,6 +3909,12 @@ def cs_lookup(
 
         full_by_id: dict[str, dict] = {}
         matched_node_ids = [row["id"] for row in nodes]
+        total_unfiltered = len(matched_node_ids)
+        profile_count = total_unfiltered if max_matches == 0 else min(max_matches, total_unfiltered)
+        candidate_count = 0
+        if max_matches > 0 and total_unfiltered > max_matches:
+            candidate_count = total_unfiltered if max_candidates == 0 else min(max_candidates, total_unfiltered)
+        needed_count = max(profile_count, candidate_count)
 
         def _parse_full_node(full_dict: dict) -> dict | None:
             cached = full_by_id.get(full_dict["id"])
@@ -3916,21 +3929,22 @@ def cs_lookup(
 
         if exclude_research:
             filtered_ids = []
-            fetched_rows = _fetch_nodes_by_ids(conn, matched_node_ids)
-            for full_dict in fetched_rows:
+            filtered_total = 0
+            for full_dict in _iter_nodes_by_ids(conn, matched_node_ids):
                 parsed = _parse_full_node(full_dict)
                 if parsed is not None:
-                    filtered_ids.append(parsed["id"])
+                    filtered_total = _append_capped(
+                        filtered_ids,
+                        parsed["id"],
+                        filtered_total,
+                        needed_count,
+                    )
             matched_node_ids = filtered_ids
+            total_matches = filtered_total
         else:
-            total_unfiltered = len(matched_node_ids)
-            profile_count = total_unfiltered if max_matches == 0 else min(max_matches, total_unfiltered)
-            candidate_count = 0
-            if max_matches > 0 and total_unfiltered > max_matches:
-                candidate_count = total_unfiltered if max_candidates == 0 else min(max_candidates, total_unfiltered)
-            needed_count = max(profile_count, candidate_count)
             for full_dict in _fetch_nodes_by_ids(conn, matched_node_ids[:needed_count]):
                 _parse_full_node(full_dict)
+            total_matches = total_unfiltered
 
         def _candidate_for_id(node_id: str) -> dict:
             full_dict = full_by_id.get(node_id)
@@ -3956,7 +3970,6 @@ def cs_lookup(
                 return json.dumps({"error": f"No production function found matching '{name}'"})
             return json.dumps({"error": f"No function found matching '{name}'"})
 
-        total_matches = len(matched_node_ids)
         truncated = max_matches > 0 and total_matches > max_matches
         candidate_ids = matched_node_ids[:max_matches or total_matches]
 
@@ -4155,11 +4168,13 @@ def cs_lookup(
                 f"cs_lookup found {total_matches} matches and returned the first {len(results)} full profiles. "
                 "Use a more qualified name, inspect candidates, or set max_matches=0 for all profiles."
             )
-            shown_candidates, candidate_summary = _collect_mapped_items(
-                matched_node_ids,
-                _candidate_for_id,
-                max_candidates,
+            shown_candidate_ids = (
+                matched_node_ids
+                if max_candidates == 0
+                else matched_node_ids[:max_candidates]
             )
+            shown_candidates = [_candidate_for_id(node_id) for node_id in shown_candidate_ids]
+            candidate_summary = _section_summary(total_matches, len(shown_candidates))
             response["candidates"] = shown_candidates
             response["candidate_summary"] = candidate_summary
             if candidate_summary["truncated"]:

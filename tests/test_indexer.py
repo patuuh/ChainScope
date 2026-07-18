@@ -1728,6 +1728,57 @@ class TestIndexing:
         assert len(lookup["candidates"]) == 4
         assert len(parsed) == 4
 
+    def test_lookup_exclude_research_retains_only_capped_matches(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(40):
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.transfer(address,uint256)",
+                label="transfer",
+                type="function",
+                visibility="external",
+                file=f"Vault{i:02d}.sol",
+                line_start=i + 1,
+                signature="function transfer(address to, uint256 amount) external",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+        for i in range(5):
+            db.insert_node(
+                id=f"scripts/Helper{i:02d}.sol::Helper{i:02d}.transfer(address,uint256)",
+                label="transfer",
+                type="function",
+                visibility="external",
+                file=f"scripts/Helper{i:02d}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({"source_context": "script"}),
+            )
+
+        real_append = mcp_server._append_capped
+        match_buffer_sizes = []
+
+        def tracking_append(items, item, total, limit):
+            updated = real_append(items, item, total, limit)
+            if isinstance(item, str) and ".transfer(" in item:
+                match_buffer_sizes.append(len(items))
+            return updated
+
+        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+
+        lookup = json.loads(mcp_server.cs_lookup(
+            name="transfer",
+            db=tmp_db,
+            exclude_research=True,
+            max_matches=2,
+            max_candidates=4,
+        ))
+
+        assert lookup["matches"] == 2
+        assert lookup["matches_total"] == 40
+        assert lookup["candidate_summary"] == {"total": 40, "shown": 4, "truncated": True}
+        assert len(lookup["candidates"]) == 4
+        assert max(match_buffer_sizes) == 4
+
     def test_lookup_batches_ambiguous_candidate_loads(self, tmp_db, monkeypatch):
         import mcp_server
 
