@@ -4371,6 +4371,7 @@ class TestIndexing:
         ))
 
         assert result == {
+            "tool": "cs_lookup",
             "query": "transfer",
             "query_scope": "production_only",
             "error": "cs_lookup timed out after 7s",

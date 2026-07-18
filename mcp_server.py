@@ -1325,7 +1325,7 @@ def _query_sqlite_error(
     **fields,
 ) -> str:
     """Return a consistent JSON error for interrupted/failed graph queries."""
-    payload = dict(fields)
+    payload = {"tool": tool, **fields}
     if "interrupted" in str(exc).lower():
         payload.update({
             "error": f"{tool} timed out after {timeout_seconds}s",
