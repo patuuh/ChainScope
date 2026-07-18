@@ -38,6 +38,33 @@ class TestIndexing:
         assert result["repo_path"] == "/not/a/dir"
         assert "not a directory" in result["error"]
 
+    def test_profile_caps_large_sections_for_mcp_context(self, tmp_path):
+        import mcp_server
+
+        repo = tmp_path / "workspace"
+        repo.mkdir()
+        for i in range(5):
+            project = repo / f"pkg{i}"
+            project.mkdir()
+            (project / "foundry.toml").write_text("[profile.default]\n")
+            (project / f"Vault{i}.sol").write_text(
+                "pragma solidity ^0.8.0; contract Vault { function ping() external {} }"
+            )
+
+        capped = json.loads(mcp_server.cs_profile(str(repo), top=5, max_output_items=2))
+        uncapped = json.loads(mcp_server.cs_profile(str(repo), top=5, max_output_items=0))
+
+        assert len(capped["top_projects"]) == 2
+        assert len(capped["build_plan"]) == 2
+        assert capped["_summary"]["sections"]["top_projects"] == {"total": 5, "shown": 2, "truncated": True}
+        assert capped["_summary"]["sections"]["project_markers"] == {"total": 1, "shown": 1, "truncated": False}
+        assert "top_projects" in capped["_summary"]["truncated_sections"]
+        assert capped["_summary"]["max_output_items"] == 2
+
+        assert len(uncapped["top_projects"]) == 5
+        assert len(uncapped["build_plan"]) == 5
+        assert uncapped["_summary"]["truncated"] is False
+
     def test_source_context_classifies_deploy_dirs_as_script(self):
         assert classify_source_context("contracts/deploy/Foo.s.sol") == "script"
         assert classify_source_context("contracts/deployments/mainnet/Foo.sol") == "script"

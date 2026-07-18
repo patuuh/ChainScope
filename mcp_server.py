@@ -314,6 +314,80 @@ def _cap_items(items: list, max_items: int) -> tuple[list, dict]:
     }
 
 
+def _cap_mapping(mapping: dict, max_items: int) -> tuple[dict, dict]:
+    if max_items > 0 and len(mapping) > max_items:
+        items = list(mapping.items())
+        return dict(items[:max_items]), {
+            "total": len(mapping),
+            "shown": max_items,
+            "truncated": True,
+        }
+    return mapping, {
+        "total": len(mapping),
+        "shown": len(mapping),
+        "truncated": False,
+    }
+
+
+def _cap_profile_output(profile: dict, max_output_items: int) -> dict:
+    if max_output_items < 0:
+        max_output_items = 0
+    if not isinstance(profile, dict) or "error" in profile:
+        return profile
+
+    list_keys = (
+        "top_projects",
+        "workspace_clusters",
+        "recommended_clusters",
+        "recommended_build_targets",
+        "risk_first_targets",
+        "build_plan",
+    )
+    dict_keys = (
+        "languages",
+        "frameworks",
+        "top_extensions",
+        "project_markers",
+        "recommended_by_language",
+        "skipped_dirs",
+        "research_signal_dirs",
+        "skipped_source_reasons",
+        "examples",
+        "noise_examples",
+    )
+    sections: dict[str, dict] = {}
+    truncated_sections = []
+
+    for key in list_keys:
+        value = profile.get(key)
+        if isinstance(value, list):
+            profile[key], summary = _cap_items(value, max_output_items)
+            sections[key] = summary
+            if summary["truncated"]:
+                truncated_sections.append(key)
+
+    for key in dict_keys:
+        value = profile.get(key)
+        if isinstance(value, dict):
+            profile[key], summary = _cap_mapping(value, max_output_items)
+            sections[key] = summary
+            if summary["truncated"]:
+                truncated_sections.append(key)
+
+    profile["_summary"] = {
+        **profile.get("_summary", {}),
+        "max_output_items": max_output_items,
+        "sections": sections,
+        "truncated_sections": truncated_sections,
+        "truncated": bool(truncated_sections),
+    }
+    if truncated_sections:
+        profile["_summary"]["_hint"] = (
+            "cs_profile output was capped for MCP. Increase max_output_items or set it to 0 for exhaustive profile sections."
+        )
+    return profile
+
+
 def _summarize_cross_entries(entries, top: int) -> dict:
     top = max(top, 0)
     total = 0
@@ -435,6 +509,7 @@ def cs_profile(
     strategy: str = "balanced",
     include_research: bool = False,
     timeout_seconds: int = DEFAULT_MCP_BUILD_TIMEOUT_SECONDS,
+    max_output_items: int = 50,
 ) -> str:
     """Profile a repository before building a graph.
 
@@ -449,7 +524,11 @@ def cs_profile(
         strategy: balanced (default) or bounty for exploit-surface-first ranking
         include_research: Include scripts/poc/fuzz/invariant/certora-style research artifacts
         timeout_seconds: Optional MCP-side wall-clock budget (0 disables)
+        max_output_items: Maximum items per large profile section (0 disables)
     """
+    if max_output_items < 0:
+        max_output_items = 0
+
     repo = Path(repo_path)
     if not repo.is_dir():
         return json.dumps({
@@ -487,7 +566,7 @@ def cs_profile(
         except queue_mod.Empty:
             status, payload = ("error", f"profile worker exited with code {proc.exitcode} and returned no result")
         if status == "ok":
-            return json.dumps(payload, indent=2)
+            return json.dumps(_cap_profile_output(payload, max_output_items), indent=2)
         return json.dumps({
             "error": f"cs_profile failed: {payload}",
             "repo_path": repo_path,
@@ -498,7 +577,10 @@ def cs_profile(
     from core.project_profile import profile_repository
 
     return json.dumps(
-        profile_repository(repo_path, top=top, strategy=strategy, include_research=include_research),
+        _cap_profile_output(
+            profile_repository(repo_path, top=top, strategy=strategy, include_research=include_research),
+            max_output_items,
+        ),
         indent=2,
     )
 
@@ -591,7 +673,7 @@ def cs_help() -> str:
     """
     return json.dumps({
         "workflow": [
-            "1. cs_profile(repo_path) — optional but recommended for large/mixed workspaces.",
+            "1. cs_profile(repo_path) — optional but recommended for large/mixed workspaces; output sections are capped by max_output_items.",
             "2. cs_build(repo_path) — REQUIRED before graph queries. Builds the knowledge graph; timeout_seconds is opt-in.",
             "3. cs_summary() — Cheap graph health/stats check before broad scanning.",
             "4. cs_audit() — Full security report: stats, hotspots, reentrancy, taint, sinks, events, deadcode, access gaps.",
@@ -601,6 +683,7 @@ def cs_help() -> str:
             "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths.",
             "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections.",
             "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build.",
+            "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
         },
         "scanner_tools": {
             "cs_hotspots": "Composite risk scorer — all functions ranked with detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
