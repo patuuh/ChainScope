@@ -2077,6 +2077,76 @@ class TestIndexing:
         assert hotspots["_summary"]["top_shown"] == 25
         assert len(statements) == 4
 
+    def test_hotspots_streams_aggregate_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(12):
+            func_id = f"Vault.sol::Vault.entry{i}()"
+            state_id = f"Vault.sol::Vault.total{i}"
+            guard_id = f"Vault.sol::Vault.onlyOwner{i}"
+            db.insert_node(
+                id=func_id,
+                label=f"entry{i}",
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=state_id,
+                label=f"total{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=guard_id,
+                label=f"onlyOwner{i}",
+                type="modifier",
+                file="Vault.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+            db.insert_edge(guard_id, func_id, "guards")
+
+        real_open = mcp_server._open_query_connection
+
+        class StreamingCursor:
+            def __init__(self, cursor):
+                self._cursor = cursor
+
+            def __iter__(self):
+                return iter(self._cursor)
+
+            def fetchall(self):
+                raise AssertionError("cs_hotspots aggregate rows should stream")
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                cursor = self._conn.execute(sql, *args, **kwargs)
+                normalized = " ".join(sql.split())
+                if (
+                    "GROUP BY source" in normalized
+                    or "GROUP BY target" in normalized
+                ):
+                    return StreamingCursor(cursor)
+                return cursor
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=5))
+
+        assert hotspots["_summary"]["total_scored"] == 12
+        assert hotspots["_summary"]["top_shown"] == 5
+
     def test_hotspots_retains_only_top_results_during_scan(self, tmp_db, monkeypatch):
         import mcp_server
 

@@ -2043,25 +2043,23 @@ def cs_hotspots(
             FROM nodes WHERE type = 'function'
         """)
 
-        write_map = {
-            r["source"]: r["cnt"]
-            for r in conn.execute("""
+        write_map = {}
+        for r in conn.execute("""
                 SELECT source, COUNT(*) as cnt
                 FROM edges
                 WHERE relation = 'writes_state'
                 GROUP BY source
-            """).fetchall()
-        }
+            """):
+            write_map[r["source"]] = r["cnt"]
         ext_call_map = _external_call_counts(conn)
-        guard_map = {
-            r["target"]: r["cnt"]
-            for r in conn.execute("""
+        guard_map = {}
+        for r in conn.execute("""
                 SELECT target, COUNT(*) as cnt
                 FROM edges
                 WHERE relation = 'guards'
                 GROUP BY target
-            """).fetchall()
-        }
+            """):
+            guard_map[r["target"]] = r["cnt"]
 
         total_scored = 0
         critical = 0
