@@ -345,8 +345,8 @@ def _metadata_raw_value(raw, key: str):
 def _metadata_raw_value_truthy(raw, key: str) -> bool:
     value = _metadata_raw_value(raw, key)
     if value is _MISSING_METADATA_VALUE:
-        return bool(_load_metadata(raw).get(key))
-    return bool(value)
+        return _attr_enabled(_load_metadata(raw).get(key))
+    return _attr_enabled(value)
 
 
 def _metadata_string_value(raw, key: str) -> str | None:
@@ -2172,7 +2172,7 @@ def cs_audit(
                         entry_count += 1
                 elif row["type"] == "state_var":
                     state_var_count += 1
-                if raw_meta and '"is_sink"' in raw_meta and _load_metadata(raw_meta).get("is_sink"):
+                if raw_meta and '"is_sink"' in raw_meta and _metadata_raw_value_truthy(raw_meta, "is_sink"):
                     sink_count += 1
             file_count = len(files)
 
@@ -2204,9 +2204,11 @@ def cs_audit(
             guarded_count = conn.execute(
                 "SELECT COUNT(DISTINCT target) FROM edges WHERE relation='guards'"
             ).fetchone()[0]
-            sink_count = conn.execute(
-                "SELECT COUNT(*) FROM nodes WHERE metadata LIKE '%\"is_sink\"%'"
-            ).fetchone()[0]
+            sink_count = sum(
+                1
+                for row in conn.execute("SELECT metadata FROM nodes WHERE metadata LIKE '%\"is_sink\"%'")
+                if _metadata_raw_value_truthy(row["metadata"], "is_sink")
+            )
             state_var_count = conn.execute(
                 "SELECT COUNT(*) FROM nodes WHERE type='state_var'"
             ).fetchone()[0]
@@ -2454,10 +2456,13 @@ def cs_audit(
         for s in conn.execute(
             "SELECT id, label, metadata FROM nodes WHERE metadata LIKE '%\"is_sink\"%'"
         ):
-            smeta = _load_metadata(s["metadata"])
+            raw_meta = s["metadata"]
+            if not _metadata_raw_value_truthy(raw_meta, "is_sink"):
+                continue
+            smeta = _load_metadata(raw_meta)
             if exclude_research and _is_research_meta(smeta):
                 continue
-            if smeta.get("is_sink"):
+            if _attr_enabled(smeta.get("is_sink")):
                 sink_ids.add(s["id"])
                 sink_info[s["id"]] = {
                     "label": s["label"],
@@ -3672,8 +3677,10 @@ def cs_sinks(
             raw_meta = row["metadata"]
             if exclude_research and _is_research_metadata_raw(raw_meta):
                 continue
+            if not _metadata_raw_value_truthy(raw_meta, "is_sink"):
+                continue
             meta = _load_metadata(raw_meta)
-            if not meta.get("is_sink"):
+            if not _attr_enabled(meta.get("is_sink")):
                 continue
             current_type = meta.get("sink_type", "unknown")
             if sink_type and current_type != sink_type:
