@@ -831,7 +831,7 @@ class TestIndexing:
         assert audit["stats"]["sinks"] == 1
         assert audit["sink_summary"]["by_type"] == {"fund_transfer": 1}
         assert false_sink not in parsed
-        assert parsed == [true_sink]
+        assert parsed == []
 
     def test_audit_skips_neutral_function_metadata_parses(self, tmp_db, monkeypatch):
         import mcp_server
@@ -3264,8 +3264,7 @@ class TestIndexing:
 
         assert result["total"] == 1
         assert result["sinks"][0]["label"] == "transfer"
-        assert len(parsed) == 1
-        assert "event_log" not in parsed[0]
+        assert parsed == []
 
     def test_sinks_skips_false_markers_before_metadata_parse(self, tmp_db, monkeypatch):
         import mcp_server
@@ -3317,7 +3316,7 @@ class TestIndexing:
         assert result["by_type"] == {"fund_transfer": 1}
         assert result["sinks"][0]["label"] == "transfer"
         assert false_sink not in parsed
-        assert parsed == [true_sink]
+        assert parsed == []
 
     def test_sinks_streams_rows_and_uncaps_callers_with_zero(self, tmp_db, monkeypatch):
         import mcp_server
@@ -3514,7 +3513,7 @@ class TestIndexing:
         assert result["total"] == 1
         assert result["sinks"][0]["caller_summary"] == {"total": 80, "shown": 2, "truncated": True}
         assert len(result["sinks"][0]["callers"]) == 2
-        assert len(parsed) == 1
+        assert parsed == []
 
     def test_sinks_exclude_research_uses_raw_context_filter(self, tmp_db, monkeypatch):
         import mcp_server
@@ -3598,7 +3597,7 @@ class TestIndexing:
             "callTransfer01",
             "callTransfer02",
         ]
-        assert parsed == [prod_sink_metadata]
+        assert parsed == []
 
     def test_sinks_skips_untagged_caller_context_parses(self, tmp_db, monkeypatch):
         import mcp_server

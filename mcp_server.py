@@ -356,6 +356,13 @@ def _metadata_string_value(raw, key: str) -> str | None:
     return None
 
 
+def _metadata_value_or_default(raw, key: str, default):
+    value = _metadata_raw_value(raw, key)
+    if value is _MISSING_METADATA_VALUE:
+        return default
+    return value
+
+
 def _metadata_source_context(raw) -> str:
     if isinstance(raw, dict):
         return raw.get("source_context", "production")
@@ -2459,15 +2466,13 @@ def cs_audit(
             raw_meta = s["metadata"]
             if not _metadata_raw_value_truthy(raw_meta, "is_sink"):
                 continue
-            smeta = _load_metadata(raw_meta)
-            if exclude_research and _is_research_meta(smeta):
+            if exclude_research and _is_research_metadata_raw(raw_meta):
                 continue
-            if _attr_enabled(smeta.get("is_sink")):
-                sink_ids.add(s["id"])
-                sink_info[s["id"]] = {
-                    "label": s["label"],
-                    "type": smeta.get("sink_type", "unknown"),
-                }
+            sink_ids.add(s["id"])
+            sink_info[s["id"]] = {
+                "label": s["label"],
+                "type": _metadata_value_or_default(raw_meta, "sink_type", "unknown"),
+            }
 
         taint_results = []
         taint_total = 0
@@ -3679,13 +3684,11 @@ def cs_sinks(
                 continue
             if not _metadata_raw_value_truthy(raw_meta, "is_sink"):
                 continue
-            meta = _load_metadata(raw_meta)
-            if not _attr_enabled(meta.get("is_sink")):
-                continue
-            current_type = meta.get("sink_type", "unknown")
+            current_type = _metadata_value_or_default(raw_meta, "sink_type", "unknown")
             if sink_type and current_type != sink_type:
                 continue
             by_type[current_type] = by_type.get(current_type, 0) + 1
+            meta = _load_metadata(raw_meta) if include_metadata else None
             sink_entry = {
                 "id": row["id"],
                 "label": row["label"],
@@ -3696,7 +3699,11 @@ def cs_sinks(
                 "line_end": row["line_end"],
                 "signature": row["signature"],
                 "sink_type": current_type,
-                "source_context": meta.get("source_context", "production"),
+                "source_context": (
+                    meta.get("source_context", "production")
+                    if meta is not None
+                    else _metadata_source_context(raw_meta)
+                ),
             }
             if include_metadata:
                 sink_entry["metadata"] = meta
