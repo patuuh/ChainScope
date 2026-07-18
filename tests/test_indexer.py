@@ -2585,13 +2585,27 @@ class TestIndexing:
         statements = []
         parsed = []
 
+        class StreamingCursor:
+            def __init__(self, cursor):
+                self._cursor = cursor
+
+            def __iter__(self):
+                return iter(self._cursor)
+
+            def fetchall(self):
+                raise AssertionError("limited lookup relation rows should stream")
+
         class CountingConnection:
             def __init__(self, conn):
                 self._conn = conn
 
             def execute(self, sql, *args, **kwargs):
-                statements.append(" ".join(sql.split()))
-                return self._conn.execute(sql, *args, **kwargs)
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                cursor = self._conn.execute(sql, *args, **kwargs)
+                if "LIMIT ?" in normalized:
+                    return StreamingCursor(cursor)
+                return cursor
 
             def close(self):
                 self._conn.close()

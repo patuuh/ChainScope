@@ -4134,9 +4134,11 @@ def cs_lookup(
                             "shown": 0,
                             "truncated": False,
                         }
-                    rows = conn.execute(f"{sql} LIMIT ?", params + (max_relation_items,)).fetchall()
-                    items = [_relation_item(row) for row in rows]
-                    shown = [item for item in items if item is not None]
+                    shown = []
+                    for row in conn.execute(f"{sql} LIMIT ?", params + (max_relation_items,)):
+                        item = _relation_item(row)
+                        if item is not None:
+                            shown.append(item)
                     return shown, {
                         "total": total,
                         "shown": len(shown),
