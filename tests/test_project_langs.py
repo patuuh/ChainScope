@@ -293,6 +293,48 @@ def test_repository_profile_recommends_supported_targets(tmp_path):
     assert any(item["tool_call"]["include_research"] is True for item in research_profile["build_plan"])
 
 
+def test_repository_profile_walks_workspace_once(tmp_path, monkeypatch):
+    from core import project_profile
+
+    repo = tmp_path / "workspace"
+    pkg = repo / "packages" / "vault"
+    pkg.mkdir(parents=True)
+    (pkg / "foundry.toml").write_text("[profile.default]\n", encoding="utf-8")
+    (pkg / "Vault.sol").write_text("pragma solidity ^0.8.0; contract Vault {}", encoding="utf-8")
+
+    real_walk = project_profile.os.walk
+    walk_roots = []
+
+    def tracking_walk(*args, **kwargs):
+        walk_roots.append(args[0])
+        yield from real_walk(*args, **kwargs)
+
+    monkeypatch.setattr(project_profile.os, "walk", tracking_walk)
+
+    profile = project_profile.profile_repository(str(repo), top=3)
+
+    assert walk_roots == [repo]
+    assert profile["package_roots_detected"] == 1
+    assert profile["languages"] == {"solidity": 1}
+    assert any("packages/vault" in item["path"] for item in profile["recommended_build_targets"])
+
+
+def test_repository_profile_keeps_root_package_build_plan(tmp_path):
+    from core.project_profile import profile_repository
+
+    repo = tmp_path / "vault"
+    repo.mkdir()
+    (repo / "foundry.toml").write_text("[profile.default]\n", encoding="utf-8")
+    (repo / "Vault.sol").write_text("pragma solidity ^0.8.0; contract Vault {}", encoding="utf-8")
+
+    profile = profile_repository(str(repo), top=5)
+
+    assert profile["package_roots_detected"] == 1
+    assert profile["top_projects"][0]["path"] == "."
+    assert profile["recommended_build_targets"][0]["path"] == str(repo)
+    assert profile["build_plan"][0]["tool_call"]["repo_path"] == str(repo)
+
+
 def test_indexer_detects_project_specific_languages(tmp_path, tmp_db):
     repo = tmp_path / "repo"
     repo.mkdir()

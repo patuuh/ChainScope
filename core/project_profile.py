@@ -189,19 +189,6 @@ def _project_bucket(root: Path, file_path: Path) -> str:
     return rel.parts[0] if len(rel.parts) > 1 else "."
 
 
-def _find_package_roots(root: Path) -> dict[Path, Counter[str]]:
-    """Find directories with project marker files."""
-    roots: dict[Path, Counter[str]] = defaultdict(Counter)
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if not should_skip_dir_name(d)]
-        markers = [f for f in filenames if f in PROJECT_MARKERS]
-        if markers:
-            p = Path(dirpath)
-            for marker in markers:
-                roots[p][marker] += 1
-    return roots
-
-
 def _nearest_package_root(root: Path, package_roots: set[Path], file_path: Path) -> str:
     """Assign a file to the nearest ancestor package root, or top-level bucket."""
     parent = file_path.parent
@@ -495,8 +482,8 @@ def profile_repository(
     total_files = 0
     detected_source_files = 0
     source_files = 0
-    package_roots_with_markers = _find_package_roots(root)
-    package_root_paths = set(package_roots_with_markers.keys())
+    package_roots_with_markers: dict[Path, Counter[str]] = defaultdict(Counter)
+    package_root_paths: set[Path] = set()
 
     for dirpath, dirnames, filenames in os.walk(root):
         skipped = [d for d in dirnames if should_skip_dir_name(d, include_research=include_research)]
@@ -506,9 +493,16 @@ def profile_repository(
                 research_signal_dirs[d.lower()] += 1
         dirnames[:] = [d for d in dirnames if not should_skip_dir_name(d, include_research=include_research)]
 
+        dir_path = Path(dirpath)
+        markers = [f for f in filenames if f in PROJECT_MARKERS]
+        if markers:
+            for marker in markers:
+                package_roots_with_markers[dir_path][marker] += 1
+            package_root_paths.add(dir_path)
+
         for fname in filenames:
             total_files += 1
-            path = Path(dirpath) / fname
+            path = dir_path / fname
             bucket = _nearest_package_root(root, package_root_paths, path)
 
             if fname in PROJECT_MARKERS:
@@ -551,7 +545,7 @@ def profile_repository(
     for bucket, chains in project_chains.items():
         if not chains:
             continue
-        if bucket == "." and package_roots_with_markers:
+        if bucket == "." and package_roots_with_markers and root not in package_roots_with_markers:
             continue
         weighted = sum(SOURCE_PRIORITIES.get(chain, 10) * count for chain, count in chains.items())
         markers = project_markers[bucket]
