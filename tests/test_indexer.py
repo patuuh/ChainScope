@@ -1627,6 +1627,100 @@ class TestIndexing:
         assert len(unsafe["command_execution"]) == 3
         assert parsed == [unsafe_metadata[i] for i in (0, 1, 10)]
 
+    def test_scanners_parse_only_retained_production_rows(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        defi_metadata = []
+        unsafe_metadata = []
+        for i in range(8):
+            raw = json.dumps({
+                "timestamp_dependence": [{"line": i + 1}],
+                "source_context": "production",
+                "large": ["x"] * 20,
+            })
+            defi_metadata.append(raw)
+            db.insert_node(
+                id=f"contracts/Vault{i}.sol::Vault{i}.checkDeadline(uint256)",
+                label=f"checkDeadline{i}",
+                type="function",
+                visibility="external",
+                file=f"contracts/Vault{i}.sol",
+                line_start=i + 1,
+                metadata=raw,
+            )
+            db.insert_node(
+                id=f"scripts/Vault{i}.sol::Vault{i}.checkDeadline(uint256)",
+                label=f"scriptCheckDeadline{i}",
+                type="function",
+                visibility="external",
+                file=f"scripts/Vault{i}.sol",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "timestamp_dependence": [{"line": i + 1}],
+                    "source_context": "script",
+                    "large": ["x"] * 20,
+                }),
+            )
+            raw = json.dumps({
+                "command_injection_risk": [{"line": i + 1}],
+                "language": "python",
+                "source_context": "production",
+                "large": ["x"] * 20,
+            })
+            unsafe_metadata.append(raw)
+            db.insert_node(
+                id=f"aa_prod{i}.py::run_cmd",
+                label=f"run_cmd_{i}",
+                type="function",
+                file=f"aa_prod{i}.py",
+                line_start=i + 1,
+                metadata=raw,
+            )
+            db.insert_node(
+                id=f"zz_scripts{i}.py::run_cmd",
+                label=f"script_run_cmd_{i}",
+                type="function",
+                file=f"zz_scripts{i}.py",
+                line_start=i + 1,
+                metadata=json.dumps({
+                    "command_injection_risk": [{"line": i + 1}],
+                    "language": "python",
+                    "source_context": "script",
+                    "large": ["x"] * 20,
+                }),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        defi = json.loads(mcp_server.cs_defi(
+            db=tmp_db,
+            category="timestamp",
+            exclude_research=True,
+            max_per_category=3,
+        ))
+        assert defi["_summary"]["category_totals"] == {"timestamp_dependence": 8}
+        assert len(defi["timestamp_dependence"]) == 3
+        assert parsed == [defi_metadata[i] for i in (0, 1, 2)]
+
+        parsed.clear()
+        unsafe = json.loads(mcp_server.cs_unsafe(
+            db=tmp_db,
+            category="command",
+            exclude_research=True,
+            max_per_category=3,
+        ))
+        assert unsafe["_summary"]["category_totals"] == {"command_execution": 8}
+        assert len(unsafe["command_execution"]) == 3
+        assert parsed == [unsafe_metadata[i] for i in (0, 1, 2)]
+
     def test_scanners_stream_function_rows_into_metadata_index(self, monkeypatch):
         import mcp_server
 

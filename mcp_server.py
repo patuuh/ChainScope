@@ -795,16 +795,13 @@ def _metadata_rows_by_key(
         matched = [key for key, needle in needles.items() if needle in raw]
         if not matched:
             continue
-        if exclude_research:
-            meta = _load_metadata(raw)
-            if not _include_metadata(meta, exclude_research):
-                continue
-        else:
-            retained_keys = [
-                key for key in matched
-                if max_per_key == 0 or len(indexed[key]) < max_per_key
-            ]
-            meta = _load_metadata(raw) if retained_keys else None
+        if exclude_research and _is_research_metadata_raw(raw):
+            continue
+        retained_keys = [
+            key for key in matched
+            if max_per_key == 0 or len(indexed[key]) < max_per_key
+        ]
+        meta = _load_metadata(raw) if retained_keys else None
         for key in matched:
             totals[key] += 1
             if meta is not None and (max_per_key == 0 or len(indexed[key]) < max_per_key):
