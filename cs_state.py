@@ -12,6 +12,9 @@ def state(
     db: str = typer.Option("graph.db", help="Database path"),
     entity: str = typer.Option(None, "--entity", help="Filter by entity name (e.g. VaultState)"),
     all_entities: bool = typer.Option(False, "--all", help="Show all state machines"),
+    max_entities: int = typer.Option(20, "--max-entities", help="Max entity groups for --all (0 = all)"),
+    max_transitions_per_entity: int = typer.Option(50, "--max-transitions-per-entity", help="Max transitions per entity (0 = all)"),
+    max_warnings: int = typer.Option(50, "--max-warnings", help="Max warnings to show (0 = all)"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode transitions"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -23,6 +26,9 @@ def state(
         db=db,
         entity=entity or "",
         exclude_research=exclude_research,
+        max_entities=max_entities,
+        max_transitions_per_entity=max_transitions_per_entity,
+        max_warnings=max_warnings,
     ))
 
     if json_output:
@@ -36,6 +42,13 @@ def state(
         return
 
     typer.echo(f"Scope: {data.get('query_scope', 'all_sources')}")
+    summary = data.get("_summary", {})
+    if summary.get("truncated"):
+        typer.echo(
+            f"Showing {summary.get('entities_shown')}/{summary.get('entities_total')} entities, "
+            f"{summary.get('transitions_shown')}/{summary.get('transitions_total')} transitions, "
+            f"{summary.get('warnings_shown')}/{summary.get('warnings_total')} warnings"
+        )
     for ent, trans in entities.items():
         typer.echo(f"\nState Machine: {ent}")
         for t in trans:

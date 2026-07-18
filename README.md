@@ -238,6 +238,10 @@ Scanner category output from `cs_defi` and `cs_unsafe` is capped by
 `max_per_category` by default. The summary still reports full category totals;
 set `max_per_category=0` only when an exhaustive category dump is intentional.
 
+Broad `cs_state` output is also capped by entity groups, transitions per entity,
+and warnings. Prefer `entity=` when investigating one state machine, or set the
+state caps to `0` when you intentionally need every transition.
+
 For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
 choose where to inspect without dumping every trust-boundary edge.
@@ -271,6 +275,7 @@ choose where to inspect without dumping every trust-boundary edge.
 - `python cs_cross.py --summary ...`
 - `python cs_cross.py ...`
 - `python cs_state.py ...`
+- `python cs_state.py --max-entities 0 --max-transitions-per-entity 0 --max-warnings 0 ...`
 - `python cs_sinks.py ...`
 
 ## Research mode
@@ -415,4 +420,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`408 passed`
+`409 passed`

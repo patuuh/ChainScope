@@ -591,7 +591,7 @@ def cs_help() -> str:
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches; use max_matches=0 only when exhaustive output is intentional.",
             "cs_cross": "Cross-contract/module boundary calls (trust boundary crossings)",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; use before exhaustive cs_cross on big repos.",
-            "cs_state": "State machine transitions and lifecycle analysis",
+            "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
         "_tip": "All tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
     }, indent=2)
@@ -2840,6 +2840,9 @@ def cs_state(
     entity: str = "",
     exclude_research: bool = False,
     timeout_seconds: int = 0,
+    max_entities: int = 20,
+    max_transitions_per_entity: int = 50,
+    max_warnings: int = 50,
 ) -> str:
     """Analyze state machine transitions and flag security issues.
 
@@ -2852,7 +2855,17 @@ def cs_state(
         entity: Filter by entity name (e.g. "VaultState" or "Audience"). Empty = show all.
         exclude_research: Exclude transitions originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+        max_entities: Maximum entity groups to return when entity is empty (0 disables)
+        max_transitions_per_entity: Maximum transitions returned per entity (0 disables)
+        max_warnings: Maximum warnings returned (0 disables)
     """
+    if max_entities < 0:
+        max_entities = 0
+    if max_transitions_per_entity < 0:
+        max_transitions_per_entity = 0
+    if max_warnings < 0:
+        max_warnings = 0
+
     db_path = _resolve_db(db)
     try:
         conn = _open_query_connection(db_path, timeout_seconds=timeout_seconds)
@@ -2867,6 +2880,7 @@ def cs_state(
                 FROM state_transitions st
                 LEFT JOIN nodes n ON st.function_id = n.id
                 WHERE st.entity = ?
+                ORDER BY st.entity, st.function_id, st.from_state, st.to_state
                 """,
                 (entity,)
             ).fetchall()
@@ -2875,6 +2889,7 @@ def cs_state(
                 SELECT st.*, n.file as function_file, n.label as function_label, n.metadata as function_metadata
                 FROM state_transitions st
                 LEFT JOIN nodes n ON st.function_id = n.id
+                ORDER BY st.entity, st.function_id, st.from_state, st.to_state
             """).fetchall()
 
         transitions = []
@@ -2976,10 +2991,60 @@ def cs_state(
                                         f"this is intentional (potential griefing)"
                                     )
 
+        entity_names = sorted(entities)
+        entity_totals = {name: len(entities[name]) for name in entity_names}
+        transitions_total = sum(entity_totals.values())
+
+        shown_entity_names = entity_names
+        if not entity and max_entities > 0:
+            shown_entity_names = entity_names[:max_entities]
+
+        shown_entities: dict[str, list[dict]] = {}
+        truncated_entities: dict[str, dict] = {}
+        for ent in shown_entity_names:
+            trans = entities[ent]
+            if max_transitions_per_entity > 0 and len(trans) > max_transitions_per_entity:
+                shown_entities[ent] = trans[:max_transitions_per_entity]
+                truncated_entities[ent] = {
+                    "shown": max_transitions_per_entity,
+                    "total": len(trans),
+                    "hidden": len(trans) - max_transitions_per_entity,
+                }
+            else:
+                shown_entities[ent] = trans
+
+        hidden_entities = len(entity_names) - len(shown_entity_names)
+        warnings_total = len(warnings)
+        shown_warnings = warnings
+        if max_warnings > 0 and len(warnings) > max_warnings:
+            shown_warnings = warnings[:max_warnings]
+
+        truncated = bool(
+            hidden_entities
+            or truncated_entities
+            or len(shown_warnings) < warnings_total
+        )
+
         return json.dumps({
-            "entities": entities,
-            "warnings": warnings,
+            "entities": shown_entities,
+            "warnings": shown_warnings,
             "query_scope": "production_only" if exclude_research else "all_sources",
+            "_summary": {
+                "entity": entity or None,
+                "entities_total": len(entity_names),
+                "entities_shown": len(shown_entity_names),
+                "hidden_entities": hidden_entities,
+                "transitions_total": transitions_total,
+                "transitions_shown": sum(len(v) for v in shown_entities.values()),
+                "entity_totals": entity_totals,
+                "truncated_entities": truncated_entities,
+                "warnings_total": warnings_total,
+                "warnings_shown": len(shown_warnings),
+                "truncated": truncated,
+                "max_entities": max_entities,
+                "max_transitions_per_entity": max_transitions_per_entity,
+                "max_warnings": max_warnings,
+            },
         }, indent=2)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(

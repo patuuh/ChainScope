@@ -700,6 +700,56 @@ class TestIndexing:
         assert prod_contexts == {"Vault.sol": "production"}
         assert prod_state["warnings"] == ["UNGUARDED: close() transitions VaultState to Closed without checking current state", "TERMINAL: VaultState::Closed has no outgoing transitions"]
 
+    def test_state_caps_broad_entity_output_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(5):
+            fn_id = f"Vault{i}.sol::Vault{i}.advance()"
+            db.insert_node(
+                id=fn_id,
+                label=f"advance{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+            db.insert_transition(f"State{i}", "*", "Active", fn_id)
+            db.insert_transition(f"State{i}", "Active", "Paused", fn_id)
+            db.insert_transition(f"State{i}", "Paused", "Closed", fn_id)
+
+        capped = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            max_entities=2,
+            max_transitions_per_entity=2,
+            max_warnings=3,
+        ))
+        uncapped = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            max_entities=0,
+            max_transitions_per_entity=0,
+            max_warnings=0,
+        ))
+
+        assert list(capped["entities"]) == ["State0", "State1"]
+        assert all(len(transitions) == 2 for transitions in capped["entities"].values())
+        assert len(capped["warnings"]) == 3
+        assert capped["_summary"]["entities_total"] == 5
+        assert capped["_summary"]["entities_shown"] == 2
+        assert capped["_summary"]["hidden_entities"] == 3
+        assert capped["_summary"]["transitions_total"] == 15
+        assert capped["_summary"]["transitions_shown"] == 4
+        assert capped["_summary"]["warnings_total"] > capped["_summary"]["warnings_shown"]
+        assert capped["_summary"]["truncated"] is True
+        assert capped["_summary"]["truncated_entities"]["State0"]["hidden"] == 1
+
+        assert len(uncapped["entities"]) == 5
+        assert all(len(transitions) == 3 for transitions in uncapped["entities"].values())
+        assert uncapped["_summary"]["transitions_total"] == 15
+        assert uncapped["_summary"]["transitions_shown"] == 15
+        assert uncapped["_summary"]["warnings_total"] == uncapped["_summary"]["warnings_shown"]
+        assert uncapped["_summary"]["truncated"] is False
+
 
 class TestFileFiltering:
     def test_collect_files_prioritizes_protocol_sources_for_partial_builds(self, tmp_path):
