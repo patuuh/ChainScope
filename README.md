@@ -294,6 +294,7 @@ The response still reports total sinks and type counts; set `max_results=0` or
 ### CLI wrappers
 
 - `python cs_profile.py ...`
+- `python cs_profile.py --max-output-items 0 ...`
 - `python cs_build.py ...`
 - `python cs_summary.py ...`
 - `python cs_summary.py --attack-surface --top 10 ...`
@@ -451,4 +452,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`421 passed`
+`423 passed`

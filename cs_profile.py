@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Profile a repository or workspace before building a ChainScope graph."""
 import json
-from pathlib import Path
 import typer
-
-from core.project_profile import profile_repository
+import mcp_server
 
 app = typer.Typer()
 
@@ -15,14 +13,22 @@ def profile(
     top: int = typer.Option(20, help="Number of top projects/extensions to show"),
     strategy: str = typer.Option("balanced", help="Ranking strategy: balanced or bounty"),
     include_research: bool = typer.Option(False, help="Include scripts/poc/fuzz/invariant/certora research artifacts"),
+    timeout_seconds: int = typer.Option(0, help="Stop profiling after N seconds (0 disables)"),
+    max_output_items: int = typer.Option(50, "--max-output-items", help="Max items per large JSON section (0 = all)"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
-    repo = Path(repo_path)
-    if not repo.is_dir():
-        typer.echo(f"Error: {repo_path} is not a directory", err=True)
-        raise typer.Exit(1)
+    data = json.loads(mcp_server.cs_profile(
+        repo_path=repo_path,
+        top=top,
+        strategy=strategy,
+        include_research=include_research,
+        timeout_seconds=timeout_seconds,
+        max_output_items=max_output_items,
+    ))
 
-    data = profile_repository(str(repo), top=top, strategy=strategy, include_research=include_research)
+    if "error" in data:
+        typer.echo(data["error"], err=True)
+        raise typer.Exit(1)
 
     if json_output:
         typer.echo(json.dumps(data, indent=2))

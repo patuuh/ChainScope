@@ -151,6 +151,33 @@ class TestResearchAwareCli:
         assert data["include_research"] is True
         assert any(item["tool_call"]["include_research"] is True for item in data["build_plan"])
 
+    def test_profile_cli_caps_large_json_sections(self, tmp_path):
+        repo = tmp_path / "workspace"
+        repo.mkdir()
+        for i in range(4):
+            pkg = repo / f"pkg{i}"
+            pkg.mkdir()
+            (pkg / "foundry.toml").write_text("[profile.default]\n")
+            (pkg / f"Vault{i}.sol").write_text(
+                "pragma solidity ^0.8.0; contract Vault { function ping() external {} }"
+            )
+
+        result = run_tool(
+            "cs_profile.py",
+            [str(repo), "--top", "4", "--max-output-items", "2", "--json"],
+        )
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert len(data["build_plan"]) == 2
+        assert data["_summary"]["max_output_items"] == 2
+        assert "build_plan" in data["_summary"]["truncated_sections"]
+
+    def test_profile_cli_missing_repo_returns_error(self, tmp_path):
+        missing = tmp_path / "missing"
+        result = run_tool("cs_profile.py", [str(missing), "--json"])
+        assert result.returncode == 1
+        assert "not a directory" in result.stderr
+
     def test_cli_exclude_research_flags(self, tmp_path):
         repo = tmp_path / "repo"
         repo.mkdir()
