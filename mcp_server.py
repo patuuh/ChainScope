@@ -957,6 +957,15 @@ def _metadata_key_filter(keys: list[str]) -> tuple[str, tuple[str, ...]]:
     return f" AND ({clauses})", params
 
 
+def _metadata_any_key_predicate(keys: tuple[str, ...]) -> tuple[str, tuple[str, ...]]:
+    """Return a standalone SQL predicate for rows that may contain any metadata key."""
+    if not keys:
+        return "0", ()
+    clauses = " OR ".join("metadata LIKE ?" for _ in keys)
+    params = tuple(f'%"{key}"%' for key in keys)
+    return f"({clauses})", params
+
+
 def _metadata_string_value_filter(key: str, value: str) -> tuple[str, tuple[str, ...]]:
     """Return a cheap JSON string prefilter; parsed metadata remains authoritative."""
     if not key or not value:
@@ -1589,7 +1598,7 @@ def cs_help() -> str:
             "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
         },
         "scanner_tools": {
-            "cs_hotspots": "Composite risk scorer — all functions ranked with detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
+            "cs_hotspots": "Composite risk scorer — broad scan with SQL candidate prefilters and detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
             "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter; category output is capped by max_per_category.",
             "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output is capped by max_per_category.",
         },
@@ -1963,6 +1972,41 @@ _HOTSPOT_SCORE_METADATA_KEYS = (
     "view",
     "weak_crypto",
 )
+
+
+def _iter_hotspot_candidate_rows(conn):
+    """Yield function rows that can plausibly score as hotspots."""
+    metadata_predicate, metadata_params = _metadata_any_key_predicate(_HOTSPOT_SCORE_METADATA_KEYS)
+    edge_index = (
+        " INDEXED BY idx_edges_source_relation"
+        if _sqlite_index_exists(conn, "idx_edges_source_relation")
+        else ""
+    )
+    yield from conn.execute(f"""
+        SELECT id, label, file, visibility, signature, line_start, metadata
+        FROM nodes AS n
+        WHERE n.type = 'function'
+          AND n.label NOT IN ('constructor', 'fallback', 'receive')
+          AND (
+            (
+              n.visibility IN ('external', 'public')
+              AND EXISTS (
+                SELECT 1
+                FROM edges AS w{edge_index}
+                WHERE w.source = n.id AND w.relation = 'writes_state'
+              )
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM edges AS c{edge_index}
+              WHERE c.source = n.id
+                AND c.relation = 'calls'
+                AND c.attributes LIKE '%"unresolved"%'
+            )
+            OR {metadata_predicate}
+          )
+        ORDER BY n.rowid
+    """, metadata_params)
 
 
 def _score_function(row, meta, writes, ext_calls, guard_count):
@@ -2887,15 +2931,8 @@ def cs_hotspots(
         return _query_open_error("cs_hotspots", db_path, exc)
 
     try:
-        rows = conn.execute("""
-            SELECT id, label, file, visibility, signature, line_start, metadata
-            FROM nodes WHERE type = 'function'
-        """)
-
         function_rows: list[tuple] = []
-        for r in rows:
-            if r["label"] in ("constructor", "fallback", "receive"):
-                continue
+        for r in _iter_hotspot_candidate_rows(conn):
             if exclude_research and _is_research_metadata_raw(r["metadata"]):
                 continue
             function_rows.append(r)

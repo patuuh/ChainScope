@@ -272,6 +272,10 @@ instead of treating the overview as exhaustive. Raw attack-surface metadata is
 omitted by default for MCP context; set `include_metadata=true` only when that
 raw JSON is needed.
 
+Broad `cs_hotspots` scans are SQL-prefiltered to likely scoring candidates
+before Python computes final risk scores. This keeps normal broad scans usable
+on larger graphs while preserving exact scoring and false-positive rejection.
+
 Broad `cs_state` output is also capped by entity groups, transitions per entity,
 and warnings. Prefer `entity=` when investigating one state machine, or set the
 state caps to `0` when you intentionally need every transition.

@@ -4411,24 +4411,33 @@ class TestIndexing:
 
         real_load = mcp_server._load_metadata
         real_guard_counts = mcp_server._guard_counts_for_writable_entries
+        real_has_any_key = mcp_server._metadata_has_any_key
         parsed = []
         guard_scopes = []
+        key_checks = []
 
         def counting_load(raw):
             parsed.append(raw)
             return real_load(raw)
+
+        def counting_has_any_key(raw, keys):
+            key_checks.append(raw)
+            return real_has_any_key(raw, keys)
 
         def tracking_guard_counts(conn, source_ids=None):
             guard_scopes.append(set(source_ids or ()))
             return real_guard_counts(conn, source_ids)
 
         monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+        monkeypatch.setattr(mcp_server, "_metadata_has_any_key", counting_has_any_key)
         monkeypatch.setattr(mcp_server, "_guard_counts_for_writable_entries", tracking_guard_counts)
 
         hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=10))
 
         assert hotspots["_summary"]["total_scored"] == 2
         assert {item["function"] for item in hotspots["hotspots"]} == {"entry", "reenter"}
+        assert key_checks.count(neutral_metadata) == 1
+        assert key_checks.count(risk_metadata) == 1
         assert parsed == [risk_metadata]
         assert guard_scopes == [{entry_id}]
 
