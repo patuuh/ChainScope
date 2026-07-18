@@ -87,6 +87,8 @@ RESEARCH_CONTEXT_ALIASES = {
 
 SCRIPT_FILE_EXTENSIONS = {".ts", ".tsx", ".js", ".jsx", ".py"}
 DEPLOYMENT_FILE_TOKENS = {"deploy", "deploys", "deployment", "deployments"}
+_JSON_DECODER = json.JSONDecoder()
+_MISSING_JSON_VALUE = object()
 
 
 def _classify_research_filename(path: Path) -> str:
@@ -98,6 +100,72 @@ def _classify_research_filename(path: Path) -> str:
         if stem_tokens & DEPLOYMENT_FILE_TOKENS:
             return "script"
     return "production"
+
+
+def _skip_json_string(raw: str, pos: int) -> int:
+    pos += 1
+    escaped = False
+    while pos < len(raw):
+        ch = raw[pos]
+        if escaped:
+            escaped = False
+        elif ch == "\\":
+            escaped = True
+        elif ch == '"':
+            return pos + 1
+        pos += 1
+    return len(raw)
+
+
+def _raw_json_value(raw: str | None, key: str):
+    if not isinstance(raw, str) or not key:
+        return _MISSING_JSON_VALUE
+    needle = json.dumps(key)
+    depth = 0
+    pos = 0
+    while pos < len(raw):
+        ch = raw[pos]
+        if ch == '"':
+            end = _skip_json_string(raw, pos)
+            if depth == 1 and raw.startswith(needle, pos) and end == pos + len(needle):
+                colon = end
+                while colon < len(raw) and raw[colon] in " \t\r\n":
+                    colon += 1
+                if colon >= len(raw) or raw[colon] != ":":
+                    pos = end
+                    continue
+                value_pos = colon + 1
+                while value_pos < len(raw) and raw[value_pos] in " \t\r\n":
+                    value_pos += 1
+                try:
+                    value, _end = _JSON_DECODER.raw_decode(raw[value_pos:])
+                except ValueError:
+                    return _MISSING_JSON_VALUE
+                return value
+            pos = end
+            continue
+        if ch in "{[":
+            depth += 1
+        elif ch in "}]":
+            depth = max(depth - 1, 0)
+        pos += 1
+    return _MISSING_JSON_VALUE
+
+
+def _raw_json_truthy(raw: str | None, key: str) -> bool:
+    value = _raw_json_value(raw, key)
+    if value is _MISSING_JSON_VALUE:
+        return False
+    if isinstance(value, str):
+        return value.lower() not in {"", "false", "0", "none", "null"}
+    return bool(value)
+
+
+def _raw_json_string(raw: str | None, key: str) -> str | None:
+    value = _raw_json_value(raw, key)
+    if isinstance(value, str):
+        return value
+    return None
 
 
 def classify_source_context(file_path: str) -> str:
@@ -1130,7 +1198,9 @@ class Indexer:
             # Find all unresolved call edges
             unresolved = conn.execute("""
                 SELECT rowid, source, target, attributes FROM edges
-                WHERE relation = 'calls' AND attributes LIKE '%"unresolved"%'
+                WHERE relation = 'calls'
+                  AND attributes LIKE '%"unresolved"%'
+                  AND attributes LIKE '%"call_name"%'
             """).fetchall()
 
             if not unresolved:
@@ -1149,8 +1219,10 @@ class Indexer:
 
             resolved_count = 0
             for edge in unresolved:
-                attrs = json.loads(edge["attributes"])
-                call_name = attrs.get("call_name", "")
+                raw_attrs = edge["attributes"]
+                if not _raw_json_truthy(raw_attrs, "unresolved"):
+                    continue
+                call_name = _raw_json_string(raw_attrs, "call_name") or ""
                 if not call_name or call_name not in func_by_name:
                     continue
 

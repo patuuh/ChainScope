@@ -162,6 +162,60 @@ class TestIndexing:
         assert contexts["execute"] == "script"
         assert contexts["deployUSDTOFT"] == "script"
 
+    def test_cross_file_resolution_skips_false_unresolved_without_json_parse(self, tmp_path, tmp_db, monkeypatch):
+        import core.indexer as indexer_mod
+
+        db = GraphDB(tmp_db)
+        real_target = "Target.sol::Target.targetFunc()"
+        db.insert_node(
+            id=real_target,
+            label="targetFunc",
+            type="function",
+            file="Target.sol",
+        )
+        for label, attrs in (
+            ("falseCall", json.dumps({"unresolved": False, "call_name": "targetFunc"})),
+            ("nestedCall", json.dumps({"nested": {"unresolved": True}, "call_name": "targetFunc"})),
+            ("trueCall", json.dumps({"unresolved": True, "call_name": "targetFunc"})),
+        ):
+            source = f"Source.sol::Source.{label}()"
+            db.insert_node(
+                id=source,
+                label=label,
+                type="function",
+                file="Source.sol",
+            )
+            db.insert_edge(
+                source=source,
+                target=f"Source.sol::_unresolved::{label}",
+                relation="calls",
+                attributes=attrs,
+            )
+
+        real_json_loads = json.loads
+
+        def fail_loads(_raw):
+            raise AssertionError("cross-file resolver should use raw attribute checks")
+
+        monkeypatch.setattr(indexer_mod.json, "loads", fail_loads)
+
+        resolved = Indexer(str(tmp_path))._resolve_cross_file_calls(db)
+
+        conn = db.get_connection()
+        try:
+            edges = {
+                row["source"]: (row["target"], row["attributes"])
+                for row in conn.execute("SELECT source, target, attributes FROM edges")
+            }
+        finally:
+            conn.close()
+
+        assert resolved == 1
+        assert edges["Source.sol::Source.trueCall()"][0] == real_target
+        assert real_json_loads(edges["Source.sol::Source.trueCall()"][1]) == {"resolved_cross_file": True}
+        assert edges["Source.sol::Source.falseCall()"][0] == "Source.sol::_unresolved::falseCall"
+        assert edges["Source.sol::Source.nestedCall()"][0] == "Source.sol::_unresolved::nestedCall"
+
     def test_index_solidity_repo(self, sol_repo, tmp_db):
         indexer = Indexer(sol_repo)
         stats = indexer.index(tmp_db)
