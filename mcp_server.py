@@ -3410,7 +3410,7 @@ def cs_trace(
         def _callers(node_id: str) -> tuple[list[dict], dict]:
             rows = conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility, n.metadata
-                FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
+                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
                 ORDER BY n.file, n.id
             """, (node_id,))
@@ -4222,7 +4222,7 @@ def cs_lookup(
             callers, callers_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start,
                        n.line_end, n.signature, n.metadata, e.attributes
-                FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
+                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
             """, (node_id,), (
                 "SELECT COUNT(*) FROM edges AS e JOIN nodes n ON e.source = n.id "
@@ -4235,7 +4235,7 @@ def cs_lookup(
                 for caller in info["callers"]:
                     caller["callers"], caller["callers_summary"] = _collect_relation("""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
-                        FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
+                        FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                         WHERE e.target = ? AND e.relation = 'calls'
                     """, (caller["id"],), (
                         "SELECT COUNT(*) FROM edges AS e JOIN nodes n ON e.source = n.id "
@@ -4291,7 +4291,7 @@ def cs_lookup(
             # Guards/modifiers
             guards, guards_summary = _collect_relation("""
                 SELECT n.id, n.label, n.file, n.type, n.metadata
-                FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
+                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'guards'
             """, (node_id,), (
                 "SELECT COUNT(*) FROM edges AS e JOIN nodes n ON e.source = n.id "
@@ -4315,7 +4315,7 @@ def cs_lookup(
 
             other_edges_in, other_in_summary = _collect_relation("""
                 SELECT e.relation, n.id, n.label, n.file, n.metadata, e.attributes
-                FROM edges AS e INDEXED BY idx_edges_target JOIN nodes n ON e.source = n.id
+                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')
             """, (node_id,), (
                 "SELECT COUNT(*) FROM edges AS e JOIN nodes n ON e.source = n.id "
