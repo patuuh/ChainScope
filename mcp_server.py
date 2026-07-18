@@ -3964,7 +3964,7 @@ def cs_state(
                 FROM state_transitions st
                 LEFT JOIN nodes n ON st.function_id = n.id
                 WHERE st.entity = ?
-                ORDER BY st.entity, st.function_id, st.from_state, st.to_state
+                ORDER BY st.entity, st.from_state, st.to_state, st.function_id
                 """,
                 (entity,)
             )
@@ -3973,7 +3973,7 @@ def cs_state(
                 SELECT st.*, n.file as function_file, n.label as function_label, n.metadata as function_metadata
                 FROM state_transitions st
                 LEFT JOIN nodes n ON st.function_id = n.id
-                ORDER BY st.entity, st.function_id, st.from_state, st.to_state
+                ORDER BY st.entity, st.from_state, st.to_state, st.function_id
             """)
 
         warnings = []
@@ -3988,6 +3988,13 @@ def cs_state(
             nonlocal warnings_total
             warnings_total = _append_capped(warnings, message, warnings_total, max_warnings)
 
+        def _transition_conditions(trans: dict) -> list:
+            conditions = trans.get("_conditions_parsed")
+            if conditions is None:
+                conditions = json.loads(trans.get("conditions", "[]"))
+                trans["_conditions_parsed"] = conditions
+            return conditions
+
         def _analyze_entity(ent: str, trans: list[dict]):
             all_states = set()
             for t in trans:
@@ -3998,12 +4005,12 @@ def cs_state(
             # Detect Cosmos KV store lifecycle patterns
             has_set = any(t["to_state"] == "exists" and t["from_state"] == "*" for t in trans)
             has_delete = any(t["to_state"] == "deleted" for t in trans)
-            has_read = any(json.loads(t.get("conditions", "[]")) == ["read"] for t in trans)
+            has_read = any(_transition_conditions(t) == ["read"] for t in trans)
 
             if has_set or has_delete:
                 # Cosmos KV store entity
                 for t in trans:
-                    conditions = json.loads(t.get("conditions", "[]"))
+                    conditions = _transition_conditions(t)
                     func_label = t.get("function_label") or t["function_id"].split("::")[-1]
                     if t["to_state"] == "exists" and "no_validation" in conditions:
                         _add_warning(
@@ -4060,7 +4067,7 @@ def cs_state(
                     if edge not in directed_edges:
                         directed_edges[edge] = {"has_unguarded": False}
                         directed_order.append(edge)
-                    if not json.loads(t.get("conditions", "[]")):
+                    if not _transition_conditions(t):
                         directed_edges[edge]["has_unguarded"] = True
 
                 seen_pairs = set()
@@ -4134,6 +4141,7 @@ def cs_state(
                     item["source_context"] = meta.get("source_context", "production")
                 else:
                     item.pop("_function_metadata_raw", None)
+                item.pop("_conditions_parsed", None)
 
         hidden_entities = len(entity_names) - len(shown_entity_names)
         shown_warnings = warnings

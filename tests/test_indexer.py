@@ -4363,6 +4363,7 @@ class TestIndexing:
         class FakeConn:
             def execute(self, sql, params=()):
                 assert "FROM state_transitions" in sql
+                assert "ORDER BY st.entity, st.from_state, st.to_state, st.function_id" in sql
                 return StreamingRows()
 
             def close(self):
@@ -4387,6 +4388,48 @@ class TestIndexing:
         assert state["_summary"]["transitions_total"] == 12
         assert state["_summary"]["transitions_shown"] == 2
         assert state["_summary"]["truncated"] is True
+
+    def test_state_parses_transition_conditions_once_per_row(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        fn_id = "Vault.sol::Vault.write()"
+        db.insert_node(
+            id=fn_id,
+            label="write",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_transition("Audience", "*", "exists", fn_id, conditions='["no_validation"]')
+        db.insert_transition("Audience", "exists", "deleted", fn_id, conditions='["read"]')
+        db.insert_transition("Audience", "deleted", "exists", fn_id, conditions="[]")
+
+        real_loads = mcp_server.json.loads
+        condition_loads = []
+
+        def counting_loads(raw, *args, **kwargs):
+            if isinstance(raw, str) and raw.startswith("["):
+                condition_loads.append(raw)
+            return real_loads(raw, *args, **kwargs)
+
+        monkeypatch.setattr(mcp_server.json, "loads", counting_loads)
+
+        state = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            max_entities=0,
+            max_transitions_per_entity=0,
+            max_warnings=0,
+        ))
+
+        assert state["_summary"]["transitions_total"] == 3
+        assert condition_loads == ['["no_validation"]', "[]", '["read"]']
+        assert all(
+            "_conditions_parsed" not in item
+            for transitions in state["entities"].values()
+            for item in transitions
+        )
 
     def test_state_retains_only_capped_warnings(self, tmp_db, monkeypatch):
         import mcp_server
