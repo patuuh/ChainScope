@@ -3386,14 +3386,15 @@ def cs_paths(
                     seen.add(node_id)
                     guards = conn.execute("""
                         SELECT n.id, n.label, n.metadata
-                        FROM edges e JOIN nodes n ON e.source = n.id
+                        FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
                         WHERE e.target = ? AND e.relation = 'guards'
                     """, (node_id,))
                     labels = []
                     for guard in guards:
-                        meta = _load_metadata(guard["metadata"])
-                        if not _include_metadata(meta, exclude_research):
-                            continue
+                        if exclude_research:
+                            meta = _load_metadata(guard["metadata"])
+                            if not _include_metadata(meta, exclude_research):
+                                continue
                         labels.append(guard["label"])
                     if labels:
                         result["guards"][_label_for_node(node_id)] = labels

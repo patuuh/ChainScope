@@ -4067,6 +4067,7 @@ class TestIndexing:
         assert paths["state_access"]["start"]["reads"] == ["Vault.total"]
         assert paths["state_access"]["finish"]["writes"] == ["Vault.total"]
         assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
         assert any("e.relation IN ('reads_state', 'writes_state')" in sql for sql in statements)
 
     def test_paths_show_state_omits_empty_state_access_entries(self, tmp_db):
@@ -4112,6 +4113,54 @@ class TestIndexing:
                 "writes": [],
             }
         }
+
+    def test_paths_show_guards_skips_metadata_parse_for_all_sources(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.start()"
+        finish_id = "Vault.sol::Vault.finish()"
+        guard_id = "Vault.sol::Vault.onlyOwner"
+        db.insert_node(
+            id=start_id,
+            label="start",
+            type="function",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id=finish_id,
+            label="finish",
+            type="function",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id=guard_id,
+            label="onlyOwner",
+            type="modifier",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+        )
+        db.insert_edge(start_id, finish_id, "calls")
+        db.insert_edge(guard_id, start_id, "guards")
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            show_guards=True,
+        ))
+
+        assert paths["guards"] == {"start": ["onlyOwner"]}
+        assert parsed == []
 
     def test_state_filters_research_transitions(self, tmp_path, tmp_db):
         import mcp_server
