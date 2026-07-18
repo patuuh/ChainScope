@@ -906,6 +906,61 @@ class TestIndexing:
         }
         assert internal_labels == set()
 
+    def test_sinks_caps_callers_before_metadata_formatting(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        sink_id = "Vault.sol::Vault.transfer()"
+        db.insert_node(
+            id=sink_id,
+            label="transfer",
+            type="function",
+            visibility="public",
+            file="Vault.sol",
+            metadata=json.dumps({"is_sink": True, "sink_type": "fund_transfer"}),
+        )
+        for i in range(80):
+            caller_id = f"Caller{i}.sol::Caller{i}.callTransfer()"
+            db.insert_node(
+                id=caller_id,
+                label=f"callTransfer{i}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i}.sol",
+                metadata=json.dumps({"source_context": "production", "large": ["x"] * 20}),
+            )
+            db.insert_edge(caller_id, sink_id, "calls")
+        for i in range(200):
+            db.insert_node(
+                id=f"Helper{i}.sol::Helper{i}.noop()",
+                label=f"noop{i}",
+                type="function",
+                visibility="internal",
+                file=f"Helper{i}.sol",
+                metadata=json.dumps({"source_context": "script", "large": ["x"] * 20}),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            max_callers_per_sink=2,
+        ))
+
+        assert result["total"] == 1
+        assert result["sinks"][0]["caller_summary"] == {"total": 80, "shown": 2, "truncated": True}
+        assert len(result["sinks"][0]["callers"]) == 2
+        assert len(parsed) == 3
+
     def test_hotspots_do_not_count_false_unresolved_call_edges(self, tmp_db):
         import mcp_server
 

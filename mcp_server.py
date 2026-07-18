@@ -2532,7 +2532,6 @@ def cs_sinks(
                 "SELECT id, label, type, visibility, file, line_start, line_end, "
                 "signature, metadata FROM nodes"
             ).fetchall():
-                meta = _load_metadata(row["metadata"])
                 node_map[row["id"]] = {
                     "id": row["id"],
                     "label": row["label"],
@@ -2542,8 +2541,7 @@ def cs_sinks(
                     "line_start": row["line_start"],
                     "line_end": row["line_end"],
                     "signature": row["signature"],
-                    "source_context": meta.get("source_context", "production"),
-                    "_metadata": meta,
+                    "_metadata_raw": row["metadata"],
                 }
 
             rev_adj: dict[str, list[str]] = {}
@@ -2570,12 +2568,14 @@ def cs_sinks(
                         caller = node_map.get(caller_id)
                         if not caller or caller.get("type") != "function":
                             continue
-                        caller_meta = caller.get("_metadata", {})
-                        if not _include_metadata(caller_meta, exclude_research):
-                            continue
+                        caller_meta = None
+                        if exclude_research:
+                            caller_meta = _load_metadata(caller.get("_metadata_raw"))
+                            if not _include_metadata(caller_meta, exclude_research):
+                                continue
                         if external_only and caller.get("visibility") not in ("public", "external"):
                             continue
-                        callers.append({
+                        caller_entry = {
                             "id": caller["id"],
                             "label": caller["label"],
                             "file": caller["file"],
@@ -2583,12 +2583,22 @@ def cs_sinks(
                             "line_end": caller["line_end"],
                             "visibility": caller["visibility"],
                             "signature": caller["signature"],
-                            "source_context": caller["source_context"],
                             "distance": distance + 1,
-                        })
+                            "_metadata_raw": caller.get("_metadata_raw"),
+                        }
+                        if caller_meta is not None:
+                            caller_entry["source_context"] = caller_meta.get("source_context", "production")
+                        callers.append(caller_entry)
 
                 callers.sort(key=lambda item: (item["distance"], item["file"], item["line_start"], item["id"]))
-                return _cap_items(callers, max_callers_per_sink)
+                shown, summary = _cap_items(callers, max_callers_per_sink)
+                for caller in shown:
+                    if "source_context" not in caller:
+                        meta = _load_metadata(caller.pop("_metadata_raw", None))
+                        caller["source_context"] = meta.get("source_context", "production")
+                    else:
+                        caller.pop("_metadata_raw", None)
+                return shown, summary
 
             for sink in shown_sinks:
                 callers, caller_summary = _reachable_callers(sink["id"])
