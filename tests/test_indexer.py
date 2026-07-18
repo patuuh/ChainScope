@@ -2171,6 +2171,47 @@ class TestIndexing:
         raw_cross = json.loads(mcp_server.cs_cross(db=tmp_db))
         assert {item["source_label"] for item in raw_cross["calls"]} == {"call0", "call1", "call2", "call3", "call4", "run"}
 
+    def test_cross_broad_scan_skips_false_attribute_parses(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        false_attrs = json.dumps({
+            "unresolved": False,
+            "sink": "",
+            "cross_boundary": "false",
+            "large": ["x"] * 20,
+        })
+        true_attrs = json.dumps({"unresolved": True, "interface": "IExternal"})
+
+        for source_id, target_id, attrs in (
+            ("Vault.sol::Vault.safeCall()", "Vault.sol::Vault.helper()", false_attrs),
+            ("Vault.sol::Vault.riskyCall()", "External.sol::External.doThing()", true_attrs),
+        ):
+            db.insert_node(
+                id=source_id,
+                label=source_id.rsplit(".", 1)[-1].split("(", 1)[0],
+                type="function",
+                visibility="external",
+                file="Vault.sol",
+            )
+            db.insert_edge(source_id, target_id, "calls", attributes=attrs)
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, top=10))
+
+        assert summary["total"] == 1
+        assert summary["by_attribute"] == {"unresolved": 1}
+        assert false_attrs not in parsed
+        assert parsed == [true_attrs]
+
     def test_cross_broad_scan_skips_untagged_context_parses(self, tmp_db, monkeypatch):
         import mcp_server
 
@@ -3599,6 +3640,34 @@ class TestIndexing:
         safe_set = next(item for item in hotspots["hotspots"] if item["function"] == "safeSet")
 
         assert "ext_calls(1)" not in safe_set["reasons"]
+
+    def test_external_call_counts_skips_false_attribute_parses(self, monkeypatch):
+        import mcp_server
+
+        false_unresolved = json.dumps({"unresolved": False, "large": ["x"] * 20})
+        false_cpi = json.dumps({"cpi": "false", "large": ["x"] * 20})
+        true_unresolved = json.dumps({"unresolved": True, "interface": "IExternal"})
+
+        class FakeConn:
+            def execute(self, sql, *args, **kwargs):
+                assert "relation = 'calls'" in sql
+                return [
+                    {"source": "safeUnresolved", "attributes": false_unresolved},
+                    {"source": "safeCpi", "attributes": false_cpi},
+                    {"source": "risky", "attributes": true_unresolved},
+                ]
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        assert mcp_server._external_call_counts(FakeConn(), include_cpi=True) == {"risky": 1}
+        assert parsed == [true_unresolved]
 
     def test_hotspots_uses_bounded_queries_for_broad_scans(self, tmp_db, monkeypatch):
         import mcp_server

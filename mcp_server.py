@@ -387,6 +387,24 @@ def _attr_enabled(value) -> bool:
     return bool(value)
 
 
+def _edge_attrs_may_have_enabled_key(raw, keys: tuple[str, ...]) -> bool:
+    """Cheaply reject edge attrs whose matched marker keys are all false-like."""
+    if not isinstance(raw, str):
+        return True
+
+    matched = False
+    for key in keys:
+        if json.dumps(key) not in raw:
+            continue
+        matched = True
+        value = _metadata_raw_value(raw, key)
+        if value is _MISSING_METADATA_VALUE:
+            return True
+        if _attr_enabled(value):
+            return True
+    return not matched
+
+
 def _is_unresolved_external_call(attrs: dict) -> bool:
     return _attr_enabled(attrs.get("unresolved")) and not _attr_enabled(attrs.get("internal_candidate"))
 
@@ -477,8 +495,12 @@ def _external_call_counts(
         if include_cpi:
             query += " OR attributes LIKE '%\"cpi\"%'"
         query += ")"
+        candidate_keys = ("unresolved", "cpi") if include_cpi else ("unresolved",)
         for row in conn.execute(query, params):
-            attrs = _load_metadata(row["attributes"])
+            raw_attrs = row["attributes"]
+            if not _edge_attrs_may_have_enabled_key(raw_attrs, candidate_keys):
+                continue
+            attrs = _load_metadata(raw_attrs)
             if _is_unresolved_external_call(attrs) or (include_cpi and _attr_enabled(attrs.get("cpi"))):
                 source = row["source"]
                 counts[source] = counts.get(source, 0) + 1
@@ -623,7 +645,10 @@ def _iter_cross_call_rows(conn, exclude_research: bool):
                 continue
             if entry.get("target_label") and _is_research_metadata_raw(target_raw):
                 continue
-        attrs = _load_metadata(entry.get("attributes"))
+        raw_attrs = entry.get("attributes")
+        if not _edge_attrs_may_have_enabled_key(raw_attrs, ("unresolved", "sink", "cross_boundary")):
+            continue
+        attrs = _load_metadata(raw_attrs)
         if not _is_trust_boundary_call(attrs):
             continue
         entry["attributes"] = attrs
@@ -729,7 +754,10 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
             if target and not _node_allowed(target):
                 continue
             source_row = _node_for_id(conn, row["source"], node_by_id)
-            attrs = _load_metadata(row["attributes"])
+            raw_attrs = row["attributes"]
+            if not _edge_attrs_may_have_enabled_key(raw_attrs, ("unresolved", "sink", "cross_boundary")):
+                continue
+            attrs = _load_metadata(raw_attrs)
             if not _is_trust_boundary_call(attrs):
                 continue
             yield {
