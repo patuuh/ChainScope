@@ -893,9 +893,38 @@ class TestIndexing:
                 metadata=json.dumps({"source_context": context}),
             )
             db.insert_edge(func_id, f"{func_id}::total", "writes_state")
+            db.insert_node(
+                id=f"{func_id}::onlyOwner",
+                label="onlyOwner",
+                type="modifier",
+                file=func_id.split("::", 1)[0],
+                metadata=json.dumps({"source_context": context}),
+            )
+            db.insert_edge(f"{func_id}::onlyOwner", func_id, "guards")
+            db.insert_node(
+                id=f"{func_id}::Updated",
+                label="Updated",
+                type="event",
+                file=func_id.split("::", 1)[0],
+                metadata=json.dumps({"source_context": context}),
+            )
+            db.insert_edge(func_id, f"{func_id}::Updated", "emits_event")
 
+        real_open = mcp_server._open_query_connection
         real_external_counts = mcp_server._external_call_counts
         calls = []
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append((" ".join(sql.split()), args))
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
 
         def tracking_external_counts(conn, include_cpi=False, source_ids=None):
             calls.append({
@@ -904,6 +933,11 @@ class TestIndexing:
             })
             return real_external_counts(conn, include_cpi=include_cpi, source_ids=source_ids)
 
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
         monkeypatch.setattr(mcp_server, "_external_call_counts", tracking_external_counts)
 
         audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=10, exclude_research=True))
@@ -911,6 +945,15 @@ class TestIndexing:
         assert calls == [{"include_cpi": True, "source_ids": {prod_id}}]
         assert audit["hotspot_summary"]["total_scored"] == 1
         assert audit["critical_hotspots"][0]["function"] == "set"
+        scoped_preloads = [
+            (sql, args[0] if args else ())
+            for sql, args in statements
+            if "source IN" in sql or "e.target IN" in sql
+        ]
+        assert any("relation = ?" in sql and params == (prod_id, "writes_state") for sql, params in scoped_preloads)
+        assert any("relation = ?" in sql and params == (prod_id, "emits_event") for sql, params in scoped_preloads)
+        assert any("e.target IN" in sql and params == (prod_id,) for sql, params in scoped_preloads)
+        assert all(script_id not in params for _, params in scoped_preloads)
 
     def test_audit_reuses_production_function_metadata_from_stats(self, tmp_db, monkeypatch):
         import mcp_server

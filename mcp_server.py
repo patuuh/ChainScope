@@ -453,6 +453,51 @@ def _guard_counts_for_writable_entries(
     return counts
 
 
+def _iter_edges_for_relation(conn, relation: str, source_ids: set[str] | None = None):
+    if source_ids is not None and not source_ids:
+        return
+    if source_ids is None:
+        yield from conn.execute(
+            "SELECT source, target FROM edges WHERE relation = ?",
+            (relation,),
+        )
+        return
+
+    for chunk in _chunked_ids(source_ids):
+        placeholders = ",".join("?" for _ in chunk)
+        yield from conn.execute(
+            f"SELECT source, target FROM edges WHERE source IN ({placeholders}) AND relation = ?",
+            (*chunk, relation),
+        )
+
+
+def _iter_guard_label_rows(conn, target_ids: set[str] | None = None):
+    if target_ids is not None and not target_ids:
+        return
+    if target_ids is None:
+        yield from conn.execute(
+            """
+            SELECT e.target, n.label
+            FROM edges e LEFT JOIN nodes n ON e.source = n.id
+            WHERE e.relation='guards'
+            ORDER BY e.target, n.label
+            """
+        )
+        return
+
+    for chunk in _chunked_ids(target_ids):
+        placeholders = ",".join("?" for _ in chunk)
+        yield from conn.execute(
+            f"""
+            SELECT e.target, n.label
+            FROM edges e LEFT JOIN nodes n ON e.source = n.id
+            WHERE e.target IN ({placeholders}) AND e.relation='guards'
+            ORDER BY e.target, n.label
+            """,
+            tuple(chunk),
+        )
+
+
 def _iter_cross_call_rows(conn, exclude_research: bool):
     """Yield true trust-boundary call rows for broad cross-boundary scans."""
     rows = conn.execute("""
@@ -1915,11 +1960,10 @@ def cs_audit(
         report["source_context_summary"] = dict(sorted(source_context_counts.items(), key=lambda x: (-x[1], x[0])))
 
         # --- 3. Precompute shared data structures ---
+        function_ids = set(func_meta_cache)
         write_map: dict[str, int] = {}
         write_targets: dict[str, list[str]] = {}
-        for r in conn.execute(
-            "SELECT source, target FROM edges WHERE relation='writes_state'"
-        ):
+        for r in _iter_edges_for_relation(conn, "writes_state", function_ids):
             if scoped_node_ids is not None and (
                 r["source"] not in scoped_node_ids or r["target"] not in scoped_node_ids
             ):
@@ -1929,18 +1973,7 @@ def cs_audit(
 
         guard_set = set()
         guard_labels_by_target: dict[str, list[str]] = {}
-        for r in conn.execute(
-            """
-            SELECT e.target, n.label
-            FROM edges e LEFT JOIN nodes n ON e.source = n.id
-            WHERE e.relation='guards'
-            ORDER BY e.target, n.label
-            """
-        ):
-            if scoped_node_ids is not None and (
-                r["target"] not in scoped_node_ids
-            ):
-                continue
+        for r in _iter_guard_label_rows(conn, function_ids):
             guard_set.add(r["target"])
             if r["label"]:
                 guard_labels_by_target.setdefault(r["target"], []).append(r["label"])
@@ -1948,7 +1981,7 @@ def cs_audit(
         ext_call_map = _external_call_counts(
             conn,
             include_cpi=True,
-            source_ids=set(func_meta_cache),
+            source_ids=function_ids,
         )
 
         adj: dict[str, list[str]] = {}
@@ -2214,11 +2247,7 @@ def cs_audit(
 
         # --- 10. Silent state changes (formerly cs_events) ---
         emitters = set()
-        for r in conn.execute(
-            "SELECT DISTINCT source FROM edges WHERE relation='emits_event'"
-        ):
-            if scoped_node_ids is not None and r["source"] not in scoped_node_ids:
-                continue
+        for r in _iter_edges_for_relation(conn, "emits_event", function_ids):
             emitters.add(r["source"])
 
         silent = []
