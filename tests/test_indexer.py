@@ -260,6 +260,54 @@ class TestIndexing:
         assert "attack_surface" in audit["_summary"]["truncated_sections"]
         assert "cs_hotspots" in audit["_summary"]["_hint"]
 
+    def test_audit_retains_only_top_ranked_sections(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(20):
+            func_id = f"Vault{i}.sol::Vault{i}.set(uint256)"
+            state_id = f"Vault{i}.sol::Vault{i}.total"
+            db.insert_node(
+                id=func_id,
+                label=f"set{i}",
+                type="function",
+                visibility="external",
+                file=f"Vault{i}.sol",
+                line_start=i + 1,
+            )
+            db.insert_node(
+                id=state_id,
+                label="total",
+                type="state_var",
+                file=f"Vault{i}.sol",
+            )
+            db.insert_edge(func_id, state_id, "writes_state")
+
+        real_heappush = mcp_server.heapq.heappush
+        real_heapreplace = mcp_server.heapq.heapreplace
+        heap_sizes = []
+
+        def tracking_heappush(heap, item):
+            real_heappush(heap, item)
+            heap_sizes.append(len(heap))
+
+        def tracking_heapreplace(heap, item):
+            result = real_heapreplace(heap, item)
+            heap_sizes.append(len(heap))
+            return result
+
+        monkeypatch.setattr(mcp_server.heapq, "heappush", tracking_heappush)
+        monkeypatch.setattr(mcp_server.heapq, "heapreplace", tracking_heapreplace)
+
+        audit = json.loads(mcp_server.cs_audit(db=tmp_db, top=2))
+        sections = audit["_summary"]["sections"]
+
+        assert sections["attack_surface"] == {"total": 20, "shown": 2, "truncated": True}
+        assert sections["critical_hotspots"] == {"total": 20, "shown": 2, "truncated": True}
+        assert [item["label"] for item in audit["attack_surface"]] == ["set0", "set1"]
+        assert [item["function"] for item in audit["critical_hotspots"]] == ["set0", "set1"]
+        assert max(heap_sizes) == 2
+
     def test_audit_taint_summary_reports_full_total(self, tmp_db):
         import mcp_server
 

@@ -1347,7 +1347,9 @@ def cs_audit(
             return reachable
 
         # --- 4. Attack surface (formerly in cs_summary) ---
-        attack_surface = []
+        attack_surface_heap: list[tuple[int, int, dict]] = []
+        attack_surface_total = 0
+        attack_surface_sequence = 0
         for row in all_funcs:
             if row["visibility"] not in ("public", "external"):
                 continue
@@ -1355,7 +1357,8 @@ def cs_audit(
                 continue
             reachable = _reachable(row["id"])
             write_count = sum(write_map.get(rid, 0) for rid in reachable)
-            attack_surface.append({
+            attack_surface_total += 1
+            _keep_ranked_result(attack_surface_heap, {
                 "id": row["id"],
                 "label": row["label"],
                 "file": row["file"],
@@ -1363,13 +1366,17 @@ def cs_audit(
                 "reachable_count": len(reachable),
                 "state_writes": write_count,
                 "metadata": row["metadata"],
-            })
-        attack_surface.sort(key=lambda x: x["state_writes"], reverse=True)
-        if attack_surface:
-            report["attack_surface"] = attack_surface[:top]
+            }, write_count, attack_surface_sequence, top)
+            attack_surface_sequence += 1
+        if attack_surface_total:
+            report["attack_surface"] = _ranked_results(attack_surface_heap)
 
         # --- 5. Top hotspots (inline scoring) ---
-        hotspots = []
+        hotspot_heap: list[tuple[int, int, dict]] = []
+        hotspot_total = 0
+        hotspot_critical = 0
+        hotspot_high = 0
+        hotspot_sequence = 0
         for row in all_funcs:
             if row["label"] in ("constructor", "fallback", "receive"):
                 continue
@@ -1381,21 +1388,26 @@ def cs_audit(
             score, reasons = _score_function(row, meta, writes, ext_calls, guard_count)
 
             if score >= 5:
-                hotspots.append({
+                hotspot_total += 1
+                if score >= 8:
+                    hotspot_critical += 1
+                else:
+                    hotspot_high += 1
+                _keep_ranked_result(hotspot_heap, {
                     "function": row["label"],
                     "file": row["file"],
                     "line": row["line_start"],
                     "source_context": meta.get("source_context", "production"),
                     "score": score,
                     "reasons": reasons,
-                })
+                }, score, hotspot_sequence, top)
+                hotspot_sequence += 1
 
-        hotspots.sort(key=lambda x: -x["score"])
-        report["critical_hotspots"] = hotspots[:top]
+        report["critical_hotspots"] = _ranked_results(hotspot_heap)
         report["hotspot_summary"] = {
-            "total_scored": len(hotspots),
-            "critical_8plus": sum(1 for h in hotspots if h["score"] >= 8),
-            "high_5to7": sum(1 for h in hotspots if 5 <= h["score"] < 8),
+            "total_scored": hotspot_total,
+            "critical_8plus": hotspot_critical,
+            "high_5to7": hotspot_high,
         }
 
         # --- 6. Reentrancy findings (detailed, formerly cs_reentrancy) ---
@@ -1664,8 +1676,8 @@ def cs_audit(
             report["unsafe_summary"] = unsafe_counts
 
         sections = {
-            "attack_surface": _section_summary(len(attack_surface), len(report.get("attack_surface", []))),
-            "critical_hotspots": _section_summary(len(hotspots), len(report.get("critical_hotspots", []))),
+            "attack_surface": _section_summary(attack_surface_total, len(report.get("attack_surface", []))),
+            "critical_hotspots": _section_summary(hotspot_total, len(report.get("critical_hotspots", []))),
             "reentrancy": _section_summary(len(reent), len(report.get("reentrancy", []))),
             "taint_paths": _section_summary(len(taint_results), len(report.get("taint_paths", []))),
             "access_control_gaps": _section_summary(len(access_gaps), len(report.get("access_control_gaps", []))),
