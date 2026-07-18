@@ -857,13 +857,46 @@ def _sorted_count_mapping(counter: dict[str, int]) -> dict[str, int]:
     return dict(sorted(counter.items(), key=lambda item: (-item[1], item[0])))
 
 
+_KNOWN_SOURCE_CONTEXTS = (
+    "production",
+    "script",
+    "poc",
+    "fuzz",
+    "invariant",
+    "certora",
+    "echidna",
+)
+
+
 def _source_context_counts(conn, total_nodes: int) -> dict[str, int]:
     counts: dict[str, int] = {}
-    explicit_total = 0
+    explicit_total = _single_count(
+        conn,
+        "SELECT COUNT(*) FROM nodes WHERE metadata LIKE '%\"source_context\"%'",
+    )
+    known_filters = []
+    known_params: list[str] = []
+    for context in _KNOWN_SOURCE_CONTEXTS:
+        value_filter, value_params = _metadata_string_value_filter("source_context", context)
+        if not value_filter:
+            continue
+        count = _single_count(
+            conn,
+            f"SELECT COUNT(*) FROM nodes WHERE 1=1{value_filter}",
+            value_params,
+        )
+        if count:
+            counts[context] = count
+        known_filters.append(value_filter.removeprefix(" AND "))
+        known_params.extend(value_params)
+
+    unknown_filter = ""
+    if known_filters:
+        unknown_filter = " AND NOT (" + " OR ".join(f"({part})" for part in known_filters) + ")"
     for row in conn.execute(
-        "SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'"
+        f"SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'{unknown_filter}",
+        tuple(known_params),
     ):
-        explicit_total += 1
         meta = _load_metadata(row["metadata"])
         source_context = meta.get("source_context", "production")
         counts[source_context] = counts.get(source_context, 0) + 1

@@ -246,10 +246,11 @@ class TestIndexing:
         assert any("GROUP BY type" in sql for sql in statements)
         assert any("GROUP BY e.relation" in sql for sql in statements)
 
-    def test_summary_default_parses_only_tagged_source_context_rows(self, tmp_db, monkeypatch):
+    def test_summary_default_counts_known_source_contexts_without_parsing(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
+        custom_metadata = json.dumps({"source_context": "custom", "large": ["x"] * 20})
         db.insert_node(
             id="Vault.sol::Vault.entry()",
             label="entry",
@@ -265,6 +266,14 @@ class TestIndexing:
             visibility="external",
             file="scripts/Deploy.sol",
             metadata=json.dumps({"source_context": "script"}),
+        )
+        db.insert_node(
+            id="custom/Probe.sol::Probe.run()",
+            label="runCustom",
+            type="function",
+            visibility="external",
+            file="custom/Probe.sol",
+            metadata=custom_metadata,
         )
         for i in range(40):
             db.insert_node(
@@ -286,12 +295,13 @@ class TestIndexing:
 
         summary = json.loads(mcp_server.cs_summary(db=tmp_db))
 
-        assert summary["nodes"] == 42
+        assert summary["nodes"] == 43
         assert summary["source_context_summary"] == {
             "production": 41,
             "script": 1,
+            "custom": 1,
         }
-        assert len(parsed) == 2
+        assert parsed == [custom_metadata]
 
     def test_summary_reports_attack_surface_truncation(self, tmp_db):
         import mcp_server
