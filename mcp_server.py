@@ -80,31 +80,6 @@ def _open_query_connection(db_path: str, timeout_seconds: int | None = DEFAULT_M
     raise sqlite3.OperationalError(f"unable to open database file: {db_path}")
 
 
-def _find_nodes(conn, label: str) -> list:
-    """Find nodes by label or qualified ID fragment.
-
-    Supports: 'deposit', 'Vault.deposit', 'KeyManager::generate_key', etc.
-    Tries exact label match first, then ID contains, then label LIKE.
-    """
-    # Exact label match
-    rows = conn.execute(
-        "SELECT id, label FROM nodes WHERE label = ?", (label,)
-    ).fetchall()
-    if rows:
-        return rows
-    # Qualified: search in node IDs (e.g., 'KeyManager::generate_key' matches '...::KeyManager::generate_key...')
-    rows = conn.execute(
-        "SELECT id, label FROM nodes WHERE id LIKE ?", (f"%{label}%",)
-    ).fetchall()
-    if rows:
-        return rows
-    # Fuzzy label match
-    rows = conn.execute(
-        "SELECT id, label FROM nodes WHERE label LIKE ?", (f"%{label}%",)
-    ).fetchall()
-    return rows
-
-
 def _node_match_queries(columns: str, label: str) -> tuple[tuple[str, tuple], ...]:
     """Return lookup stages in the same exact, qualified, fuzzy order."""
     return (

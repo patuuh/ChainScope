@@ -29,6 +29,13 @@ class TestIndexing:
         assert inspect.signature(mcp_server.cs_build).parameters["timeout_seconds"].default == 0
         assert inspect.signature(mcp_server.cs_profile).parameters["timeout_seconds"].default == 0
 
+    def test_mcp_uses_capped_node_match_helpers(self):
+        import mcp_server
+
+        assert not hasattr(mcp_server, "_find_nodes")
+        assert hasattr(mcp_server, "_find_node_ids_capped")
+        assert hasattr(mcp_server, "_find_function_rows_capped")
+
     def test_build_missing_repo_returns_json_error(self):
         import mcp_server
 
