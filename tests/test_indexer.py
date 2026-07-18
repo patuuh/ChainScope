@@ -1392,6 +1392,52 @@ class TestIndexing:
         assert prod_paths["query_scope"] == "production_only"
         assert prod_paths["paths"] == [["Vault.start", "Vault.finish"]]
 
+    def test_paths_avoids_metadata_parse_for_all_source_search(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.start()",
+            label="start",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id="Vault.sol::Vault.finish()",
+            label="finish",
+            type="function",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge("Vault.sol::Vault.start()", "Vault.sol::Vault.finish()", "calls")
+        for i in range(200):
+            db.insert_node(
+                id=f"scripts/Helper{i}.sol::Helper{i}.noop()",
+                label=f"noop{i}",
+                type="function",
+                file=f"scripts/Helper{i}.sol",
+                metadata=json.dumps({"source_context": "script", "large": ["x"] * 20}),
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+        ))
+
+        assert paths["paths"] == [["start", "finish"]]
+        assert parsed == []
+
     def test_paths_cap_ambiguous_endpoints_for_llm_context(self, tmp_db):
         import mcp_server
 

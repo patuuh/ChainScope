@@ -2680,14 +2680,26 @@ def cs_paths(
         ).fetchall()
         node_labels = {row["id"]: row["label"] for row in all_nodes}
         node_files = {row["id"]: row["file"] for row in all_nodes}
+        node_metadata_raw = {row["id"]: row["metadata"] for row in all_nodes}
         label_counts: dict[str, int] = {}
         for label in node_labels.values():
             label_counts[label] = label_counts.get(label, 0) + 1
-        node_meta = {row["id"]: _load_metadata(row["metadata"]) for row in all_nodes}
-        allowed_ids = {
-            row["id"] for row in all_nodes
-            if _include_metadata(node_meta[row["id"]], exclude_research)
-        }
+        if exclude_research:
+            node_meta = {row["id"]: _load_metadata(row["metadata"]) for row in all_nodes}
+            allowed_ids = {
+                row["id"] for row in all_nodes
+                if _include_metadata(node_meta[row["id"]], exclude_research)
+            }
+        else:
+            node_meta: dict[str, dict] = {}
+            allowed_ids = set(node_labels)
+
+        def _metadata_for_node(node_id: str) -> dict:
+            meta = node_meta.get(node_id)
+            if meta is None:
+                meta = _load_metadata(node_metadata_raw.get(node_id))
+                node_meta[node_id] = meta
+            return meta
 
         from_nodes = sorted(
             [n for n in _find_nodes(conn, from_label) if n["id"] in allowed_ids],
@@ -2730,7 +2742,7 @@ def cs_paths(
             return label
 
         def _candidate_for_node(node: dict) -> dict:
-            meta = node_meta.get(node["id"], {})
+            meta = _metadata_for_node(node["id"])
             return {
                 "id": node["id"],
                 "label": node["label"],
