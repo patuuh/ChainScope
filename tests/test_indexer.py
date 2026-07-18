@@ -3179,6 +3179,70 @@ class TestIndexing:
         assert [item["function"] for item in hotspots["hotspots"]] == ["entry0", "entry1", "entry2"]
         assert max(heap_sizes) == 3
 
+    def test_hotspots_skips_neutral_metadata_parses(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        entry_id = "Vault.sol::Vault.entry()"
+        state_id = "Vault.sol::Vault.total"
+        neutral_metadata = json.dumps({"large": ["x"] * 20})
+        risk_metadata = json.dumps({"reentrancy_risk": True, "large": ["x"] * 20})
+        db.insert_node(
+            id=entry_id,
+            label="entry",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=neutral_metadata,
+        )
+        db.insert_node(
+            id=state_id,
+            label="total",
+            type="state_var",
+            file="Vault.sol",
+        )
+        db.insert_edge(entry_id, state_id, "writes_state")
+        db.insert_node(
+            id="Vault.sol::Vault.reenter()",
+            label="reenter",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=risk_metadata,
+        )
+        for i in range(40):
+            db.insert_node(
+                id=f"Helper{i}.sol::Helper{i}.noop()",
+                label=f"noop{i}",
+                type="function",
+                visibility="internal",
+                file=f"Helper{i}.sol",
+                metadata=neutral_metadata,
+            )
+
+        real_load = mcp_server._load_metadata
+        real_guard_counts = mcp_server._guard_counts_for_writable_entries
+        parsed = []
+        guard_scopes = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        def tracking_guard_counts(conn, source_ids=None):
+            guard_scopes.append(set(source_ids or ()))
+            return real_guard_counts(conn, source_ids)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+        monkeypatch.setattr(mcp_server, "_guard_counts_for_writable_entries", tracking_guard_counts)
+
+        hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=10))
+
+        assert hotspots["_summary"]["total_scored"] == 2
+        assert {item["function"] for item in hotspots["hotspots"]} == {"entry", "reenter"}
+        assert parsed == [risk_metadata]
+        assert guard_scopes == [{entry_id}]
+
     def test_lookup_query_connection_falls_back_to_immutable(self, tmp_db, monkeypatch):
         import mcp_server
 

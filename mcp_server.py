@@ -1685,9 +1685,75 @@ def _is_research_meta(meta: dict) -> bool:
     return meta.get("source_kind") == "research" or meta.get("source_context") not in (None, "", "production")
 
 
+def _is_research_metadata_raw(raw) -> bool:
+    """Fast production default for metadata without provenance keys."""
+    if not raw or ('"source_context"' not in raw and '"source_kind"' not in raw):
+        return False
+    return _is_research_meta(_load_metadata(raw))
+
+
+def _metadata_has_any_key(raw, keys: tuple[str, ...]) -> bool:
+    if not raw:
+        return False
+    return any(f'"{key}"' in raw for key in keys)
+
+
 def _has_access_control(meta: dict, guard_count: int) -> bool:
     """Treat modifiers, graph guard edges, and inferred inline role checks as access control."""
     return bool(guard_count or meta.get("modifiers") or meta.get("role_guards") or meta.get("access_controls"))
+
+
+_HOTSPOT_SCORE_METADATA_KEYS = (
+    "access_controls",
+    "anchor_risks",
+    "auth_boundary",
+    "buffer_overflow_risk",
+    "command_injection_risk",
+    "cpi_reentrancy_risk",
+    "cross_contract_calls",
+    "cross_reentrancy",
+    "dead_params",
+    "deserialization_sinks",
+    "dos_risk",
+    "double_free_risk",
+    "erc_callback_risk",
+    "flash_loan_risk",
+    "format_string_risk",
+    "frontrun_risk",
+    "has_assembly",
+    "ignored_bounce",
+    "injection_sinks",
+    "integer_overflow_risk",
+    "modifiers",
+    "no_input_validation",
+    "null_deref_risk",
+    "oracle_risk",
+    "path_traversal_risk",
+    "precision_risk",
+    "private_key_material",
+    "privileged_operations",
+    "proxy_risk",
+    "pure",
+    "reentrancy_risk",
+    "role_guards",
+    "signature_risk",
+    "slippage_risk",
+    "sql_injection_risk",
+    "timestamp_dependence",
+    "toctou_risk",
+    "transfer_sinks",
+    "unchecked_arithmetic",
+    "unchecked_calls",
+    "unchecked_erc20",
+    "unguarded_privileged_operation",
+    "uninitialized_use",
+    "unsafe_downcast",
+    "unsafe_type_assertions",
+    "upgrade_surface",
+    "use_after_free_risk",
+    "view",
+    "weak_crypto",
+)
 
 
 def _score_function(row, meta, writes, ext_calls, guard_count):
@@ -2570,20 +2636,22 @@ def cs_hotspots(
         """)
 
         function_rows: list[tuple] = []
-        function_meta: dict[str, dict] = {}
         for r in rows:
             if r["label"] in ("constructor", "fallback", "receive"):
                 continue
-            meta = _load_metadata(r["metadata"])
-            if exclude_research and _is_research_meta(meta):
+            if exclude_research and _is_research_metadata_raw(r["metadata"]):
                 continue
             function_rows.append(r)
-            function_meta[r["id"]] = meta
 
-        function_ids = set(function_meta)
+        function_ids = {r["id"] for r in function_rows}
         write_map = _write_counts_for_sources(conn, function_ids)
         ext_call_map = _external_call_counts(conn, source_ids=function_ids)
-        guard_map = _guard_counts_for_writable_entries(conn, function_ids)
+        writable_entry_ids = {
+            r["id"]
+            for r in function_rows
+            if r["visibility"] in ("external", "public") and write_map.get(r["id"], 0) > 0
+        }
+        guard_map = _guard_counts_for_writable_entries(conn, writable_entry_ids)
 
         total_scored = 0
         critical = 0
@@ -2592,13 +2660,18 @@ def cs_hotspots(
         top_heap: list[tuple[int, int, dict]] = []
         sequence = 0
         for r in function_rows:
-            meta = function_meta[r["id"]]
             writes = write_map.get(r["id"], 0)
             ext_calls = ext_call_map.get(r["id"], 0)
             guards = 0
             vis = r["visibility"]
             if vis in ("external", "public") and writes > 0:
                 guards = guard_map.get(r["id"], 0)
+            relation_scored = (vis in ("external", "public") and writes > 0) or ext_calls > 0
+            has_score_metadata = _metadata_has_any_key(r["metadata"], _HOTSPOT_SCORE_METADATA_KEYS)
+            if not relation_scored and not has_score_metadata:
+                continue
+
+            meta = _load_metadata(r["metadata"]) if has_score_metadata else {}
 
             score, reasons = _score_function(r, meta, writes, ext_calls, guards)
 
@@ -2616,7 +2689,11 @@ def cs_hotspots(
                     "file": r["file"],
                     "line": r["line_start"],
                     "visibility": r["visibility"],
-                    "source_context": meta.get("source_context", "production"),
+                    "source_context": (
+                        meta.get("source_context", "production")
+                        if has_score_metadata
+                        else _metadata_source_context(r["metadata"])
+                    ),
                     "score": score,
                     "reasons": reasons,
                 }, score, sequence, top)
