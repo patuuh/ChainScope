@@ -105,14 +105,79 @@ def _find_nodes(conn, label: str) -> list:
     return rows
 
 
+def _node_match_queries(columns: str, label: str) -> tuple[tuple[str, tuple], ...]:
+    """Return lookup stages in the same exact, qualified, fuzzy order."""
+    return (
+        (
+            f"SELECT {columns} FROM nodes WHERE label = ? ORDER BY id",
+            (label,),
+        ),
+        (
+            f"SELECT {columns} FROM nodes WHERE id LIKE ? ORDER BY id",
+            (f"%{label}%",),
+        ),
+        (
+            f"SELECT {columns} FROM nodes WHERE label LIKE ? ORDER BY id",
+            (f"%{label}%",),
+        ),
+    )
+
+
+def _find_node_ids_capped(
+    conn,
+    label: str,
+    exclude_research: bool,
+    retain_limit: int,
+) -> tuple[list[str], int, bool]:
+    """Find matching node IDs while retaining only rows needed by callers."""
+    columns = "id, label, metadata"
+    for sql, params in _node_match_queries(columns, label):
+        ids: list[str] = []
+        total = 0
+        matched_before_scope = False
+        for row in conn.execute(sql, params):
+            matched_before_scope = True
+            if exclude_research:
+                meta = _load_metadata(row["metadata"])
+                if not _include_metadata(meta, exclude_research):
+                    continue
+            total = _append_capped(ids, row["id"], total, retain_limit)
+        if total or matched_before_scope:
+            return ids, total, matched_before_scope
+    return [], 0, False
+
+
+def _find_function_rows_capped(
+    conn,
+    label: str,
+    exclude_research: bool,
+    retain_limit: int,
+) -> tuple[list[dict], int, bool]:
+    """Find matching function rows while retaining only candidate-preview rows."""
+    columns = "id, label, type, visibility, file, line_start, line_end, signature, metadata"
+    for sql, params in _node_match_queries(columns, label):
+        rows: list[dict] = []
+        total = 0
+        matched_before_scope = False
+        for row in conn.execute(sql, params):
+            matched_before_scope = True
+            item = dict(row)
+            if item.get("type") != "function":
+                continue
+            if exclude_research:
+                meta = _load_metadata(item.get("metadata"))
+                if not _include_metadata(meta, exclude_research):
+                    continue
+                item["_metadata_parsed"] = meta
+            total = _append_capped(rows, item, total, retain_limit)
+        if total or matched_before_scope:
+            return rows, total, matched_before_scope
+    return [], 0, False
+
+
 def _find_nodes_bounded(conn, label: str, allowed_ids: set[str], retain_limit: int) -> tuple[list[dict], int]:
     """Find matching nodes while retaining only the first ordered rows needed by callers."""
-    queries = (
-        ("SELECT id, label FROM nodes WHERE label = ? ORDER BY id", (label,)),
-        ("SELECT id, label FROM nodes WHERE id LIKE ? ORDER BY id", (f"%{label}%",)),
-        ("SELECT id, label FROM nodes WHERE label LIKE ? ORDER BY id", (f"%{label}%",)),
-    )
-    for sql, params in queries:
+    for sql, params in _node_match_queries("id, label", label):
         rows: list[dict] = []
         total = 0
         matched_before_scope = False
@@ -3376,26 +3441,15 @@ def cs_cross(
 
     try:
         if from_func:
-            nodes = _find_nodes(conn, from_func)
-            if not nodes:
+            matching_starts, matching_starts_total, matched_before_scope = _find_function_rows_capped(
+                conn,
+                from_func,
+                exclude_research,
+                max_start_candidates,
+            )
+            if not matched_before_scope:
                 return json.dumps({"error": f"No function found matching '{from_func}'"})
 
-            matching_starts = []
-            matching_starts_total = 0
-            for node in _iter_nodes_by_ids(conn, [row["id"] for row in nodes]):
-                if node.get("type") != "function":
-                    continue
-                if exclude_research:
-                    meta = _load_metadata(node.get("metadata"))
-                    if not _include_metadata(meta, exclude_research):
-                        continue
-                    node["_metadata_parsed"] = meta
-                matching_starts_total = _append_capped(
-                    matching_starts,
-                    node,
-                    matching_starts_total,
-                    max_start_candidates,
-                )
             if not matching_starts:
                 return json.dumps({"error": f"No production function found matching '{from_func}'"})
             if matching_starts_total > 1:
@@ -3922,18 +3976,24 @@ def cs_lookup(
         return _query_open_error("cs_lookup", db_path, exc)
 
     try:
-        nodes = _find_nodes(conn, name)
-        if not nodes:
+        if max_matches == 0 or max_candidates == 0:
+            match_retain_limit = 0
+        else:
+            match_retain_limit = max(max_matches, max_candidates)
+        matched_node_ids, total_matches, matched_before_scope = _find_node_ids_capped(
+            conn,
+            name,
+            exclude_research,
+            match_retain_limit,
+        )
+        if not matched_before_scope:
+            return json.dumps({"error": f"No function found matching '{name}'"})
+        if not matched_node_ids:
+            if exclude_research:
+                return json.dumps({"error": f"No production function found matching '{name}'"})
             return json.dumps({"error": f"No function found matching '{name}'"})
 
         full_by_id: dict[str, dict] = {}
-        matched_node_ids = [row["id"] for row in nodes]
-        total_unfiltered = len(matched_node_ids)
-        profile_count = total_unfiltered if max_matches == 0 else min(max_matches, total_unfiltered)
-        candidate_count = 0
-        if max_matches > 0 and total_unfiltered > max_matches:
-            candidate_count = total_unfiltered if max_candidates == 0 else min(max_candidates, total_unfiltered)
-        needed_count = max(profile_count, candidate_count)
 
         def _parse_full_node(full_dict: dict) -> dict | None:
             cached = full_by_id.get(full_dict["id"])
@@ -3946,24 +4006,8 @@ def cs_lookup(
             full_by_id[full_dict["id"]] = full_dict
             return full_dict
 
-        if exclude_research:
-            filtered_ids = []
-            filtered_total = 0
-            for full_dict in _iter_nodes_by_ids(conn, matched_node_ids):
-                parsed = _parse_full_node(full_dict)
-                if parsed is not None:
-                    filtered_total = _append_capped(
-                        filtered_ids,
-                        parsed["id"],
-                        filtered_total,
-                        needed_count,
-                    )
-            matched_node_ids = filtered_ids
-            total_matches = filtered_total
-        else:
-            for full_dict in _fetch_nodes_by_ids(conn, matched_node_ids[:needed_count]):
-                _parse_full_node(full_dict)
-            total_matches = total_unfiltered
+        for full_dict in _fetch_nodes_by_ids(conn, matched_node_ids):
+            _parse_full_node(full_dict)
 
         def _candidate_for_id(node_id: str) -> dict:
             full_dict = full_by_id.get(node_id)
@@ -3983,11 +4027,6 @@ def cs_lookup(
                 "line": full_dict["line_start"],
                 "source_context": meta.get("source_context", "production"),
             }
-
-        if not matched_node_ids:
-            if exclude_research:
-                return json.dumps({"error": f"No production function found matching '{name}'"})
-            return json.dumps({"error": f"No function found matching '{name}'"})
 
         truncated = max_matches > 0 and total_matches > max_matches
         candidate_ids = matched_node_ids[:max_matches or total_matches]
