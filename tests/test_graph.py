@@ -171,10 +171,10 @@ class TestGraphQueryIndexes:
         assert {item["wrapper_label"] for item in graph_with_chain.propagate_sinks(["f4"])} == {"f1", "f2", "f3"}
         assert graph_with_chain.get_attack_surface()[0]["id"] == "a::f1"
 
-        assert any("INDEXED BY idx_edges_relation_source" in sql for sql in statements)
-        assert any("INDEXED BY idx_edges_relation_target" in sql for sql in statements)
-        assert any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
-        assert any("FROM edges WHERE relation IN" in sql for sql in statements)
-        assert any("FROM edges WHERE relation = 'calls'" in sql for sql in statements)
-        assert any("FROM edges e JOIN nodes" in sql for sql in statements)
-        assert any("FROM edges WHERE relation='writes_state'" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_relation_source" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_relation_target" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation" in sql and "relation IN" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation" in sql and "relation = 'calls'" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_target" in sql and "e.target = ?" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation" in sql and "relation='writes_state'" in sql for sql in statements)

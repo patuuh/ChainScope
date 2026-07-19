@@ -38,6 +38,57 @@ def _execute_with_index_fallback(conn, sql: str, params: tuple = (), index_name:
         raise
 
 
+def _index_name_from_hint(index_hint: str) -> str:
+    for name in (
+        "idx_edges_source_relation",
+        "idx_edges_target_relation",
+        "idx_edges_relation_source",
+        "idx_edges_relation_target",
+        "idx_edges_relation",
+        "idx_edges_source",
+        "idx_edges_target",
+    ):
+        if name in index_hint:
+            return name
+    return ""
+
+
+def _sqlite_existing_indexes(conn, names: tuple[str, ...]) -> set[str]:
+    if not names:
+        return set()
+    placeholders = ",".join("?" for _ in names)
+    return {
+        row["name"]
+        for row in conn.execute(
+            f"SELECT name FROM sqlite_master WHERE type = 'index' AND name IN ({placeholders})",
+            names,
+        )
+    }
+
+
+def _edge_index_hint_any(conn, *names: str) -> str:
+    try:
+        existing = _sqlite_existing_indexes(conn, tuple(names))
+    except Exception:
+        return ""
+    for name in names:
+        if name in existing:
+            return f" INDEXED BY {name}"
+    return ""
+
+
+def _relation_source_index_hint(conn) -> str:
+    return _edge_index_hint_any(conn, "idx_edges_relation_source", "idx_edges_relation")
+
+
+def _relation_target_index_hint(conn) -> str:
+    return _edge_index_hint_any(conn, "idx_edges_relation_target", "idx_edges_relation")
+
+
+def _target_relation_index_hint(conn) -> str:
+    return _edge_index_hint_any(conn, "idx_edges_target_relation", "idx_edges_target")
+
+
 class Graph:
     """Query interface over a ChainScope knowledge graph."""
 
@@ -46,15 +97,16 @@ class Graph:
 
     def _build_adjacency(self, conn) -> dict[str, list[str]]:
         """Build forward adjacency list from traversal edges."""
+        index_hint = _relation_source_index_hint(conn)
         rows = _execute_with_index_fallback(
             conn,
-            """
+            f"""
             SELECT source, target, relation
-            FROM edges INDEXED BY idx_edges_relation_source
+            FROM edges{index_hint}
             WHERE relation IN ('calls', 'flows_to', 'inherits')
             """,
             (),
-            "idx_edges_relation_source",
+            _index_name_from_hint(index_hint),
         ).fetchall()
         adj: dict[str, list[str]] = {}
         for row in rows:
@@ -66,15 +118,16 @@ class Graph:
 
     def _build_reverse_adjacency(self, conn) -> dict[str, list[str]]:
         """Build reverse adjacency list (target -> callers) for backward BFS."""
+        index_hint = _relation_target_index_hint(conn)
         rows = _execute_with_index_fallback(
             conn,
-            """
+            f"""
             SELECT source, target
-            FROM edges INDEXED BY idx_edges_relation_target
+            FROM edges{index_hint}
             WHERE relation = 'calls'
             """,
             (),
-            "idx_edges_relation_target",
+            _index_name_from_hint(index_hint),
         ).fetchall()
         rev: dict[str, list[str]] = {}
         for row in rows:
@@ -166,12 +219,13 @@ class Graph:
         """Find all functions that read/write a state variable."""
         conn = self.db.get_connection()
         try:
-            rows = _execute_with_index_fallback(conn, """
+            index_hint = _target_relation_index_hint(conn)
+            rows = _execute_with_index_fallback(conn, f"""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start, n.line_end
-                FROM edges e INDEXED BY idx_edges_target_relation
+                FROM edges e{index_hint}
                 JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = ?
-            """, (state_var_id, relation), "idx_edges_target_relation").fetchall()
+            """, (state_var_id, relation), _index_name_from_hint(index_hint)).fetchall()
             return [dict(r) for r in rows]
         finally:
             conn.close()
@@ -180,12 +234,13 @@ class Graph:
         """Find all direct callers of a function."""
         conn = self.db.get_connection()
         try:
-            rows = _execute_with_index_fallback(conn, """
+            index_hint = _target_relation_index_hint(conn)
+            rows = _execute_with_index_fallback(conn, f"""
                 SELECT n.id, n.label, n.file, n.visibility
-                FROM edges e INDEXED BY idx_edges_target_relation
+                FROM edges e{index_hint}
                 JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
-            """, (node_id,), "idx_edges_target_relation").fetchall()
+            """, (node_id,), _index_name_from_hint(index_hint)).fetchall()
             return [dict(r) for r in rows]
         finally:
             conn.close()
@@ -194,12 +249,13 @@ class Graph:
         """Find all modifiers/guards protecting a function."""
         conn = self.db.get_connection()
         try:
-            rows = _execute_with_index_fallback(conn, """
+            index_hint = _target_relation_index_hint(conn)
+            rows = _execute_with_index_fallback(conn, f"""
                 SELECT n.id, n.label, n.file, n.type
-                FROM edges e INDEXED BY idx_edges_target_relation
+                FROM edges e{index_hint}
                 JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'guards'
-            """, (node_id,), "idx_edges_target_relation").fetchall()
+            """, (node_id,), _index_name_from_hint(index_hint)).fetchall()
             return [dict(r) for r in rows]
         finally:
             conn.close()
@@ -286,13 +342,14 @@ class Graph:
 
             # Precompute per-node write counts
             write_map: dict[str, int] = {}
+            index_hint = _relation_source_index_hint(conn)
             rows = _execute_with_index_fallback(
                 conn,
                 "SELECT source, COUNT(DISTINCT target) as cnt "
-                "FROM edges INDEXED BY idx_edges_relation_source "
+                f"FROM edges{index_hint} "
                 "WHERE relation='writes_state' GROUP BY source",
                 (),
-                "idx_edges_relation_source",
+                _index_name_from_hint(index_hint),
             ).fetchall()
             for r in rows:
                 write_map[r["source"]] = r["cnt"]
