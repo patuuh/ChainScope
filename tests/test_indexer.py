@@ -3022,7 +3022,7 @@ class TestIndexing:
         prod_cross_sources = {(item["source_file"], item["source_context"]) for item in prod_cross["calls"] if item["source_label"] == "ping"}
         assert prod_cross_sources == {("Vault.sol", "production")}
 
-    def test_mcp_followups_fallback_when_composite_edge_indexes_are_missing(self, tmp_db):
+    def test_mcp_followups_fallback_when_composite_edge_indexes_are_missing(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
@@ -3087,6 +3087,26 @@ class TestIndexing:
         finally:
             conn.close()
 
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
         cross = json.loads(mcp_server.cs_cross(db=tmp_db, from_func="start"))
         sinks = json.loads(mcp_server.cs_sinks(
             db=tmp_db,
@@ -3119,6 +3139,10 @@ class TestIndexing:
         assert trace["writers_summary"] == {"total": 1, "shown": 1, "truncated": False}
         assert trace["readers_summary"] == {"total": 1, "shown": 1, "truncated": False}
         assert lookup["functions"][0]["callees"][0]["label"] == "helper"
+        assert not any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_source" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_target" in sql for sql in statements)
 
     def test_cross_summary_caps_output_and_filters_false_attributes(self, tmp_db):
         import mcp_server

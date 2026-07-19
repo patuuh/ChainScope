@@ -562,6 +562,8 @@ def _index_name_from_hint(index_hint: str) -> str:
         "idx_edges_relation_source",
         "idx_edges_relation_target",
         "idx_edges_relation",
+        "idx_edges_source",
+        "idx_edges_target",
     ):
         if name in index_hint:
             return name
@@ -971,7 +973,7 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
         return not _is_research_metadata_raw(node.get("metadata"))
 
     start_id = start_row["id"]
-    source_index_hint = _edge_index_hint(conn, "idx_edges_source_relation")
+    source_index_hint = _source_relation_index_hint(conn)
 
     reachable = {start_id}
     queue = [start_id]
@@ -1266,6 +1268,14 @@ def _edge_index_hint_any(conn, *names: str) -> str:
         if name in existing:
             return f" INDEXED BY {name}"
     return ""
+
+
+def _source_relation_index_hint(conn) -> str:
+    return _edge_index_hint_any(conn, "idx_edges_source_relation", "idx_edges_source")
+
+
+def _target_relation_index_hint(conn) -> str:
+    return _edge_index_hint_any(conn, "idx_edges_target_relation", "idx_edges_target")
 
 
 def _count_rows(conn, sql: str, key_column: str = "key") -> dict[str, int]:
@@ -3418,7 +3428,7 @@ def cs_hotspots(
         return _query_open_error("cs_hotspots", db_path, exc)
 
     try:
-        source_index_hint = " INDEXED BY idx_edges_source_relation"
+        source_index_hint = _source_relation_index_hint(conn)
         write_map = _write_counts_for_sources(conn)
         ext_call_map = _external_call_counts(conn)
         writable_entry_ids = set()
@@ -4332,7 +4342,7 @@ def cs_sinks(
 
         if shown_sinks:
             node_map: dict[str, dict | None] = {}
-            target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation")
+            target_index_hint = _target_relation_index_hint(conn)
 
             def _reachable_callers(sink_id: str) -> tuple[list[dict], dict]:
                 visited = {sink_id}
@@ -4552,7 +4562,7 @@ def cs_paths(
             return _json_response({"error": f"No node found matching '{to_label}'"})
 
         adjacency: dict[str, list[str]] = {}
-        source_index_hint = _edge_index_hint(conn, "idx_edges_source_relation")
+        source_index_hint = _source_relation_index_hint(conn)
 
         def _label_for_node(node_id: str) -> str:
             node = _node_for_id(conn, node_id, node_by_id)
@@ -4688,7 +4698,7 @@ def cs_paths(
                     "cs_paths endpoint candidate lists were capped. Increase max_endpoint_candidates or set max_endpoint_candidates=0 for all candidates."
                 )
 
-        target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation") if show_guards else ""
+        target_index_hint = _target_relation_index_hint(conn) if show_guards else ""
 
         if show_guards:
             result["guards"] = {}
@@ -4920,7 +4930,7 @@ def cs_trace(
                 "source_context": item["source_context"],
             }
 
-        target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation")
+        target_index_hint = _target_relation_index_hint(conn)
 
         def _accessor_rows(var_id: str, relation: str):
             return conn.execute(f"""
@@ -5860,8 +5870,8 @@ def cs_lookup(
 
         results = []
         attribute_truncated_items = 0
-        source_index_hint = _edge_index_hint(conn, "idx_edges_source_relation")
-        target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation")
+        source_index_hint = _source_relation_index_hint(conn)
+        target_index_hint = _target_relation_index_hint(conn)
         for node_id in profile_ids:
 
             # Full node details
