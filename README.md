@@ -283,6 +283,8 @@ before Python computes final risk scores. This keeps normal broad scans usable
 on larger graphs while preserving exact scoring and false-positive rejection.
 Write-count and external-call aggregate helpers use the source/relation edge
 index directly and fall back only when older graph DBs lack it.
+Traversal relation scans and guard-label lookups use composite relation indexes
+the same way, so audit-style broad scans avoid avoidable edge-table walks.
 MCP broad scans also cache repeated raw metadata probes so common fields such as
 `source_context`, `is_sink`, and `sink_type` do not require repeated JSON scans.
 Top-level metadata key sets are cached too, while oversized metadata blobs are
@@ -510,4 +512,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`549 passed`
+`550 passed`

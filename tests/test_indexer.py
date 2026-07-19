@@ -4611,6 +4611,92 @@ class TestIndexing:
         assert any("FROM edges WHERE source IN" in sql for sql in statements)
         assert any("FROM edges WHERE relation =" in sql for sql in statements)
 
+    def test_audit_relation_helpers_use_composite_indexes(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        source_id = "Vault.sol::Vault.entry()"
+        target_id = "Vault.sol::Vault.helper()"
+        guard_id = "Vault.sol::Vault.onlyOwner"
+        for node_id, label, node_type in (
+            (source_id, "entry", "function"),
+            (target_id, "helper", "function"),
+            (guard_id, "onlyOwner", "modifier"),
+        ):
+            db.insert_node(
+                id=node_id,
+                label=label,
+                type=node_type,
+                visibility="external" if node_type == "function" else "",
+                file="Vault.sol",
+            )
+        db.insert_edge(source_id, target_id, "calls")
+        db.insert_edge(guard_id, source_id, "guards")
+
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, wrapped):
+                self._wrapped = wrapped
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._wrapped.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._wrapped.close()
+
+        conn = CountingConnection(db.get_connection())
+        try:
+            traversal_rows = list(mcp_server._iter_edges_for_relations(
+                conn,
+                mcp_server.TRAVERSAL_RELATIONS,
+                validate_nodes=True,
+            ))
+            guard_rows = list(mcp_server._iter_guard_label_rows(conn, {source_id}))
+        finally:
+            conn.close()
+
+        assert [(row["source"], row["target"], row["relation"]) for row in traversal_rows] == [
+            (source_id, target_id, "calls")
+        ]
+        assert [(row["target"], row["label"]) for row in guard_rows] == [
+            (source_id, "onlyOwner")
+        ]
+        assert any("FROM edges e INDEXED BY idx_edges_relation_source" in sql for sql in statements)
+        assert any("FROM edges e INDEXED BY idx_edges_relation_target" in sql for sql in statements)
+
+        conn = db.get_connection()
+        try:
+            conn.execute("DROP INDEX idx_edges_relation_source")
+            conn.execute("DROP INDEX idx_edges_relation_target")
+            conn.commit()
+        finally:
+            conn.close()
+
+        statements.clear()
+        conn = CountingConnection(db.get_connection())
+        try:
+            fallback_traversal_rows = list(mcp_server._iter_edges_for_relations(
+                conn,
+                mcp_server.TRAVERSAL_RELATIONS,
+                validate_nodes=True,
+            ))
+            fallback_guard_rows = list(mcp_server._iter_guard_label_rows(conn, {source_id}))
+        finally:
+            conn.close()
+
+        assert [(row["source"], row["target"], row["relation"]) for row in fallback_traversal_rows] == [
+            (source_id, target_id, "calls")
+        ]
+        assert [(row["target"], row["label"]) for row in fallback_guard_rows] == [
+            (source_id, "onlyOwner")
+        ]
+        assert any("INDEXED BY idx_edges_relation_source" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation_target" in sql for sql in statements)
+        assert any("FROM edges e JOIN nodes" in sql for sql in statements)
+        assert any("FROM edges e LEFT JOIN nodes" in sql for sql in statements)
+
     def test_hotspots_streams_aggregate_rows(self, tmp_db, monkeypatch):
         import mcp_server
 

@@ -525,10 +525,15 @@ def _execute_with_index_fallback(conn, sql: str, params: tuple = (), index_name:
 
 
 def _index_name_from_hint(index_hint: str) -> str:
-    if "idx_edges_source_relation" in index_hint:
-        return "idx_edges_source_relation"
-    if "idx_edges_relation_source" in index_hint:
-        return "idx_edges_relation_source"
+    for name in (
+        "idx_edges_source_relation",
+        "idx_edges_target_relation",
+        "idx_edges_relation_source",
+        "idx_edges_relation_target",
+        "idx_edges_relation",
+    ):
+        if name in index_hint:
+            return name
     return ""
 
 
@@ -715,52 +720,76 @@ def _iter_edges_for_relation(
         )
 
 
-def _iter_edges_for_relations(conn, relations: tuple[str, ...], validate_nodes: bool = False):
+def _iter_edges_for_relations(
+    conn,
+    relations: tuple[str, ...],
+    validate_nodes: bool = False,
+    relation_index_hint: str | None = None,
+):
     if not relations:
         return
     placeholders = ",".join("?" for _ in relations)
+    if relation_index_hint is None:
+        relation_index_hint = " INDEXED BY idx_edges_relation_source"
+    index_name = _index_name_from_hint(relation_index_hint)
     if validate_nodes:
-        yield from conn.execute(
+        yield from _execute_with_index_fallback(
+            conn,
             f"""
             SELECT e.source, e.target, e.relation
-            FROM edges e
+            FROM edges e{relation_index_hint}
             JOIN nodes s ON e.source = s.id
             JOIN nodes t ON e.target = t.id
             WHERE e.relation IN ({placeholders})
             """,
             relations,
+            index_name,
         )
         return
-    yield from conn.execute(
-        f"SELECT source, target, relation FROM edges WHERE relation IN ({placeholders})",
+    yield from _execute_with_index_fallback(
+        conn,
+        f"SELECT source, target, relation FROM edges{relation_index_hint} WHERE relation IN ({placeholders})",
         relations,
+        index_name,
     )
 
 
-def _iter_guard_label_rows(conn, target_ids: set[str] | None = None):
+def _iter_guard_label_rows(
+    conn,
+    target_ids: set[str] | None = None,
+    relation_target_index_hint: str | None = None,
+):
     if target_ids is not None and not target_ids:
         return
+    if relation_target_index_hint is None:
+        relation_target_index_hint = " INDEXED BY idx_edges_relation_target"
+    index_name = _index_name_from_hint(relation_target_index_hint)
     if target_ids is None:
-        yield from conn.execute(
-            """
+        yield from _execute_with_index_fallback(
+            conn,
+            f"""
             SELECT e.target, n.label
-            FROM edges e LEFT JOIN nodes n ON e.source = n.id
+            FROM edges e{relation_target_index_hint} LEFT JOIN nodes n ON e.source = n.id
             WHERE e.relation='guards'
             ORDER BY e.target, n.label
-            """
+            """,
+            (),
+            index_name,
         )
         return
 
     for chunk in _chunked_ids(target_ids):
         placeholders = ",".join("?" for _ in chunk)
-        yield from conn.execute(
+        yield from _execute_with_index_fallback(
+            conn,
             f"""
             SELECT e.target, n.label
-            FROM edges e LEFT JOIN nodes n ON e.source = n.id
+            FROM edges e{relation_target_index_hint} LEFT JOIN nodes n ON e.source = n.id
             WHERE e.target IN ({placeholders}) AND e.relation='guards'
             ORDER BY e.target, n.label
             """,
             tuple(chunk),
+            index_name,
         )
 
 
