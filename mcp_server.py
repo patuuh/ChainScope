@@ -412,12 +412,17 @@ def _metadata_top_level_key_tuple(raw: str) -> tuple[str, ...]:
     return _metadata_top_level_key_tuple_uncached(raw)
 
 
+@lru_cache(maxsize=8192)
+def _metadata_top_level_key_set(raw: str) -> frozenset[str]:
+    return frozenset(_metadata_top_level_key_tuple(raw))
+
+
 def _metadata_top_level_keys(raw) -> set[str]:
     if not isinstance(raw, str):
         return set()
     if len(raw) > _METADATA_PROBE_CACHE_MAX_BYTES:
         return set(_metadata_top_level_key_tuple_uncached(raw))
-    return set(_metadata_top_level_key_tuple(raw))
+    return set(_metadata_top_level_key_set(raw))
 
 
 def _metadata_raw_value_truthy(raw, key: str) -> bool:
@@ -1954,7 +1959,12 @@ def _is_research_metadata_raw(raw) -> bool:
 def _metadata_has_any_key(raw, keys: tuple[str, ...]) -> bool:
     if not raw:
         return False
-    top_level_keys = _metadata_top_level_keys(raw)
+    if not isinstance(raw, str):
+        return False
+    if len(raw) > _METADATA_PROBE_CACHE_MAX_BYTES:
+        top_level_keys = set(_metadata_top_level_key_tuple_uncached(raw))
+    else:
+        top_level_keys = _metadata_top_level_key_set(raw)
     return any(key in top_level_keys for key in keys)
 
 

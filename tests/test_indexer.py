@@ -537,9 +537,32 @@ class TestIndexing:
         assert mcp_server._metadata_has_any_key(nested_context_only, ("source_context",)) is False
         assert mcp_server._metadata_has_any_key(nested_sink, ("is_sink",)) is True
         mcp_server._metadata_top_level_key_tuple.cache_clear()
+        mcp_server._metadata_top_level_key_set.cache_clear()
         assert mcp_server._metadata_has_any_key(top_level_sink, ("is_sink",)) is True
         assert mcp_server._metadata_has_any_key(top_level_sink, ("nested",)) is True
-        assert mcp_server._metadata_top_level_key_tuple.cache_info().hits == 1
+        assert mcp_server._metadata_top_level_key_set.cache_info().hits == 1
+
+    def test_metadata_has_any_key_reuses_cached_key_sets(self):
+        import mcp_server
+
+        mcp_server._metadata_top_level_key_tuple.cache_clear()
+        mcp_server._metadata_top_level_key_set.cache_clear()
+        raw = json.dumps({
+            "source_context": "production",
+            "reentrancy_risk": True,
+            "unchecked_calls": [{"line": 10}],
+            "large": ["x"] * 20,
+        })
+
+        assert mcp_server._metadata_has_any_key(raw, ("reentrancy_risk",)) is True
+        assert mcp_server._metadata_has_any_key(raw, ("unchecked_calls",)) is True
+        assert mcp_server._metadata_has_any_key(raw, ("missing_key",)) is False
+
+        tuple_info = mcp_server._metadata_top_level_key_tuple.cache_info()
+        set_info = mcp_server._metadata_top_level_key_set.cache_info()
+        assert tuple_info.misses == 1
+        assert set_info.misses == 1
+        assert set_info.hits == 2
 
     def test_metadata_raw_value_cache_reuses_repeated_key_probes(self):
         import mcp_server
@@ -568,6 +591,7 @@ class TestIndexing:
 
         mcp_server._metadata_raw_value_cached.cache_clear()
         mcp_server._metadata_top_level_key_tuple.cache_clear()
+        mcp_server._metadata_top_level_key_set.cache_clear()
         raw = json.dumps({
             "source_context": "script",
             "is_sink": True,
@@ -583,6 +607,7 @@ class TestIndexing:
 
         assert mcp_server._metadata_raw_value_cached.cache_info().currsize == 0
         assert mcp_server._metadata_top_level_key_tuple.cache_info().currsize == 0
+        assert mcp_server._metadata_top_level_key_set.cache_info().currsize == 0
 
     def test_summary_exclude_research_uses_raw_metadata_filters(self, tmp_db, monkeypatch):
         import mcp_server
