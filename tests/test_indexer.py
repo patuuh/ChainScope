@@ -4169,16 +4169,14 @@ class TestIndexing:
                 }),
             )
 
-        real_append = mcp_server._append_capped
-        sink_buffer_sizes = []
+        real_source_context = mcp_server._metadata_source_context
+        formatted_contexts = []
 
-        def tracking_append(items, item, total, limit):
-            updated = real_append(items, item, total, limit)
-            if isinstance(item, dict) and item.get("sink_type") == "fund_transfer":
-                sink_buffer_sizes.append(len(items))
-            return updated
+        def counting_source_context(raw):
+            formatted_contexts.append(raw)
+            return real_source_context(raw)
 
-        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+        monkeypatch.setattr(mcp_server, "_metadata_source_context", counting_source_context)
 
         result = json.loads(mcp_server.cs_sinks(
             db=tmp_db,
@@ -4195,7 +4193,23 @@ class TestIndexing:
             "transfer01",
             "transfer02",
         ]
-        assert max(sink_buffer_sizes) == 3
+        assert formatted_contexts == [
+            json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+            }),
+            json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+            }),
+            json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+            }),
+        ]
 
     def test_sinks_omits_raw_metadata_from_default_sink_buffer(self, tmp_db, monkeypatch):
         import mcp_server
@@ -4215,15 +4229,14 @@ class TestIndexing:
             }),
         )
 
-        real_append = mcp_server._append_capped
-        retained_sink_entries = []
+        real_load = mcp_server._load_metadata
+        parsed = []
 
-        def tracking_append(items, item, total, limit):
-            if isinstance(item, dict) and item.get("sink_type") == "fund_transfer":
-                retained_sink_entries.append(dict(item))
-            return real_append(items, item, total, limit)
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
 
-        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
 
         result = json.loads(mcp_server.cs_sinks(
             db=tmp_db,
@@ -4232,8 +4245,7 @@ class TestIndexing:
         ))
 
         assert result["shown"] == 1
-        assert retained_sink_entries
-        assert "_metadata_raw" not in retained_sink_entries[0]
+        assert parsed == []
         assert "metadata" not in result["sinks"][0]
 
     def test_sinks_omit_metadata_by_default_for_mcp_context(self, tmp_db):

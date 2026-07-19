@@ -4187,21 +4187,23 @@ def cs_sinks(
             if sink_type and current_type != sink_type:
                 continue
             by_type[current_type] = by_type.get(current_type, 0) + 1
-            sink_entry = {
-                "id": row["id"],
-                "label": row["label"],
-                "node_type": row["type"],
-                "visibility": row["visibility"],
-                "file": row["file"],
-                "line_start": row["line_start"],
-                "line_end": row["line_end"],
-                "signature": row["signature"],
-                "sink_type": current_type,
-                "source_context": _metadata_source_context(raw_meta),
-            }
-            if include_metadata:
-                sink_entry["_metadata_raw"] = raw_meta
-            total = _append_capped(sinks, sink_entry, total, max_results)
+            total += 1
+            if max_results == 0 or len(sinks) < max_results:
+                sink_entry = {
+                    "id": row["id"],
+                    "label": row["label"],
+                    "node_type": row["type"],
+                    "visibility": row["visibility"],
+                    "file": row["file"],
+                    "line_start": row["line_start"],
+                    "line_end": row["line_end"],
+                    "signature": row["signature"],
+                    "sink_type": current_type,
+                    "source_context": _metadata_source_context(raw_meta),
+                }
+                if include_metadata:
+                    sink_entry["_metadata_raw"] = raw_meta
+                sinks.append(sink_entry)
 
         shown_sinks = sinks
         sink_summary = _section_summary(total, len(shown_sinks))
