@@ -323,6 +323,7 @@ def _metadata_string_fragments(key: str, value: str) -> tuple[str, str]:
 _JSON_DECODER = json.JSONDecoder()
 _MISSING_METADATA_VALUE = object()
 _METADATA_PROBE_CACHE_MAX_BYTES = 16_384
+_METADATA_SQL_FILTER_MAX_KEYS = 4
 
 
 def _skip_json_string(raw: str, pos: int) -> int:
@@ -1057,16 +1058,21 @@ def _metadata_rows_by_key(
     max_per_key: int = 0,
 ) -> tuple[dict[str, list[tuple]], dict[str, int]]:
     """Index capped metadata-key rows and full totals while parsing only retained rows when possible."""
-    needles = {key: f'"{key}"' for key in keys}
+    use_direct_key_scan = len(keys) > _METADATA_SQL_FILTER_MAX_KEYS
+    needles = {} if use_direct_key_scan else {key: f'"{key}"' for key in keys}
     indexed: dict[str, list[tuple]] = {key: [] for key in keys}
     totals: dict[str, int] = {key: 0 for key in keys}
     for row in rows:
         raw = row["metadata"] or ""
-        possible_keys = [key for key, needle in needles.items() if needle in raw]
-        if not possible_keys:
-            continue
-        top_level_keys = _metadata_top_level_keys(raw)
-        matched = [key for key in possible_keys if key in top_level_keys]
+        if use_direct_key_scan:
+            top_level_keys = _metadata_top_level_keys(raw)
+            matched = [key for key in keys if key in top_level_keys]
+        else:
+            possible_keys = [key for key, needle in needles.items() if needle in raw]
+            if not possible_keys:
+                continue
+            top_level_keys = _metadata_top_level_keys(raw)
+            matched = [key for key in possible_keys if key in top_level_keys]
         if not matched:
             continue
         if exclude_research and _is_research_metadata_raw(raw):
@@ -1087,6 +1093,21 @@ def _metadata_rows_by_key(
             if meta is not None and (max_per_key == 0 or len(indexed[key]) < max_per_key):
                 indexed[key].append((row, meta))
     return indexed, totals
+
+
+def _scanner_function_rows(conn, selected_keys: list[str]):
+    columns = "id, label, file, line_start, visibility, signature, metadata"
+    if selected_keys and len(selected_keys) <= _METADATA_SQL_FILTER_MAX_KEYS:
+        metadata_filter, metadata_params = _metadata_key_filter(selected_keys)
+        return conn.execute(
+            f"SELECT {columns} FROM nodes WHERE type = 'function'{metadata_filter} "
+            "ORDER BY file, line_start, id",
+            metadata_params,
+        )
+    return conn.execute(
+        f"SELECT {columns} FROM nodes WHERE type = 'function' "
+        "ORDER BY file, line_start, id"
+    )
 
 
 def _selected_metadata_keys(
@@ -1854,8 +1875,8 @@ def cs_help() -> str:
         },
         "scanner_tools": {
             "cs_hotspots": "Composite risk scorer — broad scan with SQL candidate prefilters and detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
-            "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter; category output defaults to max_per_category=25 and per-finding details to max_detail_items=10.",
-            "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output defaults to max_per_category=25 and per-finding details to max_detail_items=10.",
+            "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= for narrow SQL-prefiltered scans; all-category scans stream function rows to avoid wide LIKE chains. Output defaults to max_per_category=25 and per-finding details to max_detail_items=10.",
+            "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= for narrow SQL-prefiltered scans; all-category scans stream function rows to avoid wide LIKE chains. Output defaults to max_per_category=25 and per-finding details to max_detail_items=10.",
         },
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes; relation attributes by max_attribute_bytes.",
@@ -3404,15 +3425,8 @@ def cs_defi(
             "crosscontract": ["cross_contract_calls"],
         })
         if selected_keys:
-            metadata_filter, metadata_params = _metadata_key_filter(selected_keys)
-            function_rows = conn.execute(
-                "SELECT id, label, file, line_start, visibility, signature, metadata "
-                f"FROM nodes WHERE type = 'function'{metadata_filter} "
-                "ORDER BY file, line_start, id",
-                metadata_params,
-            )
             metadata_rows, metadata_totals = _metadata_rows_by_key(
-                function_rows,
+                _scanner_function_rows(conn, selected_keys),
                 selected_keys,
                 exclude_research,
                 max_per_category,
@@ -3747,15 +3761,8 @@ def cs_unsafe(
             "dead_params": ["dead_params"],
         })
         if selected_keys:
-            metadata_filter, metadata_params = _metadata_key_filter(selected_keys)
-            function_rows = conn.execute(
-                "SELECT id, label, file, line_start, visibility, signature, metadata "
-                f"FROM nodes WHERE type = 'function'{metadata_filter} "
-                "ORDER BY file, line_start, id",
-                metadata_params,
-            )
             metadata_rows, metadata_totals = _metadata_rows_by_key(
-                function_rows,
+                _scanner_function_rows(conn, selected_keys),
                 selected_keys,
                 exclude_research,
                 max_per_category,

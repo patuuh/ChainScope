@@ -2444,6 +2444,76 @@ class TestIndexing:
         assert unsafe["_summary"]["category_totals"] == {"command_execution": 1}
         assert unsafe["command_execution"][0]["function"] == "run_cmd"
 
+    def test_scanners_all_category_skips_wide_metadata_like_filter(self, monkeypatch):
+        import mcp_server
+
+        rows = [
+            {
+                "id": "Vault.sol::Vault.checkDeadline(uint256)",
+                "label": "checkDeadline",
+                "file": "Vault.sol",
+                "line_start": 7,
+                "visibility": "external",
+                "signature": "checkDeadline(uint256)",
+                "metadata": json.dumps({
+                    "timestamp_dependence": [{"line": 7}],
+                    "source_context": "production",
+                }),
+            },
+            {
+                "id": "ops.py::run_cmd",
+                "label": "run_cmd",
+                "file": "ops.py",
+                "line_start": 3,
+                "visibility": "",
+                "signature": "run_cmd(cmd)",
+                "metadata": json.dumps({
+                    "command_injection_risk": [{"line": 3}],
+                    "language": "python",
+                    "source_context": "production",
+                }),
+            },
+        ]
+        function_queries = []
+
+        class StreamingRows:
+            def __init__(self, values):
+                self.values = values
+
+            def __iter__(self):
+                return iter(self.values)
+
+            def fetchall(self):
+                raise AssertionError("scanner all-category function rows should stream")
+
+        class FakeConn:
+            def execute(self, sql, params=()):
+                normalized = " ".join(sql.split())
+                if "FROM nodes WHERE type = 'function'" in normalized:
+                    function_queries.append((normalized, params))
+                    assert "metadata LIKE ?" not in normalized
+                    assert params == ()
+                    return StreamingRows(rows)
+                if "metadata LIKE ?" in normalized:
+                    return StreamingRows([])
+                raise AssertionError(f"unexpected scanner SQL: {normalized}")
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda db_path, timeout_seconds: FakeConn(),
+        )
+
+        defi = json.loads(mcp_server.cs_defi(db="stream.db", category="all", max_per_category=1))
+        unsafe = json.loads(mcp_server.cs_unsafe(db="stream.db", category="all", max_per_category=1))
+
+        assert len(function_queries) == 2
+        assert defi["_summary"]["category_totals"] == {"timestamp_dependence": 1}
+        assert unsafe["_summary"]["category_totals"] == {"command_execution": 1}
+
     def test_unsafe_scanner_streams_ffi_sink_rows(self, monkeypatch):
         import mcp_server
 

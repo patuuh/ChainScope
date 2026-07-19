@@ -275,6 +275,9 @@ totals; set `max_per_category=0` only when an exhaustive category dump is
 intentional. Per-finding scanner detail lists such as `risks`, `sinks`,
 `operations`, and `unchecked_calls` are capped by `max_detail_items=10`; set
 `max_detail_items=0` only when exhaustive detector detail is needed.
+Narrow category scans use SQL metadata prefilters. Broad all-category scans
+stream function rows and index top-level metadata keys once, avoiding wide
+`metadata LIKE ... OR ...` chains that can be slower on large graphs.
 
 `cs_audit` is a top-N overview. Its `_summary` reports full section totals and
 which sections were truncated so agents can drill down with specialized tools
@@ -529,4 +532,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`555 passed`
+`556 passed`
