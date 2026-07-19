@@ -7073,6 +7073,59 @@ class TestIndexing:
         assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
         assert any("e.source = ? AND e.relation IN" in sql for sql in statements)
 
+    def test_paths_uses_tuple_paths_in_bfs_queue(self, tmp_db, monkeypatch):
+        import mcp_server
+        from collections import deque as real_deque
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.start()"
+        mid_id = "Vault.sol::Vault.mid()"
+        finish_id = "Vault.sol::Vault.finish()"
+        for node_id, label in (
+            (start_id, "start"),
+            (mid_id, "mid"),
+            (finish_id, "finish"),
+        ):
+            db.insert_node(
+                id=node_id,
+                label=label,
+                type="function",
+                file="Vault.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+        db.insert_edge(start_id, mid_id, "calls")
+        db.insert_edge(mid_id, finish_id, "calls")
+
+        appended_types = []
+
+        class TrackingDeque:
+            def __init__(self, items=()):
+                self._queue = real_deque(items)
+                appended_types.extend(type(item) for item in items)
+
+            def append(self, item):
+                appended_types.append(type(item))
+                self._queue.append(item)
+
+            def popleft(self):
+                return self._queue.popleft()
+
+            def __bool__(self):
+                return bool(self._queue)
+
+        monkeypatch.setattr(mcp_server, "deque", TrackingDeque)
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            max_paths=1,
+        ))
+
+        assert paths["paths"] == [["start", "mid", "finish"]]
+        assert appended_types
+        assert set(appended_types) == {tuple}
+
     def test_paths_preserves_exact_match_stage_when_excluding_research(self, tmp_db, monkeypatch):
         import mcp_server
 

@@ -16,6 +16,7 @@ import sqlite3
 import time
 import multiprocessing as mp
 import queue as queue_mod
+from collections import deque
 from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
@@ -4354,8 +4355,6 @@ def cs_paths(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
-    from collections import deque
-
     if max_paths < 0:
         max_paths = 0
     if max_endpoint_matches < 0:
@@ -4464,24 +4463,24 @@ def cs_paths(
             or len(selected_to_nodes) < to_matches_total
         )
 
-        def _find_paths(start_id: str, end_id: str, path_limit: int | None) -> list[list[str]]:
-            results: list[list[str]] = []
-            queue = deque([[start_id]])
-            while queue and (path_limit is None or len(results) < path_limit):
+        def _iter_paths(start_id: str, end_id: str, path_limit: int | None):
+            yielded = 0
+            queue = deque([(start_id,)])
+            while queue and (path_limit is None or yielded < path_limit):
                 path = queue.popleft()
                 current = path[-1]
                 if current == end_id and len(path) > 1:
-                    results.append(path)
+                    yielded += 1
+                    yield path
                     continue
                 if len(path) > max_depth:
                     continue
                 for neighbor in _neighbors_for_node(current):
                     if neighbor not in path:
-                        queue.append(path + [neighbor])
-            return results
+                        queue.append(path + (neighbor,))
 
         # Try all from/to combinations to find paths (handles ambiguous labels)
-        all_path_ids: list[list[str]] = []
+        all_path_ids: list[tuple[str, ...]] = []
         seen_paths: set[tuple[str, ...]] = set()
         path_limit = None if max_paths == 0 else max_paths
         path_limit_reached = False
@@ -4491,11 +4490,10 @@ def cs_paths(
                 if remaining is not None and remaining <= 0:
                     path_limit_reached = True
                     break
-                for path in _find_paths(fn["id"], tn["id"], remaining):
-                    key = tuple(path)
-                    if key in seen_paths:
+                for path in _iter_paths(fn["id"], tn["id"], remaining):
+                    if path in seen_paths:
                         continue
-                    seen_paths.add(key)
+                    seen_paths.add(path)
                     all_path_ids.append(path)
                 if path_limit is not None and len(all_path_ids) >= path_limit:
                     path_limit_reached = True
