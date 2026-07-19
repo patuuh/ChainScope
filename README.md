@@ -347,7 +347,9 @@ only when an exhaustive edge list is intentional. Cross-boundary call attribute
 payloads are capped by `max_attribute_bytes=2048`; set
 `max_attribute_bytes=0` only when full call attributes are needed. Broad raw
 rows omit source and target graph IDs by default; set `include_node_ids=true`
-when exact graph IDs are needed.
+when exact graph IDs are needed. Hidden raw cross rows do not format source
+context after `max_results` is reached; `cs_cross_summary` still formats
+contexts for all rows because its counters depend on them.
 
 Broad `cs_sinks` output is capped by sink count and reachable callers per sink
 (`max_results=50`, `max_callers_per_sink=10` by default). The response still

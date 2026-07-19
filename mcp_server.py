@@ -838,14 +838,9 @@ def _iter_cross_call_rows(conn, exclude_research: bool):
         if not _is_trust_boundary_call(attrs):
             continue
         entry["attributes"] = attrs
-        if exclude_research:
-            entry["source_context"] = _metadata_source_context(source_raw)
-            if entry.get("target_label"):
-                entry["target_source_context"] = _metadata_source_context(target_raw)
-        else:
-            entry["source_context"] = _metadata_source_context(source_raw)
-            if entry.get("target_label"):
-                entry["target_source_context"] = _metadata_source_context(target_raw)
+        entry["_source_metadata_raw"] = source_raw
+        if entry.get("target_label"):
+            entry["_target_metadata_raw"] = target_raw
         yield entry
 
 
@@ -859,6 +854,17 @@ def _cross_entry_attrs(entry: dict) -> dict:
     if isinstance(attrs, dict):
         return attrs
     return _load_metadata(attrs)
+
+
+def _finalize_cross_entry_contexts(entry: dict) -> dict:
+    item = dict(entry)
+    source_raw = item.pop("_source_metadata_raw", None)
+    target_raw = item.pop("_target_metadata_raw", None)
+    if "source_context" not in item:
+        item["source_context"] = _metadata_source_context(source_raw)
+    if item.get("target_label") and "target_source_context" not in item:
+        item["target_source_context"] = _metadata_source_context(target_raw)
+    return item
 
 
 def _node_for_id(conn, node_id: str, node_cache: dict[str, dict | None]) -> dict | None:
@@ -988,6 +994,7 @@ def _compact_cross_entry(entry: dict) -> dict:
             "target_source_context": target.get("source_context", "production"),
             "attributes": attrs,
         }
+    entry = _finalize_cross_entry_contexts(entry)
     return {
         "source_label": entry.get("source_label"),
         "source_file": entry.get("source_file"),
@@ -1502,9 +1509,11 @@ def _collect_cross_entries(entries, max_results: int) -> tuple[list[dict], dict]
 
 def _compact_raw_cross_call(entry: dict, include_node_ids: bool) -> dict:
     """Omit verbose graph IDs from broad raw cross output unless requested."""
-    if include_node_ids or isinstance(entry.get("source"), dict):
+    if isinstance(entry.get("source"), dict):
         return entry
-    compact = dict(entry)
+    compact = _finalize_cross_entry_contexts(entry)
+    if include_node_ids:
+        return compact
     compact.pop("source", None)
     compact.pop("target", None)
     return compact

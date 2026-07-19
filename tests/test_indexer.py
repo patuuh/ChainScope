@@ -3966,17 +3966,20 @@ class TestIndexing:
         assert cross["total"] == 1
         assert cross["calls"][0]["source"]["label"] == "deposit"
 
-    def test_cross_caps_raw_output_for_llm_context(self, tmp_db):
+    def test_cross_caps_raw_output_for_llm_context(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
+        metadata_by_call = {}
         for i in range(5):
+            metadata_by_call[i] = json.dumps({"source_context": "production", "call": i})
             db.insert_node(
                 id=f"Vault.sol::Vault.call{i}()",
                 label=f"call{i}",
                 type="function",
                 visibility="external",
                 file="Vault.sol",
+                metadata=metadata_by_call[i],
             )
             db.insert_edge(
                 source=f"Vault.sol::Vault.call{i}()",
@@ -3985,13 +3988,29 @@ class TestIndexing:
                 attributes=json.dumps({"unresolved": True}),
             )
 
+        real_source_context = mcp_server._metadata_source_context
+        formatted_contexts = []
+
+        def counting_source_context(raw):
+            formatted_contexts.append(raw)
+            return real_source_context(raw)
+
+        monkeypatch.setattr(mcp_server, "_metadata_source_context", counting_source_context)
+
         capped = json.loads(mcp_server.cs_cross(db=tmp_db, max_results=2))
+        assert formatted_contexts == [metadata_by_call[0], metadata_by_call[1]]
+        formatted_contexts.clear()
+
         with_ids = json.loads(mcp_server.cs_cross(
             db=tmp_db,
             max_results=2,
             include_node_ids=True,
         ))
+        assert formatted_contexts == [metadata_by_call[0], metadata_by_call[1]]
+        formatted_contexts.clear()
+
         uncapped = json.loads(mcp_server.cs_cross(db=tmp_db, max_results=0))
+        assert formatted_contexts == [metadata_by_call[i] for i in range(5)]
 
         assert capped["total"] == 5
         assert capped["shown"] == 2
