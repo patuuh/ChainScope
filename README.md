@@ -311,8 +311,9 @@ Follow-up tools such as `cs_cross`, `cs_sinks`, `cs_paths`, `cs_trace`, and
 older graph DBs that were built before those indexes existed.
 
 Broad `cs_state` output is also capped by entity groups, transitions per entity,
-and warnings. Prefer `entity=` when investigating one state machine, or set the
-state caps to `0` when you intentionally need every transition.
+warnings, and summary entity total counters. Prefer `entity=` when investigating
+one state machine, or set the state caps to `0` when you intentionally need
+every transition or entity total.
 
 For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
@@ -390,6 +391,7 @@ expansion is intentional.
 - `python cs_cross.py --max-start-candidates 0 ...`
 - `python cs_state.py ...`
 - `python cs_state.py --max-entities 0 --max-transitions-per-entity 0 --max-warnings 0 ...`
+- `python cs_state.py --max-entity-totals 0 --json ...`
 - `python cs_sinks.py ...`
 - `python cs_sinks.py --max-results 0 --max-callers-per-sink 0 ...`
 - `python cs_sinks.py --include-metadata --max-metadata-bytes 0 --json ...`

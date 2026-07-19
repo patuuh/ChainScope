@@ -87,6 +87,8 @@ class TestIndexing:
         assert "max_metadata_bytes=4096" in help_payload["exploration_tools"]["cs_sinks"]
         assert inspect.signature(mcp_server.cs_trace).parameters["max_metadata_bytes"].default == 4096
         assert "max_metadata_bytes=4096" in help_payload["exploration_tools"]["cs_trace"]
+        assert inspect.signature(mcp_server.cs_state).parameters["max_entity_totals"].default == 100
+        assert "max_entity_totals" in help_payload["exploration_tools"]["cs_state"]
 
     def test_mcp_uses_capped_node_match_helpers(self):
         import mcp_server
@@ -7514,6 +7516,20 @@ class TestIndexing:
             max_transitions_per_entity=0,
             max_warnings=0,
         ))
+        totals_capped = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            max_entities=0,
+            max_transitions_per_entity=0,
+            max_warnings=0,
+            max_entity_totals=2,
+        ))
+        totals_uncapped = json.loads(mcp_server.cs_state(
+            db=tmp_db,
+            max_entities=0,
+            max_transitions_per_entity=0,
+            max_warnings=0,
+            max_entity_totals=0,
+        ))
 
         assert list(capped["entities"]) == ["State0", "State1"]
         assert all(len(transitions) == 2 for transitions in capped["entities"].values())
@@ -7526,6 +7542,7 @@ class TestIndexing:
         assert capped["_summary"]["warnings_total"] > capped["_summary"]["warnings_shown"]
         assert capped["_summary"]["truncated"] is True
         assert capped["_summary"]["truncated_entities"]["State0"]["hidden"] == 1
+        assert capped["_summary"]["entity_totals_summary"] == {"total": 5, "shown": 5, "truncated": False}
 
         assert len(uncapped["entities"]) == 5
         assert all(len(transitions) == 3 for transitions in uncapped["entities"].values())
@@ -7533,6 +7550,20 @@ class TestIndexing:
         assert uncapped["_summary"]["transitions_shown"] == 15
         assert uncapped["_summary"]["warnings_total"] == uncapped["_summary"]["warnings_shown"]
         assert uncapped["_summary"]["truncated"] is False
+        assert totals_capped["_summary"]["entity_totals"] == {"State0": 3, "State1": 3}
+        assert totals_capped["_summary"]["entity_totals_summary"] == {
+            "total": 5,
+            "shown": 2,
+            "truncated": True,
+        }
+        assert totals_capped["_summary"]["truncated"] is True
+        assert "max_entity_totals=0" in totals_capped["_warnings"][0]
+        assert len(totals_uncapped["_summary"]["entity_totals"]) == 5
+        assert totals_uncapped["_summary"]["entity_totals_summary"] == {
+            "total": 5,
+            "shown": 5,
+            "truncated": False,
+        }
 
     def test_state_detects_toggle_warnings_from_indexed_edges(self, tmp_db):
         import mcp_server

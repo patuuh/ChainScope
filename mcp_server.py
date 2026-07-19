@@ -1885,7 +1885,7 @@ def cs_help() -> str:
             "cs_cross": "Cross-contract/module boundary calls. Raw calls default to max_results=50, attributes to max_attribute_bytes=2048, and omit graph IDs unless include_node_ids=true; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top, counters by max_counter_items, and sample attributes by max_attribute_bytes.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50, callers per sink at max_callers_per_sink=10, and included metadata at max_metadata_bytes=4096; use include_metadata and include_caller_details for verbose output.",
-            "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
+            "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, max_warnings, and max_entity_totals.",
         },
         "timeout_policy": "MCP tools do not self-timeout by default. Pass timeout_seconds only when a time-limited query or partial build is intentional.",
         "_tip": "All graph query tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
@@ -5234,6 +5234,7 @@ def cs_state(
     max_entities: int = 20,
     max_transitions_per_entity: int = 50,
     max_warnings: int = 50,
+    max_entity_totals: int = 100,
 ) -> str:
     """Analyze state machine transitions and flag security issues.
 
@@ -5249,6 +5250,7 @@ def cs_state(
         max_entities: Maximum entity groups to return when entity is empty (0 disables)
         max_transitions_per_entity: Maximum transitions returned per entity (0 disables)
         max_warnings: Maximum warnings returned (0 disables)
+        max_entity_totals: Maximum entity total counters returned in summary (0 disables)
     """
     if max_entities < 0:
         max_entities = 0
@@ -5256,6 +5258,8 @@ def cs_state(
         max_transitions_per_entity = 0
     if max_warnings < 0:
         max_warnings = 0
+    if max_entity_totals < 0:
+        max_entity_totals = 0
 
     db_path = _resolve_db(db)
     try:
@@ -5463,8 +5467,14 @@ def cs_state(
             or truncated_entities
             or len(shown_warnings) < warnings_total
         )
+        shown_entity_totals, entity_totals_summary = _cap_mapping(
+            entity_totals,
+            max_entity_totals,
+        )
+        if entity_totals_summary["truncated"]:
+            truncated = True
 
-        return _json_response({
+        response = {
             "entities": shown_entities,
             "warnings": shown_warnings,
             "query_scope": "production_only" if exclude_research else "all_sources",
@@ -5475,7 +5485,8 @@ def cs_state(
                 "hidden_entities": hidden_entities,
                 "transitions_total": transitions_total,
                 "transitions_shown": sum(len(v) for v in shown_entities.values()),
-                "entity_totals": entity_totals,
+                "entity_totals": shown_entity_totals,
+                "entity_totals_summary": entity_totals_summary,
                 "truncated_entities": truncated_entities,
                 "warnings_total": warnings_total,
                 "warnings_shown": len(shown_warnings),
@@ -5483,8 +5494,14 @@ def cs_state(
                 "max_entities": max_entities,
                 "max_transitions_per_entity": max_transitions_per_entity,
                 "max_warnings": max_warnings,
+                "max_entity_totals": max_entity_totals,
             },
-        })
+        }
+        if entity_totals_summary["truncated"]:
+            response.setdefault("_warnings", []).append(
+                "cs_state entity total counters were capped. Set max_entity_totals=0 for exhaustive entity totals."
+            )
+        return _json_response(response)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_state",

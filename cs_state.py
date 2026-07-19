@@ -15,6 +15,7 @@ def state(
     max_entities: int = typer.Option(20, "--max-entities", help="Max entity groups for --all (0 = all)"),
     max_transitions_per_entity: int = typer.Option(50, "--max-transitions-per-entity", help="Max transitions per entity (0 = all)"),
     max_warnings: int = typer.Option(50, "--max-warnings", help="Max warnings to show (0 = all)"),
+    max_entity_totals: int = typer.Option(100, "--max-entity-totals", help="Max entity total counters in summary (0 = all)"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode transitions"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -29,6 +30,7 @@ def state(
         max_entities=max_entities,
         max_transitions_per_entity=max_transitions_per_entity,
         max_warnings=max_warnings,
+        max_entity_totals=max_entity_totals,
     ))
 
     if json_output:
