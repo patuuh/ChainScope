@@ -218,6 +218,26 @@ class TestIndexing:
             "idx_transitions_function",
         } <= indexes
 
+    def test_edge_index_hint_any_checks_fallback_group_once(self):
+        import mcp_server
+
+        statements = []
+
+        class FakeConn:
+            def execute(self, sql, params=()):
+                statements.append((" ".join(sql.split()), params))
+                return [{"name": "idx_edges_relation"}]
+
+        hint = mcp_server._edge_index_hint_any(
+            FakeConn(),
+            "idx_edges_relation_source",
+            "idx_edges_relation",
+        )
+
+        assert hint == " INDEXED BY idx_edges_relation"
+        assert len(statements) == 1
+        assert statements[0][1] == ("idx_edges_relation_source", "idx_edges_relation")
+
     def test_build_missing_repo_returns_json_error(self):
         import mcp_server
 

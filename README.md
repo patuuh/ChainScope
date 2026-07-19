@@ -320,7 +320,8 @@ Traversal relation scans and guard-label lookups use composite relation indexes
 the same way, so audit-style broad scans avoid avoidable edge-table walks.
 Older graph DBs that still have single-column edge indexes use those directly
 instead of first attempting missing composite indexes and retrying after an
-SQLite error.
+SQLite error. Preferred/fallback edge-index groups are resolved with one schema
+lookup so broad MCP scans do not repeatedly probe `sqlite_master`.
 The core graph API used by local workflows also filters traversal, reverse-call,
 accessor, guard, and attack-surface edge queries through composite indexes, with
 fallback for older graph DBs.

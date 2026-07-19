@@ -1244,11 +1244,27 @@ def _edge_index_hint(conn, name: str) -> str:
         return ""
 
 
+def _sqlite_existing_indexes(conn, names: tuple[str, ...]) -> set[str]:
+    if not names:
+        return set()
+    placeholders = ",".join("?" for _ in names)
+    return {
+        row["name"]
+        for row in conn.execute(
+            f"SELECT name FROM sqlite_master WHERE type = 'index' AND name IN ({placeholders})",
+            names,
+        )
+    }
+
+
 def _edge_index_hint_any(conn, *names: str) -> str:
+    try:
+        existing = _sqlite_existing_indexes(conn, tuple(names))
+    except Exception:
+        return ""
     for name in names:
-        hint = _edge_index_hint(conn, name)
-        if hint:
-            return hint
+        if name in existing:
+            return f" INDEXED BY {name}"
     return ""
 
 
