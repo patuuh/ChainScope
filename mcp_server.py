@@ -685,13 +685,13 @@ def _guard_counts_for_writable_entries(
     """Count guards only for writable public/external functions."""
     if source_ids is not None and not source_ids:
         return {}
-    guard_index = (
-        " INDEXED BY idx_edges_relation_target"
-        if _sqlite_index_exists(conn, "idx_edges_relation_target")
-        else ""
+    guard_index = _edge_index_hint_any(
+        conn,
+        "idx_edges_relation_target",
+        "idx_edges_relation",
     )
     write_index = (
-        _edge_index_hint(conn, "idx_edges_source_relation")
+        _edge_index_hint_any(conn, "idx_edges_source_relation", "idx_edges_source")
         if source_index_hint is None
         else source_index_hint
     )

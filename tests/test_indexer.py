@@ -5168,7 +5168,14 @@ class TestIndexing:
             def close(self):
                 self._wrapped.close()
 
-        monkeypatch.setattr(mcp_server, "_sqlite_index_exists", lambda conn, name: False)
+        conn = db.get_connection()
+        try:
+            conn.execute("DROP INDEX idx_edges_relation_target")
+            conn.execute("DROP INDEX idx_edges_source_relation")
+            conn.commit()
+        finally:
+            conn.close()
+
         conn = CountingConnection(db.get_connection())
         try:
             fallback_counts = mcp_server._guard_counts_for_writable_entries(conn)
@@ -5176,7 +5183,10 @@ class TestIndexing:
             conn.close()
 
         assert fallback_counts == counts
-        assert all("INDEXED BY" not in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_relation_target" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_source" in sql for sql in statements)
 
     def test_hotspots_edge_counts_skip_out_of_scope_sources(self, monkeypatch):
         import mcp_server

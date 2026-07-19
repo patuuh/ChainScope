@@ -316,8 +316,9 @@ normal broad scans usable on larger graphs while preserving exact scoring and
 false-positive rejection.
 Write-count and external-call aggregate helpers use the source/relation edge
 index directly and fall back only when older graph DBs lack it.
-Traversal relation scans and guard-label lookups use composite relation indexes
-the same way, so audit-style broad scans avoid avoidable edge-table walks.
+Traversal relation scans, guard-label lookups, and writable-entry guard counts
+use composite relation indexes the same way, so audit-style broad scans avoid
+avoidable edge-table walks.
 Older graph DBs that still have single-column edge indexes use those directly
 instead of first attempting missing composite indexes and retrying after an
 SQLite error. Preferred/fallback edge-index groups are resolved with one schema
