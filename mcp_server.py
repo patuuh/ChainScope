@@ -3083,13 +3083,16 @@ def cs_audit(
                 continue
             wt = write_targets.get(row["id"], [])
             wvars = [t.split("::")[-1].split(".")[-1] for t in wt[:5]]
-            access_gaps_total = _append_top(access_gaps, {
+            access_gaps_total += 1
+            if top == 0 or len(access_gaps) >= top:
+                continue
+            access_gaps.append({
                 "function": row["label"],
                 "file": row["file"],
                 "source_context": _func_source_context(row, meta if has_access_metadata else None),
                 "visibility": vis,
                 "state_writes": wvars,
-            }, access_gaps_total, top)
+            })
         if access_gaps_total:
             report["access_control_gaps"] = access_gaps
             report["access_gaps_total"] = access_gaps_total
@@ -3159,29 +3162,33 @@ def cs_audit(
                     parent_id = ""
                 if parent_id in library_ids:
                     continue
-                dead_item = {
-                    "function": func["label"],
-                    "file": func["file"],
-                    "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
-                    "visibility": vis,
-                }
                 if include_dead_code_details:
-                    dead_internal_total = _append_top(dead_internal, dead_item, dead_internal_total, top)
+                    dead_internal_total += 1
+                    if top == 0 or len(dead_internal) >= top:
+                        continue
+                    dead_internal.append({
+                        "function": func["label"],
+                        "file": func["file"],
+                        "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
+                        "visibility": vis,
+                    })
                 else:
                     dead_internal_total += 1
             elif vis in ("external", "public"):
                 wt = write_targets.get(fid, [])
                 if wt and not meta.get("view") and not meta.get("pure"):
                     wvars = [t.split("::")[-1].split(".")[-1] for t in wt[:5]]
-                    orphan_item = {
-                        "function": func["label"],
-                        "file": func["file"],
-                        "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
-                        "visibility": vis,
-                        "state_writes": wvars,
-                    }
                     if include_dead_code_details:
-                        orphan_writers_total = _append_top(orphan_writers, orphan_item, orphan_writers_total, top)
+                        orphan_writers_total += 1
+                        if top == 0 or len(orphan_writers) >= top:
+                            continue
+                        orphan_writers.append({
+                            "function": func["label"],
+                            "file": func["file"],
+                            "source_context": _func_source_context(func, meta if has_mutability_metadata else None),
+                            "visibility": vis,
+                            "state_writes": wvars,
+                        })
                     else:
                         orphan_writers_total += 1
 

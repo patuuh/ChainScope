@@ -304,6 +304,8 @@ is needed. Source-context counters are capped by `max_source_contexts=20`; set
 `max_source_contexts=0` only when every provenance bucket is needed. Detailed
 dead-code rows are also omitted by default; set
 `include_dead_code_details=true` when dead-code investigation is the current task.
+Append-style audit sections such as access gaps and detailed dead code count
+hidden rows without building their detail payloads after `top` is reached.
 
 Broad `cs_hotspots` scans use one streaming function-row pass that retains only
 scoreable candidates before guard counting, use indexed edge aggregates for

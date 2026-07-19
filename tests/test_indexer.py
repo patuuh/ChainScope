@@ -1402,9 +1402,19 @@ class TestIndexing:
         import mcp_server
 
         db = GraphDB(tmp_db)
+        metadata_by_id = {}
         for i in range(12):
             func_id = f"Vault{i}.sol::Vault{i}.set(uint256)"
             state_id = f"Vault{i}.sol::Vault{i}.total"
+            helper_id = f"Vault{i}.sol::Vault{i}.helper()"
+            metadata_by_id[func_id] = json.dumps({
+                "reentrancy_risk": True,
+                "source_context": f"entry{i}",
+            })
+            metadata_by_id[helper_id] = json.dumps({
+                "view": False,
+                "source_context": f"helper{i}",
+            })
             db.insert_node(
                 id=func_id,
                 label=f"set{i}",
@@ -1412,7 +1422,7 @@ class TestIndexing:
                 visibility="external",
                 file=f"Vault{i}.sol",
                 line_start=i + 1,
-                metadata=json.dumps({"reentrancy_risk": True}),
+                metadata=metadata_by_id[func_id],
             )
             db.insert_node(
                 id=state_id,
@@ -1422,12 +1432,13 @@ class TestIndexing:
             )
             db.insert_edge(func_id, state_id, "writes_state")
             db.insert_node(
-                id=f"Vault{i}.sol::Vault{i}.helper()",
+                id=helper_id,
                 label=f"helper{i}",
                 type="function",
                 visibility="internal",
                 file=f"Vault{i}.sol",
                 line_start=100 + i,
+                metadata=metadata_by_id[helper_id],
             )
 
         real_append_top = mcp_server._append_top
@@ -1451,6 +1462,15 @@ class TestIndexing:
         assert audit["dead_code"]["dead_internal_total"] == 12
         assert audit["dead_code"]["direct_entry_points_total"] == 12
         assert max(retained_sizes) == 2
+        assert all(item["source_context"] in {"entry0", "entry1"} for item in audit["access_control_gaps"])
+        assert all(
+            item["source_context"] in {"helper0", "helper1"}
+            for item in audit["dead_code"]["dead_internal"]
+        )
+        assert all(
+            item["source_context"] in {"entry0", "entry1"}
+            for item in audit["dead_code"]["direct_entry_points"]
+        )
 
     def test_audit_retains_only_top_sorted_sections(self, tmp_db, monkeypatch):
         import mcp_server
