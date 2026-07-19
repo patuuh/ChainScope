@@ -756,11 +756,11 @@ def _node_for_id(conn, node_id: str, node_cache: dict[str, dict | None]) -> dict
     return node_cache[node_id]
 
 
-def _iter_reachable_traversal_targets(conn, source_id: str):
+def _iter_reachable_traversal_targets(conn, source_id: str, source_index_hint: str = ""):
     return conn.execute(
-        """
+        f"""
         SELECT e.target
-        FROM edges AS e INDEXED BY idx_edges_source_relation
+        FROM edges AS e{source_index_hint}
         WHERE e.source = ? AND e.relation IN (?, ?, ?)
         ORDER BY e.target
         """,
@@ -768,11 +768,11 @@ def _iter_reachable_traversal_targets(conn, source_id: str):
     )
 
 
-def _iter_trust_boundary_call_edges_from_source(conn, source_id: str):
+def _iter_trust_boundary_call_edges_from_source(conn, source_id: str, source_index_hint: str = ""):
     return conn.execute(
-        """
+        f"""
         SELECT e.source, e.target, e.attributes
-        FROM edges AS e INDEXED BY idx_edges_source_relation
+        FROM edges AS e{source_index_hint}
         WHERE e.source = ? AND e.relation = 'calls' AND (
             e.attributes LIKE '%"unresolved"%'
             OR e.attributes LIKE '%"sink"%'
@@ -800,6 +800,7 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
         return not _is_research_metadata_raw(node.get("metadata"))
 
     start_id = start_row["id"]
+    source_index_hint = _edge_index_hint(conn, "idx_edges_source_relation")
 
     reachable = {start_id}
     queue = [start_id]
@@ -807,7 +808,7 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
     while pos < len(queue):
         current = queue[pos]
         pos += 1
-        for row in _iter_reachable_traversal_targets(conn, current):
+        for row in _iter_reachable_traversal_targets(conn, current, source_index_hint):
             target_id = row["target"]
             if target_id in reachable:
                 continue
@@ -818,7 +819,7 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
             queue.append(target_id)
 
     for source_id in sorted(reachable):
-        for row in _iter_trust_boundary_call_edges_from_source(conn, source_id):
+        for row in _iter_trust_boundary_call_edges_from_source(conn, source_id, source_index_hint):
             target = _node_for_id(conn, row["target"], node_by_id)
             if target and not _node_allowed(target):
                 continue
@@ -844,11 +845,11 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
             }
 
 
-def _iter_callers_for_target(conn, target_id: str):
+def _iter_callers_for_target(conn, target_id: str, target_index_hint: str = ""):
     return conn.execute(
-        """
+        f"""
         SELECT e.source
-        FROM edges AS e INDEXED BY idx_edges_target_relation
+        FROM edges AS e{target_index_hint}
         WHERE e.target = ? AND e.relation = 'calls'
         ORDER BY e.source
         """,
@@ -1003,11 +1004,16 @@ def _single_count(conn, sql: str, params: tuple = ()) -> int:
 
 
 def _sqlite_index_exists(conn, name: str) -> bool:
-    row = conn.execute(
+    rows = conn.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?",
         (name,),
-    ).fetchone()
+    )
+    row = rows.fetchone() if hasattr(rows, "fetchone") else next(iter(rows), None)
     return row is not None
+
+
+def _edge_index_hint(conn, name: str) -> str:
+    return f" INDEXED BY {name}" if _sqlite_index_exists(conn, name) else ""
 
 
 def _count_rows(conn, sql: str, key_column: str = "key") -> dict[str, int]:
@@ -3854,6 +3860,7 @@ def cs_sinks(
 
         if shown_sinks:
             node_map: dict[str, dict | None] = {}
+            target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation")
 
             def _reachable_callers(sink_id: str) -> tuple[list[dict], dict]:
                 visited = {sink_id}
@@ -3864,7 +3871,7 @@ def cs_sinks(
                 while pos < len(queue):
                     target_id, distance = queue[pos]
                     pos += 1
-                    for row in _iter_callers_for_target(conn, target_id):
+                    for row in _iter_callers_for_target(conn, target_id, target_index_hint):
                         caller_id = row["source"]
                         if caller_id in visited:
                             continue
@@ -4055,6 +4062,7 @@ def cs_paths(
             return _json_response({"error": f"No node found matching '{to_label}'"})
 
         adjacency: dict[str, list[str]] = {}
+        source_index_hint = _edge_index_hint(conn, "idx_edges_source_relation")
 
         def _label_for_node(node_id: str) -> str:
             node = _node_for_id(conn, node_id, node_by_id)
@@ -4081,7 +4089,7 @@ def cs_paths(
             if neighbors is not None:
                 return neighbors
             neighbors = []
-            for row in _iter_reachable_traversal_targets(conn, node_id):
+            for row in _iter_reachable_traversal_targets(conn, node_id, source_index_hint):
                 target_id = row["target"]
                 if _node_allowed(target_id):
                     neighbors.append(target_id)
@@ -4189,6 +4197,8 @@ def cs_paths(
                     "cs_paths endpoint candidate lists were capped. Increase max_endpoint_candidates or set max_endpoint_candidates=0 for all candidates."
                 )
 
+        target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation") if show_guards else ""
+
         if show_guards:
             result["guards"] = {}
             seen: set[str] = set()
@@ -4199,9 +4209,9 @@ def cs_paths(
                     seen.add(node_id)
                     guards = conn.execute("""
                         SELECT n.id, n.label, n.metadata
-                        FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                        FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                         WHERE e.target = ? AND e.relation = 'guards'
-                    """, (node_id,))
+                    """.format(target_index_hint=target_index_hint), (node_id,))
                     labels = []
                     for guard in guards:
                         if exclude_research:
@@ -4220,9 +4230,9 @@ def cs_paths(
                         continue
                     seen.add(node_id)
                     access_rows = conn.execute(
-                        """
+                        f"""
                         SELECT e.relation, e.target
-                        FROM edges AS e INDEXED BY idx_edges_source_relation
+                        FROM edges AS e{source_index_hint}
                         WHERE e.source = ? AND e.relation IN ('reads_state', 'writes_state')
                         ORDER BY e.relation, e.target
                         """,
@@ -4360,10 +4370,12 @@ def cs_trace(
                 "source_context": item["source_context"],
             }
 
+        target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation")
+
         def _accessor_rows(var_id: str, relation: str):
-            return conn.execute("""
+            return conn.execute(f"""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start, n.line_end, n.metadata
-                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = ?
                 ORDER BY n.file, n.line_start, n.id
             """, (var_id, relation))
@@ -4413,18 +4425,18 @@ def cs_trace(
             return _finalize_accessor_items(shown), _section_summary(total, len(shown))
 
         def _callers(node_id: str) -> tuple[list[dict], dict]:
-            sql = """
+            sql = f"""
                 SELECT n.id, n.label, n.file, n.visibility, n.metadata
-                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
                 ORDER BY n.file, n.id
             """
             params = (node_id,)
             if max_callers_per_accessor > 0 and not exclude_research:
                 callers_total = conn.execute(
-                    """
+                    f"""
                     SELECT COUNT(*)
-                    FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                    FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                     WHERE e.target = ? AND e.relation = 'calls'
                     """,
                     params,
@@ -5188,6 +5200,8 @@ def cs_lookup(
         truncated = max_matches > 0 and total_matches > max_matches
 
         results = []
+        source_index_hint = _edge_index_hint(conn, "idx_edges_source_relation")
+        target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation")
         for node_id in profile_ids:
 
             # Full node details
@@ -5250,108 +5264,117 @@ def cs_lookup(
                 }
 
             # Callers (who calls this)
-            callers, callers_summary = _collect_relation("""
+            callers, callers_summary = _collect_relation(f"""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start,
                        n.line_end, n.signature, n.metadata, e.attributes
-                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
-            """, (node_id,), (
-                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id "
-                "WHERE e.target = ? AND e.relation = 'calls'"
-            ))
+            """, (node_id,), f"""
+                SELECT COUNT(*)
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                WHERE e.target = ? AND e.relation = 'calls'
+            """)
             _set_relation("callers", callers, callers_summary)
 
             # Depth-2 callers
             if depth >= 2 and info["callers"]:
                 for caller in info["callers"]:
-                    caller["callers"], caller["callers_summary"] = _collect_relation("""
+                    caller["callers"], caller["callers_summary"] = _collect_relation(f"""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
-                        FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                        FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                         WHERE e.target = ? AND e.relation = 'calls'
-                    """, (caller["id"],), (
-                        "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id "
-                        "WHERE e.target = ? AND e.relation = 'calls'"
-                    ))
+                    """, (caller["id"],), f"""
+                        SELECT COUNT(*)
+                        FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                        WHERE e.target = ? AND e.relation = 'calls'
+                    """)
 
             # Callees (what this calls)
-            callees, callees_summary = _collect_relation("""
+            callees, callees_summary = _collect_relation(f"""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start,
                        n.line_end, n.signature, n.metadata, e.attributes
-                FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
+                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'calls'
-            """, (node_id,), (
-                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
-                "WHERE e.source = ? AND e.relation = 'calls'"
-            ))
+            """, (node_id,), f"""
+                SELECT COUNT(*)
+                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                WHERE e.source = ? AND e.relation = 'calls'
+            """)
             _set_relation("callees", callees, callees_summary)
 
             # Depth-2 callees
             if depth >= 2 and info["callees"]:
                 for callee in info["callees"]:
-                    callee["callees"], callee["callees_summary"] = _collect_relation("""
+                    callee["callees"], callee["callees_summary"] = _collect_relation(f"""
                         SELECT n.id, n.label, n.file, n.visibility, n.metadata
-                        FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
+                        FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
                         WHERE e.source = ? AND e.relation = 'calls'
-                    """, (callee["id"],), (
-                        "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
-                        "WHERE e.source = ? AND e.relation = 'calls'"
-                    ))
+                    """, (callee["id"],), f"""
+                        SELECT COUNT(*)
+                        FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                        WHERE e.source = ? AND e.relation = 'calls'
+                    """)
 
             # State reads
-            state_reads, state_reads_summary = _collect_relation("""
+            state_reads, state_reads_summary = _collect_relation(f"""
                 SELECT n.id, n.label, n.file, n.metadata
-                FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
+                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'reads_state'
-            """, (node_id,), (
-                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
-                "WHERE e.source = ? AND e.relation = 'reads_state'"
-            ))
+            """, (node_id,), f"""
+                SELECT COUNT(*)
+                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                WHERE e.source = ? AND e.relation = 'reads_state'
+            """)
             _set_relation("state_reads", state_reads, state_reads_summary)
 
             # State writes
-            state_writes, state_writes_summary = _collect_relation("""
+            state_writes, state_writes_summary = _collect_relation(f"""
                 SELECT n.id, n.label, n.file, n.metadata
-                FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
+                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation = 'writes_state'
-            """, (node_id,), (
-                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
-                "WHERE e.source = ? AND e.relation = 'writes_state'"
-            ))
+            """, (node_id,), f"""
+                SELECT COUNT(*)
+                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                WHERE e.source = ? AND e.relation = 'writes_state'
+            """)
             _set_relation("state_writes", state_writes, state_writes_summary)
 
             # Guards/modifiers
-            guards, guards_summary = _collect_relation("""
+            guards, guards_summary = _collect_relation(f"""
                 SELECT n.id, n.label, n.file, n.type, n.metadata
-                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'guards'
-            """, (node_id,), (
-                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id "
-                "WHERE e.target = ? AND e.relation = 'guards'"
-            ))
+            """, (node_id,), f"""
+                SELECT COUNT(*)
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                WHERE e.target = ? AND e.relation = 'guards'
+            """)
             _set_relation("guards", guards, guards_summary)
 
             # All other edges (flows_to, inherits, emits_event, etc.)
-            other_edges_out, other_out_summary = _collect_relation("""
+            other_edges_out, other_out_summary = _collect_relation(f"""
                 SELECT e.relation, n.id, n.label, n.file, n.metadata, e.attributes
-                FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id
+                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
                 WHERE e.source = ? AND e.relation NOT IN
                       ('calls', 'reads_state', 'writes_state')
-            """, (node_id,), (
-                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_source_relation JOIN nodes n ON e.target = n.id "
-                "WHERE e.source = ? AND e.relation NOT IN "
-                "('calls', 'reads_state', 'writes_state')"
-            ))
+            """, (node_id,), f"""
+                SELECT COUNT(*)
+                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                WHERE e.source = ? AND e.relation NOT IN
+                      ('calls', 'reads_state', 'writes_state')
+            """)
             if other_out_summary["total"]:
                 _set_relation("other_edges_out", other_edges_out, other_out_summary)
 
-            other_edges_in, other_in_summary = _collect_relation("""
+            other_edges_in, other_in_summary = _collect_relation(f"""
                 SELECT e.relation, n.id, n.label, n.file, n.metadata, e.attributes
-                FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')
-            """, (node_id,), (
-                "SELECT COUNT(*) FROM edges AS e INDEXED BY idx_edges_target_relation JOIN nodes n ON e.source = n.id "
-                "WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')"
-            ))
+            """, (node_id,), f"""
+                SELECT COUNT(*)
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')
+            """)
             if other_in_summary["total"]:
                 _set_relation("other_edges_in", other_edges_in, other_in_summary)
 

@@ -2508,6 +2508,104 @@ class TestIndexing:
         prod_cross_sources = {(item["source_file"], item["source_context"]) for item in prod_cross["calls"] if item["source_label"] == "ping"}
         assert prod_cross_sources == {("Vault.sol", "production")}
 
+    def test_mcp_followups_fallback_when_composite_edge_indexes_are_missing(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.start()"
+        helper_id = "Vault.sol::Vault.helper()"
+        sink_id = "Vault.sol::Vault.drain()"
+        state_id = "Vault.sol::Vault.balance"
+        guard_id = "Vault.sol::Vault.onlyOwner"
+        db.insert_node(
+            id=start_id,
+            label="start",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id=helper_id,
+            label="helper",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id=sink_id,
+            label="drain",
+            type="function",
+            visibility="public",
+            file="Vault.sol",
+            metadata=json.dumps({
+                "source_context": "production",
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+            }),
+        )
+        db.insert_node(
+            id=state_id,
+            label="balance",
+            type="state_var",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_node(
+            id=guard_id,
+            label="onlyOwner",
+            type="modifier",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge(start_id, helper_id, "calls")
+        db.insert_edge(helper_id, sink_id, "calls", attributes=json.dumps({"unresolved": True}))
+        db.insert_edge(start_id, state_id, "writes_state")
+        db.insert_edge(helper_id, state_id, "reads_state")
+        db.insert_edge(guard_id, start_id, "guards")
+
+        conn = db.get_connection()
+        try:
+            conn.execute("DROP INDEX idx_edges_source_relation")
+            conn.execute("DROP INDEX idx_edges_target_relation")
+            conn.commit()
+        finally:
+            conn.close()
+
+        cross = json.loads(mcp_server.cs_cross(db=tmp_db, from_func="start"))
+        sinks = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            max_callers_per_sink=2,
+        ))
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="drain",
+            db=tmp_db,
+            show_guards=True,
+            show_state=True,
+        ))
+        trace = json.loads(mcp_server.cs_trace(
+            var="balance",
+            db=tmp_db,
+            show_callers=True,
+            max_accessors_per_relation=5,
+            max_callers_per_accessor=5,
+        ))
+        lookup = json.loads(mcp_server.cs_lookup(name="start", db=tmp_db, max_relation_items=5))
+
+        assert cross["total"] == 1
+        assert sinks["total"] == 1
+        assert sinks["sinks"][0]["caller_summary"]["total"] == 2
+        assert paths["paths"] == [["start", "helper", "drain"]]
+        assert paths["guards"]["start"] == ["onlyOwner"]
+        assert paths["state_access"]["start"]["writes"] == ["Vault.balance"]
+        assert trace["writers_summary"] == {"total": 1, "shown": 1, "truncated": False}
+        assert trace["readers_summary"] == {"total": 1, "shown": 1, "truncated": False}
+        assert lookup["functions"][0]["callees"][0]["label"] == "helper"
+
     def test_cross_summary_caps_output_and_filters_false_attributes(self, tmp_db):
         import mcp_server
 
