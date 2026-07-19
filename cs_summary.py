@@ -24,6 +24,7 @@ def summary(
     db: str = typer.Option("graph.db", help="Database path"),
     attack_surface: bool = typer.Option(False, "--attack-surface", help="Show attack surface analysis"),
     top: int = typer.Option(20, "--top", help="Maximum attack-surface entries to show"),
+    max_source_contexts: int = typer.Option(20, "--max-source-contexts", help="Max source-context counters to show (0 = all)"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -31,6 +32,7 @@ def summary(
         db=db,
         attack_surface=attack_surface,
         top=top,
+        max_source_contexts=max_source_contexts,
         exclude_research=exclude_research,
     ))
     data = _with_legacy_fields(data)

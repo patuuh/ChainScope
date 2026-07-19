@@ -1188,6 +1188,15 @@ def _sorted_count_mapping(counter: dict[str, int]) -> dict[str, int]:
     return dict(sorted(counter.items(), key=lambda item: (-item[1], item[0])))
 
 
+def _capped_count_mapping(counter: dict[str, int], max_items: int) -> tuple[dict[str, int], dict]:
+    sorted_items = sorted(counter.items(), key=lambda item: (-item[1], item[0]))
+    if max_items > 0:
+        shown_items = sorted_items[:max_items]
+    else:
+        shown_items = sorted_items
+    return dict(shown_items), _section_summary(len(sorted_items), len(shown_items))
+
+
 def _source_context_counts(conn, total_nodes: int) -> dict[str, int]:
     counts: dict[str, int] = {"production": total_nodes} if total_nodes else {}
     for row in conn.execute("SELECT metadata FROM nodes WHERE metadata LIKE '%\"source_context\"%'"):
@@ -1868,7 +1877,7 @@ def cs_help() -> str:
             "5. Drill into specific areas with specialized tools below.",
         ],
         "core_tools": {
-            "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths; timeout_seconds is opt-in.",
+            "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths; source-context counters are capped by max_source_contexts, and timeout_seconds is opt-in.",
             "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata, detailed dead-code rows, and timeout_seconds are opt-in; included metadata is capped by max_metadata_bytes=4096.",
             "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build.",
             "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
@@ -1897,6 +1906,7 @@ def cs_summary(
     db: str = "",
     attack_surface: bool = False,
     top: int = 20,
+    max_source_contexts: int = 20,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
 ) -> str:
@@ -1910,11 +1920,14 @@ def cs_summary(
         db: Database path (default: graph.db)
         attack_surface: Include top external/public functions by reachable state writes
         top: Maximum attack-surface rows to return
+        max_source_contexts: Maximum source-context counters returned (0 disables)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
     if top < 0:
         top = 0
+    if max_source_contexts < 0:
+        max_source_contexts = 0
 
     db_path = _resolve_db(db)
     try:
@@ -1940,6 +1953,10 @@ def cs_summary(
                 """,
             )
             node_count = _single_count(conn, "SELECT COUNT(*) FROM nodes")
+            source_context_summary, source_context_summary_meta = _capped_count_mapping(
+                _source_context_counts(conn, node_count),
+                max_source_contexts,
+            )
             data = {
                 "database": db_path,
                 "query_scope": "all_sources",
@@ -1963,9 +1980,15 @@ def cs_summary(
                 ),
                 "node_types": _sorted_count_mapping(type_counts),
                 "edge_relations": _sorted_count_mapping(rel_counts),
-                "source_context_summary": _sorted_count_mapping(_source_context_counts(conn, node_count)),
+                "source_context_summary": source_context_summary,
+                "source_context_summary_info": source_context_summary_meta,
+                "max_source_contexts": max_source_contexts,
                 "build_info": build_info,
             }
+            if source_context_summary_meta["truncated"]:
+                data.setdefault("_warnings", []).append(
+                    "cs_summary source-context counters were capped. Set max_source_contexts=0 for exhaustive source-context counters."
+                )
 
             hint = _empty_graph_hint(db_path, build_info)
             if hint and data["nodes"] == 0:
@@ -2084,6 +2107,10 @@ def cs_summary(
             transitions = _single_count(conn, "SELECT COUNT(*) FROM state_transitions")
 
         build_info = _load_build_info(conn)
+        source_context_summary, source_context_summary_meta = _capped_count_mapping(
+            source_context_counts,
+            max_source_contexts,
+        )
         data = {
             "database": db_path,
             "query_scope": "production_only" if exclude_research else "all_sources",
@@ -2096,9 +2123,15 @@ def cs_summary(
             "entry_points": entry_points,
             "node_types": _sorted_count_mapping(type_counts),
             "edge_relations": _sorted_count_mapping(rel_counts),
-            "source_context_summary": _sorted_count_mapping(source_context_counts),
+            "source_context_summary": source_context_summary,
+            "source_context_summary_info": source_context_summary_meta,
+            "max_source_contexts": max_source_contexts,
             "build_info": build_info,
         }
+        if source_context_summary_meta["truncated"]:
+            data.setdefault("_warnings", []).append(
+                "cs_summary source-context counters were capped. Set max_source_contexts=0 for exhaustive source-context counters."
+            )
 
         hint = _empty_graph_hint(db_path, build_info)
         if hint and data["nodes"] == 0:

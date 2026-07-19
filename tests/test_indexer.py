@@ -50,6 +50,8 @@ class TestIndexing:
         help_payload = json.loads(mcp_server.cs_help())
         assert "do not self-timeout by default" in help_payload["timeout_policy"]
         assert "timeout_seconds is opt-in" in help_payload["core_tools"]["cs_summary"]
+        assert inspect.signature(mcp_server.cs_summary).parameters["max_source_contexts"].default == 20
+        assert "max_source_contexts" in help_payload["core_tools"]["cs_summary"]
         assert "timeout_seconds are opt-in" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_audit).parameters["include_dead_code_details"].default is False
         assert inspect.signature(mcp_server.cs_audit).parameters["max_metadata_bytes"].default == 4096
@@ -522,6 +524,58 @@ class TestIndexing:
         assert not any("SUM(CASE WHEN" in sql and "source_context" in sql for sql in statements)
         assert not any("SELECT COUNT(*) FROM nodes WHERE 1=1" in sql for sql in statements)
         assert any("SELECT metadata FROM nodes WHERE metadata LIKE" in sql for sql in statements)
+
+    def test_summary_caps_source_context_counters_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(8):
+            for j in range(i + 1):
+                db.insert_node(
+                    id=f"Context{i}.sol::Context{i}.fn{j}()",
+                    label=f"fn{i}_{j}",
+                    type="function",
+                    file=f"Context{i}.sol",
+                    metadata=json.dumps({"source_context": f"context{i}"}),
+                )
+
+        capped = json.loads(mcp_server.cs_summary(
+            db=tmp_db,
+            max_source_contexts=3,
+        ))
+        uncapped = json.loads(mcp_server.cs_summary(
+            db=tmp_db,
+            max_source_contexts=0,
+        ))
+        prod_capped = json.loads(mcp_server.cs_summary(
+            db=tmp_db,
+            exclude_research=True,
+            max_source_contexts=3,
+        ))
+
+        assert capped["max_source_contexts"] == 3
+        assert list(capped["source_context_summary"]) == ["context7", "context6", "context5"]
+        assert capped["source_context_summary_info"] == {
+            "total": 8,
+            "shown": 3,
+            "truncated": True,
+        }
+        assert "max_source_contexts=0" in capped["_warnings"][0]
+        assert uncapped["max_source_contexts"] == 0
+        assert len(uncapped["source_context_summary"]) == 8
+        assert uncapped["source_context_summary_info"] == {
+            "total": 8,
+            "shown": 8,
+            "truncated": False,
+        }
+        assert "_warnings" not in uncapped
+        assert prod_capped["query_scope"] == "production_only"
+        assert prod_capped["source_context_summary"] == {}
+        assert prod_capped["source_context_summary_info"] == {
+            "total": 0,
+            "shown": 0,
+            "truncated": False,
+        }
 
     def test_source_context_helpers_avoid_json_parse(self, monkeypatch):
         import mcp_server

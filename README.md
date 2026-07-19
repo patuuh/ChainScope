@@ -268,9 +268,11 @@ default; set `include_metadata=true` only when that raw metadata is needed.
 Included variable metadata is capped by `max_metadata_bytes=4096`; set
 `max_metadata_bytes=0` only when full variable metadata is needed.
 
-`cs_summary --attack-surface` is also a bounded overview. Its `_summary`
-reports the total entry points, how many were shown, and whether the list was
-truncated; increase `top` when you need a broader entry-point inventory.
+`cs_summary` caps source-context counters by `max_source_contexts=20`.
+Set `max_source_contexts=0` only when every custom provenance bucket is needed.
+`cs_summary --attack-surface` is also a bounded overview. Its `_summary` reports
+the total entry points, how many were shown, and whether the list was truncated;
+increase `top` when you need a broader entry-point inventory.
 
 Scanner category output from `cs_defi` and `cs_unsafe` is capped by
 `max_per_category=25` by default. The summary still reports full category
@@ -369,6 +371,7 @@ expansion is intentional.
 - `python cs_build.py ...`
 - `python cs_build.py --json ...`
 - `python cs_summary.py ...`
+- `python cs_summary.py --max-source-contexts 0 --json ...`
 - `python cs_summary.py --attack-surface --top 10 ...`
 - `python cs_paths.py ...`
 - `python cs_paths.py --max-paths 0 --max-endpoint-matches 0 ...`
@@ -539,4 +542,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`557 passed`
+`558 passed`
