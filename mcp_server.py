@@ -1238,6 +1238,41 @@ def _cap_metadata_payload(meta: dict, max_bytes: int) -> tuple[dict, dict]:
     }
 
 
+def _cap_json_payload(value, max_bytes: int, essential_keys: tuple[str, ...] = ()) -> tuple[object, dict]:
+    encoded = json.dumps(value, default=str)
+    if max_bytes <= 0 or len(encoded) <= max_bytes:
+        return value, {
+            "bytes": len(encoded),
+            "max_bytes": max_bytes,
+            "truncated": False,
+        }
+    if isinstance(value, dict):
+        compact = {
+            key: value[key]
+            for key in essential_keys
+            if key in value
+        }
+        compact.update({
+            "_truncated": True,
+            "_original_bytes": len(encoded),
+            "_keys": sorted(str(key) for key in value.keys()),
+        })
+        return compact, {
+            "bytes": len(encoded),
+            "max_bytes": max_bytes,
+            "truncated": True,
+        }
+    return {
+        "_truncated": True,
+        "_original_bytes": len(encoded),
+        "_type": type(value).__name__,
+    }, {
+        "bytes": len(encoded),
+        "max_bytes": max_bytes,
+        "truncated": True,
+    }
+
+
 def _cap_profile_output(profile: dict, max_output_items: int) -> dict:
     if max_output_items < 0:
         max_output_items = 0
@@ -1297,10 +1332,43 @@ def _cap_profile_output(profile: dict, max_output_items: int) -> dict:
     return profile
 
 
-def _summarize_cross_entries(entries, top: int, max_counter_items: int = 10) -> dict:
+_CROSS_ATTRIBUTE_ESSENTIAL_KEYS = (
+    "unresolved",
+    "sink",
+    "cross_boundary",
+    "cpi",
+    "interface",
+    "method",
+    "selector",
+    "target",
+)
+
+
+def _cap_cross_call_attributes(call: dict, max_attribute_bytes: int) -> dict:
+    attrs = call.get("attributes")
+    capped, summary = _cap_json_payload(
+        attrs,
+        max_attribute_bytes,
+        _CROSS_ATTRIBUTE_ESSENTIAL_KEYS,
+    )
+    call["attributes"] = capped
+    if summary["truncated"]:
+        call["_attribute_summary"] = summary
+    else:
+        call.pop("_attribute_summary", None)
+    return call
+
+
+def _summarize_cross_entries(
+    entries,
+    top: int,
+    max_counter_items: int = 10,
+    max_attribute_bytes: int = 2048,
+) -> dict:
     top = max(top, 0)
     max_counter_items = max(max_counter_items, 0)
     total = 0
+    attribute_truncated = 0
     attr_counts: dict[str, int] = {}
     context_counts: dict[str, int] = {}
     source_file_counts: dict[str, int] = {}
@@ -1321,7 +1389,10 @@ def _summarize_cross_entries(entries, top: int, max_counter_items: int = 10) -> 
         _bump(source_file_counts, compact.get("source_file") or "<unknown>")
         _bump(target_counts, compact.get("target_label") or "<unresolved>")
         if len(samples) < top:
-            samples.append(compact)
+            sample = _cap_cross_call_attributes(compact, max_attribute_bytes)
+            if sample.get("_attribute_summary", {}).get("truncated"):
+                attribute_truncated += 1
+            samples.append(sample)
 
     source_file_limit = len(source_file_counts) if max_counter_items == 0 else max_counter_items
     target_limit = len(target_counts) if max_counter_items == 0 else max_counter_items
@@ -1344,6 +1415,9 @@ def _summarize_cross_entries(entries, top: int, max_counter_items: int = 10) -> 
             "top_targets": targets_summary,
             "truncated": source_files_summary["truncated"] or targets_summary["truncated"],
         },
+        "max_attribute_bytes": max_attribute_bytes,
+        "attribute_truncated": attribute_truncated > 0,
+        "attribute_truncated_calls": attribute_truncated,
         "calls": samples,
     }
 
@@ -1764,8 +1838,8 @@ def cs_help() -> str:
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
-            "cs_cross": "Cross-contract/module boundary calls. Raw calls default to max_results=50 and omit graph IDs unless include_node_ids=true; ambiguous from_func candidates by max_start_candidates.",
-            "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top and counters by max_counter_items.",
+            "cs_cross": "Cross-contract/module boundary calls. Raw calls default to max_results=50, attributes to max_attribute_bytes=2048, and omit graph IDs unless include_node_ids=true; ambiguous from_func candidates by max_start_candidates.",
+            "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top, counters by max_counter_items, and sample attributes by max_attribute_bytes.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50 and callers per sink at max_callers_per_sink=10; use include_metadata and include_caller_details for verbose output.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
@@ -4723,6 +4797,7 @@ def cs_cross(
     from_func: str = "",
     max_results: int = 50,
     max_start_candidates: int = 20,
+    max_attribute_bytes: int = 2048,
     include_node_ids: bool = False,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
@@ -4737,6 +4812,7 @@ def cs_cross(
         from_func: Trace from a specific function (empty = list all cross-contract calls)
         max_results: Maximum raw calls returned (default: 50; 0 disables)
         max_start_candidates: Maximum ambiguous from_func candidates to return (0 disables)
+        max_attribute_bytes: Maximum serialized attributes bytes per call (0 disables)
         include_node_ids: Include raw source/target graph IDs in broad output
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
@@ -4745,6 +4821,8 @@ def cs_cross(
         max_results = 0
     if max_start_candidates < 0:
         max_start_candidates = 0
+    if max_attribute_bytes < 0:
+        max_attribute_bytes = 0
 
     db_path = _resolve_db(db)
     try:
@@ -4813,6 +4891,19 @@ def cs_cross(
             total = call_summary["total"]
             truncated = call_summary["truncated"]
 
+        calls = [
+            _cap_cross_call_attributes(
+                _compact_raw_cross_call(call, include_node_ids),
+                max_attribute_bytes,
+            )
+            for call in shown_calls
+        ]
+        attribute_truncated = sum(
+            1
+            for call in calls
+            if call.get("_attribute_summary", {}).get("truncated")
+        )
+
         response = {
             "tool": "cs_cross",
             "query_scope": "production_only" if exclude_research else "all_sources",
@@ -4822,13 +4913,20 @@ def cs_cross(
             "truncated": truncated,
             "max_results": max_results,
             "max_start_candidates": max_start_candidates,
+            "max_attribute_bytes": max_attribute_bytes,
+            "attribute_truncated": attribute_truncated > 0,
+            "attribute_truncated_calls": attribute_truncated,
             "include_node_ids": include_node_ids,
-            "calls": [_compact_raw_cross_call(call, include_node_ids) for call in shown_calls],
+            "calls": calls,
         }
         if truncated:
             response["_warning"] = (
                 f"cs_cross found {total} trust-boundary calls and returned {len(shown_calls)}. "
                 "Use cs_cross_summary first on large graphs or set max_results=0 for exhaustive raw output."
+            )
+        if attribute_truncated:
+            response.setdefault("_warnings", []).append(
+                "Some call attributes were capped. Set max_attribute_bytes=0 for exhaustive call attributes."
             )
         return _json_response(response, default=str)
     except sqlite3.OperationalError as exc:
@@ -4850,6 +4948,7 @@ def cs_cross_summary(
     top: int = 50,
     max_counter_items: int = 10,
     max_start_candidates: int = 20,
+    max_attribute_bytes: int = 2048,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
 ) -> str:
@@ -4865,6 +4964,7 @@ def cs_cross_summary(
         top: Maximum sample calls to include
         max_counter_items: Maximum top source files/targets to include (0 disables)
         max_start_candidates: Maximum ambiguous from_func candidates to return (0 disables)
+        max_attribute_bytes: Maximum serialized attributes bytes per sample call (0 disables)
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
     """
@@ -4872,6 +4972,8 @@ def cs_cross_summary(
         max_counter_items = 0
     if max_start_candidates < 0:
         max_start_candidates = 0
+    if max_attribute_bytes < 0:
+        max_attribute_bytes = 0
 
     db_path = _resolve_db(db)
     try:
@@ -4933,12 +5035,14 @@ def cs_cross_summary(
                     _iter_reachable_cross_entries(conn, matching_starts[0], exclude_research),
                     top,
                     max_counter_items,
+                    max_attribute_bytes,
                 )
             else:
                 summary = _summarize_cross_entries(
                     _iter_cross_call_rows(conn, exclude_research),
                     top,
                     max_counter_items,
+                    max_attribute_bytes,
                 )
         finally:
             conn.close()
@@ -4956,6 +5060,10 @@ def cs_cross_summary(
         if summary.get("counter_summary", {}).get("truncated"):
             summary.setdefault("_warnings", []).append(
                 "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
+            )
+        if summary.get("attribute_truncated"):
+            summary.setdefault("_warnings", []).append(
+                "Some sample call attributes were capped. Set max_attribute_bytes=0 for exhaustive sample attributes."
             )
         return _json_response(summary, default=str)
     except sqlite3.OperationalError as exc:

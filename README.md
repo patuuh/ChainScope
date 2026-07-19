@@ -314,9 +314,11 @@ directly instead of expanding an exhaustive raw `cs_cross` result first.
 Raw `cs_cross` output is capped by `max_results=50` by default; ambiguous
 `from_func` candidates are capped by `max_start_candidates` and require a more
 qualified name instead of silently picking the first match. Set `max_results=0`
-only when an exhaustive edge list is intentional. Broad raw rows omit source and
-target graph IDs by default; set `include_node_ids=true` when exact graph IDs
-are needed.
+only when an exhaustive edge list is intentional. Cross-boundary call attribute
+payloads are capped by `max_attribute_bytes=2048`; set
+`max_attribute_bytes=0` only when full call attributes are needed. Broad raw
+rows omit source and target graph IDs by default; set `include_node_ids=true`
+when exact graph IDs are needed.
 
 Broad `cs_sinks` output is capped by sink count and reachable callers per sink
 (`max_results=50`, `max_callers_per_sink=10` by default). The response still
@@ -367,6 +369,7 @@ are needed. Set `max_results=0` or
 - `python cs_cross.py --summary --max-counter-items 0 ...`
 - `python cs_cross.py ...`
 - `python cs_cross.py --max-results 0 ...`
+- `python cs_cross.py --max-attribute-bytes 0 ...`
 - `python cs_cross.py --include-node-ids --json ...`
 - `python cs_cross.py --max-start-candidates 0 ...`
 - `python cs_state.py ...`
@@ -517,4 +520,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`553 passed`
+`554 passed`

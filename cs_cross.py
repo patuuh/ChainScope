@@ -15,6 +15,7 @@ def cross(
     max_depth: int = typer.Option(10, help="Max depth for tracing"),
     max_results: int = typer.Option(50, "--max-results", help="Max raw calls for cs_cross output (0 = all)"),
     max_start_candidates: int = typer.Option(20, "--max-start-candidates", help="Max ambiguous --from candidates to show (0 = all)"),
+    max_attribute_bytes: int = typer.Option(2048, "--max-attribute-bytes", help="Max serialized attributes bytes per call (0 = all)"),
     include_node_ids: bool = typer.Option(False, "--include-node-ids", help="Include raw source/target graph IDs in raw output"),
     summary: bool = typer.Option(False, "--summary", help="Show bounded cross-boundary summary"),
     top: int = typer.Option(50, "--top", help="Max sample calls for --summary"),
@@ -33,6 +34,7 @@ def cross(
             top=top,
             max_counter_items=max_counter_items,
             max_start_candidates=max_start_candidates,
+            max_attribute_bytes=max_attribute_bytes,
             exclude_research=exclude_research,
         ))
     else:
@@ -41,6 +43,7 @@ def cross(
             from_func=from_func or "",
             max_results=max_results,
             max_start_candidates=max_start_candidates,
+            max_attribute_bytes=max_attribute_bytes,
             include_node_ids=include_node_ids,
             exclude_research=exclude_research,
         ))

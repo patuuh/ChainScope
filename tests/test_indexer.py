@@ -62,8 +62,12 @@ class TestIndexing:
         assert "max_detail_items=10" in help_payload["scanner_tools"]["cs_defi"]
         assert "max_detail_items=10" in help_payload["scanner_tools"]["cs_unsafe"]
         assert inspect.signature(mcp_server.cs_cross).parameters["max_results"].default == 50
+        assert inspect.signature(mcp_server.cs_cross).parameters["max_attribute_bytes"].default == 2048
+        assert inspect.signature(mcp_server.cs_cross_summary).parameters["max_attribute_bytes"].default == 2048
         assert inspect.signature(mcp_server.cs_cross).parameters["include_node_ids"].default is False
         assert "max_results=50" in help_payload["exploration_tools"]["cs_cross"]
+        assert "max_attribute_bytes=2048" in help_payload["exploration_tools"]["cs_cross"]
+        assert "max_attribute_bytes" in help_payload["exploration_tools"]["cs_cross_summary"]
         assert "include_node_ids=true" in help_payload["exploration_tools"]["cs_cross"]
         assert inspect.signature(mcp_server.cs_lookup).parameters["max_metadata_bytes"].default == 4096
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
@@ -3058,6 +3062,71 @@ class TestIndexing:
         assert len(uncapped["top_source_files"]) == 5
         assert len(uncapped["top_targets"]) == 5
         assert uncapped["counter_summary"]["truncated"] is False
+
+    def test_cross_caps_call_attributes_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        attrs = {
+            "unresolved": True,
+            "interface": "IExternal",
+            "selector": "0x12345678",
+            "large_trace": [{"line": i, "expr": "target.call(payload)"} for i in range(50)],
+        }
+        db.insert_node(
+            id="Vault.sol::Vault.callExternal()",
+            label="callExternal",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        db.insert_edge(
+            "Vault.sol::Vault.callExternal()",
+            "External.doThing()",
+            "calls",
+            attributes=json.dumps(attrs),
+        )
+
+        capped_cross = json.loads(mcp_server.cs_cross(
+            db=tmp_db,
+            max_attribute_bytes=120,
+        ))
+        uncapped_cross = json.loads(mcp_server.cs_cross(
+            db=tmp_db,
+            max_attribute_bytes=0,
+        ))
+        capped_summary = json.loads(mcp_server.cs_cross_summary(
+            db=tmp_db,
+            top=1,
+            max_attribute_bytes=120,
+        ))
+        uncapped_summary = json.loads(mcp_server.cs_cross_summary(
+            db=tmp_db,
+            top=1,
+            max_attribute_bytes=0,
+        ))
+
+        capped_attrs = capped_cross["calls"][0]["attributes"]
+        assert capped_attrs["unresolved"] is True
+        assert capped_attrs["interface"] == "IExternal"
+        assert capped_attrs["selector"] == "0x12345678"
+        assert capped_attrs["_truncated"] is True
+        assert "large_trace" in capped_attrs["_keys"]
+        assert capped_cross["attribute_truncated"] is True
+        assert capped_cross["attribute_truncated_calls"] == 1
+        assert capped_cross["calls"][0]["_attribute_summary"]["truncated"] is True
+        assert "max_attribute_bytes=0" in capped_cross["_warnings"][0]
+        assert len(uncapped_cross["calls"][0]["attributes"]["large_trace"]) == 50
+        assert uncapped_cross["attribute_truncated"] is False
+
+        summary_attrs = capped_summary["calls"][0]["attributes"]
+        assert summary_attrs["_truncated"] is True
+        assert capped_summary["attribute_truncated"] is True
+        assert capped_summary["attribute_truncated_calls"] == 1
+        assert "max_attribute_bytes=0" in capped_summary["_warnings"][0]
+        assert len(uncapped_summary["calls"][0]["attributes"]["large_trace"]) == 50
+        assert uncapped_summary["attribute_truncated"] is False
 
     def test_cross_summary_ranks_only_capped_counter_items(self, monkeypatch):
         import mcp_server
