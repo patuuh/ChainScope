@@ -5277,10 +5277,10 @@ class TestIndexing:
         assert fallback_external_counts == external_counts
         assert fallback_broad_write_counts == broad_write_counts
         assert fallback_broad_external_counts == broad_external_counts
-        assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
-        assert any("INDEXED BY idx_edges_relation_source" in sql for sql in statements)
-        assert any("FROM edges WHERE source IN" in sql for sql in statements)
-        assert any("FROM edges WHERE relation =" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_relation_source" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_source" in sql and "source IN" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation" in sql and "relation =" in sql for sql in statements)
 
     def test_audit_relation_helpers_use_composite_indexes(self, tmp_db):
         import mcp_server
@@ -5363,10 +5363,11 @@ class TestIndexing:
         assert [(row["target"], row["label"]) for row in fallback_guard_rows] == [
             (source_id, "onlyOwner")
         ]
-        assert any("INDEXED BY idx_edges_relation_source" in sql for sql in statements)
-        assert any("INDEXED BY idx_edges_relation_target" in sql for sql in statements)
-        assert any("FROM edges e JOIN nodes" in sql for sql in statements)
-        assert any("FROM edges e LEFT JOIN nodes" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_relation_source" in sql for sql in statements)
+        assert not any("INDEXED BY idx_edges_relation_target" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation" in sql for sql in statements)
+        assert any("FROM edges e" in sql and "JOIN nodes" in sql for sql in statements)
+        assert any("FROM edges e" in sql and "LEFT JOIN nodes" in sql for sql in statements)
 
     def test_hotspots_streams_aggregate_rows(self, tmp_db, monkeypatch):
         import mcp_server

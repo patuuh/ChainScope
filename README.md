@@ -318,6 +318,9 @@ Write-count and external-call aggregate helpers use the source/relation edge
 index directly and fall back only when older graph DBs lack it.
 Traversal relation scans and guard-label lookups use composite relation indexes
 the same way, so audit-style broad scans avoid avoidable edge-table walks.
+Older graph DBs that still have single-column edge indexes use those directly
+instead of first attempting missing composite indexes and retrying after an
+SQLite error.
 The core graph API used by local workflows also filters traversal, reverse-call,
 accessor, guard, and attack-surface edge queries through composite indexes, with
 fallback for older graph DBs.

@@ -583,9 +583,17 @@ def _write_counts_for_sources(
         if validate_nodes:
             source_index_hint = ""
         elif source_ids is None:
-            source_index_hint = " INDEXED BY idx_edges_relation_source"
+            source_index_hint = _edge_index_hint_any(
+                conn,
+                "idx_edges_relation_source",
+                "idx_edges_relation",
+            )
         else:
-            source_index_hint = " INDEXED BY idx_edges_source_relation"
+            source_index_hint = _edge_index_hint_any(
+                conn,
+                "idx_edges_source_relation",
+                "idx_edges_source",
+            )
     index_name = _index_name_from_hint(source_index_hint)
     from_sql = (
         "edges e JOIN nodes s ON e.source = s.id JOIN nodes t ON e.target = t.id"
@@ -634,9 +642,9 @@ def _external_call_counts(
         return {}
     if source_index_hint is None:
         source_index_hint = (
-            " INDEXED BY idx_edges_relation_source"
+            _edge_index_hint_any(conn, "idx_edges_relation_source", "idx_edges_relation")
             if source_ids is None
-            else " INDEXED BY idx_edges_source_relation"
+            else _edge_index_hint_any(conn, "idx_edges_source_relation", "idx_edges_source")
         )
     index_name = _index_name_from_hint(source_index_hint)
     if source_ids is None:
@@ -727,9 +735,9 @@ def _iter_edges_for_relation(
         return
     if source_index_hint is None:
         source_index_hint = (
-            " INDEXED BY idx_edges_relation_source"
+            _edge_index_hint_any(conn, "idx_edges_relation_source", "idx_edges_relation")
             if source_ids is None
-            else " INDEXED BY idx_edges_source_relation"
+            else _edge_index_hint_any(conn, "idx_edges_source_relation", "idx_edges_source")
         )
     index_name = _index_name_from_hint(source_index_hint)
     if source_ids is None:
@@ -761,7 +769,11 @@ def _iter_edges_for_relations(
         return
     placeholders = ",".join("?" for _ in relations)
     if relation_index_hint is None:
-        relation_index_hint = " INDEXED BY idx_edges_relation_source"
+        relation_index_hint = _edge_index_hint_any(
+            conn,
+            "idx_edges_relation_source",
+            "idx_edges_relation",
+        )
     index_name = _index_name_from_hint(relation_index_hint)
     if validate_nodes:
         yield from _execute_with_index_fallback(
@@ -793,7 +805,11 @@ def _iter_guard_label_rows(
     if target_ids is not None and not target_ids:
         return
     if relation_target_index_hint is None:
-        relation_target_index_hint = " INDEXED BY idx_edges_relation_target"
+        relation_target_index_hint = _edge_index_hint_any(
+            conn,
+            "idx_edges_relation_target",
+            "idx_edges_relation",
+        )
     index_name = _index_name_from_hint(relation_target_index_hint)
     if target_ids is None:
         yield from _execute_with_index_fallback(
@@ -1226,6 +1242,14 @@ def _edge_index_hint(conn, name: str) -> str:
         return f" INDEXED BY {name}" if _sqlite_index_exists(conn, name) else ""
     except Exception:
         return ""
+
+
+def _edge_index_hint_any(conn, *names: str) -> str:
+    for name in names:
+        hint = _edge_index_hint(conn, name)
+        if hint:
+            return hint
+    return ""
 
 
 def _count_rows(conn, sql: str, key_column: str = "key") -> dict[str, int]:
@@ -2822,7 +2846,11 @@ def cs_audit(
 
         guard_set = set()
         guard_labels_by_target: dict[str, list[str]] = {}
-        for r in _iter_guard_label_rows(conn, function_ids):
+        for r in _iter_guard_label_rows(
+            conn,
+            function_ids,
+            relation_target_index_hint=" INDEXED BY idx_edges_relation_target",
+        ):
             guard_set.add(r["target"])
             if r["label"]:
                 guard_labels_by_target.setdefault(r["target"], []).append(r["label"])
@@ -2837,7 +2865,11 @@ def cs_audit(
         adj: dict[str, list[str]] = {}
         call_rev_adj: dict[str, list[str]] = {}
         called_targets: set[str] = set()
-        for r in _iter_edges_for_relations(conn, TRAVERSAL_RELATIONS):
+        for r in _iter_edges_for_relations(
+            conn,
+            TRAVERSAL_RELATIONS,
+            relation_index_hint=" INDEXED BY idx_edges_relation_source",
+        ):
             if scoped_node_ids is not None and (
                 r["source"] not in scoped_node_ids or r["target"] not in scoped_node_ids
             ):
