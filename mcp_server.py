@@ -3292,20 +3292,15 @@ def cs_hotspots(
         return _query_open_error("cs_hotspots", db_path, exc)
 
     try:
-        function_rows: list[dict] = []
-        for r in _iter_hotspot_function_rows(conn):
-            if exclude_research and _is_research_metadata_raw(r["metadata"]):
-                continue
-            function_rows.append(r)
-
         source_index_hint = " INDEXED BY idx_edges_source_relation"
         write_map = _write_counts_for_sources(conn)
         ext_call_map = _external_call_counts(conn)
-        writable_entry_ids = {
-            r["id"]
-            for r in function_rows
-            if r["visibility"] in ("external", "public") and write_map.get(r["id"], 0) > 0
-        }
+        writable_entry_ids = set()
+        for r in _iter_hotspot_function_rows(conn):
+            if exclude_research and _is_research_metadata_raw(r["metadata"]):
+                continue
+            if r["visibility"] in ("external", "public") and write_map.get(r["id"], 0) > 0:
+                writable_entry_ids.add(r["id"])
         guard_map = _guard_counts_for_writable_entries(
             conn,
             writable_entry_ids,
@@ -3318,7 +3313,9 @@ def cs_hotspots(
         medium = 0
         top_heap: list[tuple[int, int, dict]] = []
         sequence = 0
-        for r in function_rows:
+        for r in _iter_hotspot_function_rows(conn):
+            if exclude_research and _is_research_metadata_raw(r["metadata"]):
+                continue
             writes = write_map.get(r["id"], 0)
             ext_calls = ext_call_map.get(r["id"], 0)
             guards = 0

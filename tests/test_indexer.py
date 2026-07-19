@@ -4830,7 +4830,12 @@ class TestIndexing:
             sql for sql in statements
             if "sqlite_master" not in sql
         ]
-        assert len(graph_statements) == 4
+        function_streams = [
+            sql for sql in graph_statements
+            if "FROM nodes" in sql and "WHERE type = 'function'" in sql
+        ]
+        assert len(graph_statements) == 5
+        assert len(function_streams) == 2
         assert not any("metadata LIKE" in sql for sql in graph_statements)
         assert any("idx_edges_relation_target" in sql for sql in statements)
         assert any("idx_edges_source_relation" in sql and "EXISTS" in sql for sql in statements)
