@@ -515,21 +515,47 @@ def _chunked_ids(ids: set[str]):
         yield ordered[idx:idx + SQLITE_IN_CHUNK_SIZE]
 
 
+def _execute_with_index_fallback(conn, sql: str, params: tuple = (), index_name: str = ""):
+    try:
+        return conn.execute(sql, params)
+    except sqlite3.OperationalError as exc:
+        if index_name and f"no such index: {index_name}" in str(exc):
+            return conn.execute(sql.replace(f" INDEXED BY {index_name}", ""), params)
+        raise
+
+
+def _index_name_from_hint(index_hint: str) -> str:
+    if "idx_edges_source_relation" in index_hint:
+        return "idx_edges_source_relation"
+    if "idx_edges_relation_source" in index_hint:
+        return "idx_edges_relation_source"
+    return ""
+
+
 def _write_counts_for_sources(
     conn,
     source_ids: set[str] | None = None,
     validate_nodes: bool = False,
+    source_index_hint: str | None = None,
 ) -> dict[str, int]:
     """Count writes per source, optionally skipping sources outside scope."""
     if source_ids is not None and not source_ids:
         return {}
     source_expr = "e.source" if validate_nodes else "source"
+    relation_expr = "e.relation" if validate_nodes else "relation"
+    if source_index_hint is None:
+        if validate_nodes:
+            source_index_hint = ""
+        elif source_ids is None:
+            source_index_hint = " INDEXED BY idx_edges_relation_source"
+        else:
+            source_index_hint = " INDEXED BY idx_edges_source_relation"
+    index_name = _index_name_from_hint(source_index_hint)
     from_sql = (
         "edges e JOIN nodes s ON e.source = s.id JOIN nodes t ON e.target = t.id"
         if validate_nodes
-        else "edges"
+        else f"edges{source_index_hint}"
     )
-    relation_expr = "e.relation" if validate_nodes else "relation"
     counts: dict[str, int] = {}
     if source_ids is None:
         queries = [(
@@ -556,7 +582,7 @@ def _write_counts_for_sources(
             ))
 
     for sql, params in queries:
-        for row in conn.execute(sql, params):
+        for row in _execute_with_index_fallback(conn, sql, params, index_name):
             counts[row["source"]] = counts.get(row["source"], 0) + row["cnt"]
     return counts
 
@@ -565,10 +591,18 @@ def _external_call_counts(
     conn,
     include_cpi: bool = False,
     source_ids: set[str] | None = None,
+    source_index_hint: str | None = None,
 ) -> dict[str, int]:
     """Count true external calls per source without trusting JSON key presence."""
     if source_ids is not None and not source_ids:
         return {}
+    if source_index_hint is None:
+        source_index_hint = (
+            " INDEXED BY idx_edges_relation_source"
+            if source_ids is None
+            else " INDEXED BY idx_edges_source_relation"
+        )
+    index_name = _index_name_from_hint(source_index_hint)
     if source_ids is None:
         source_filters = [("", ())]
     else:
@@ -580,7 +614,7 @@ def _external_call_counts(
     counts: dict[str, int] = {}
     for source_filter, params in source_filters:
         query = (
-            "SELECT source, attributes FROM edges "
+            f"SELECT source, attributes FROM edges{source_index_hint} "
             f"WHERE {source_filter}relation = 'calls' "
             "AND (attributes LIKE '%\"unresolved\"%'"
         )
@@ -588,7 +622,7 @@ def _external_call_counts(
             query += " OR attributes LIKE '%\"cpi\"%'"
         query += ")"
         candidate_keys = ("unresolved", "cpi") if include_cpi else ("unresolved",)
-        for row in conn.execute(query, params):
+        for row in _execute_with_index_fallback(conn, query, params, index_name):
             raw_attrs = row["attributes"]
             if not _edge_attrs_may_have_enabled_key(raw_attrs, candidate_keys):
                 continue
@@ -602,6 +636,7 @@ def _external_call_counts(
 def _guard_counts_for_writable_entries(
     conn,
     source_ids: set[str] | None = None,
+    source_index_hint: str | None = None,
 ) -> dict[str, int]:
     """Count guards only for writable public/external functions."""
     if source_ids is not None and not source_ids:
@@ -612,9 +647,9 @@ def _guard_counts_for_writable_entries(
         else ""
     )
     write_index = (
-        " INDEXED BY idx_edges_source_relation"
-        if _sqlite_index_exists(conn, "idx_edges_source_relation")
-        else ""
+        _edge_index_hint(conn, "idx_edges_source_relation")
+        if source_index_hint is None
+        else source_index_hint
     )
     counts: dict[str, int] = {}
     if source_ids is None:
@@ -626,7 +661,7 @@ def _guard_counts_for_writable_entries(
             target_filters.append((f"AND g.target IN ({placeholders})", tuple(chunk)))
 
     for target_filter, params in target_filters:
-        for row in conn.execute(f"""
+        sql = f"""
             SELECT g.target, COUNT(*) AS cnt
             FROM edges AS g{guard_index}
             JOIN nodes AS n ON g.target = n.id
@@ -640,26 +675,43 @@ def _guard_counts_for_writable_entries(
                 WHERE w.source = g.target AND w.relation = 'writes_state'
               )
             GROUP BY g.target
-        """, params):
+        """
+        for row in _execute_with_index_fallback(conn, sql, params, "idx_edges_source_relation"):
             counts[row["target"]] = counts.get(row["target"], 0) + row["cnt"]
     return counts
 
 
-def _iter_edges_for_relation(conn, relation: str, source_ids: set[str] | None = None):
+def _iter_edges_for_relation(
+    conn,
+    relation: str,
+    source_ids: set[str] | None = None,
+    source_index_hint: str | None = None,
+):
     if source_ids is not None and not source_ids:
         return
+    if source_index_hint is None:
+        source_index_hint = (
+            " INDEXED BY idx_edges_relation_source"
+            if source_ids is None
+            else " INDEXED BY idx_edges_source_relation"
+        )
+    index_name = _index_name_from_hint(source_index_hint)
     if source_ids is None:
-        yield from conn.execute(
-            "SELECT source, target FROM edges WHERE relation = ?",
+        yield from _execute_with_index_fallback(
+            conn,
+            f"SELECT source, target FROM edges{source_index_hint} WHERE relation = ?",
             (relation,),
+            index_name,
         )
         return
 
     for chunk in _chunked_ids(source_ids):
         placeholders = ",".join("?" for _ in chunk)
-        yield from conn.execute(
-            f"SELECT source, target FROM edges WHERE source IN ({placeholders}) AND relation = ?",
+        yield from _execute_with_index_fallback(
+            conn,
+            f"SELECT source, target FROM edges{source_index_hint} WHERE source IN ({placeholders}) AND relation = ?",
             (*chunk, relation),
+            index_name,
         )
 
 
@@ -1037,7 +1089,10 @@ def _sqlite_index_exists(conn, name: str) -> bool:
 
 
 def _edge_index_hint(conn, name: str) -> str:
-    return f" INDEXED BY {name}" if _sqlite_index_exists(conn, name) else ""
+    try:
+        return f" INDEXED BY {name}" if _sqlite_index_exists(conn, name) else ""
+    except Exception:
+        return ""
 
 
 def _count_rows(conn, sql: str, key_column: str = "key") -> dict[str, int]:
@@ -2472,9 +2527,10 @@ def cs_audit(
                 return cached.get("source_context", "production")
             return _metadata_source_context(row["metadata"])
 
+        source_index_hint = " INDEXED BY idx_edges_source_relation"
         write_map: dict[str, int] = {}
         write_targets: dict[str, list[str]] = {}
-        for r in _iter_edges_for_relation(conn, "writes_state", function_ids):
+        for r in _iter_edges_for_relation(conn, "writes_state", function_ids, source_index_hint):
             if scoped_node_ids is not None and (
                 r["source"] not in scoped_node_ids or r["target"] not in scoped_node_ids
             ):
@@ -2493,6 +2549,7 @@ def cs_audit(
             conn,
             include_cpi=True,
             source_ids=function_ids,
+            source_index_hint=source_index_hint,
         )
 
         adj: dict[str, list[str]] = {}
@@ -2775,7 +2832,7 @@ def cs_audit(
 
         # --- 10. Silent state changes (formerly cs_events) ---
         emitters = set()
-        for r in _iter_edges_for_relation(conn, "emits_event", function_ids):
+        for r in _iter_edges_for_relation(conn, "emits_event", function_ids, source_index_hint):
             emitters.add(r["source"])
 
         silent = []
@@ -3007,14 +3064,19 @@ def cs_hotspots(
             function_rows.append(r)
 
         function_ids = {r["id"] for r in function_rows}
-        write_map = _write_counts_for_sources(conn, function_ids)
-        ext_call_map = _external_call_counts(conn, source_ids=function_ids)
+        source_index_hint = " INDEXED BY idx_edges_source_relation"
+        write_map = _write_counts_for_sources(conn, function_ids, source_index_hint=source_index_hint)
+        ext_call_map = _external_call_counts(conn, source_ids=function_ids, source_index_hint=source_index_hint)
         writable_entry_ids = {
             r["id"]
             for r in function_rows
             if r["visibility"] in ("external", "public") and write_map.get(r["id"], 0) > 0
         }
-        guard_map = _guard_counts_for_writable_entries(conn, writable_entry_ids)
+        guard_map = _guard_counts_for_writable_entries(
+            conn,
+            writable_entry_ids,
+            source_index_hint=source_index_hint,
+        )
 
         total_scored = 0
         critical = 0

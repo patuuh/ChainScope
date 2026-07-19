@@ -1510,12 +1510,12 @@ class TestIndexing:
             def close(self):
                 self._conn.close()
 
-        def tracking_external_counts(conn, include_cpi=False, source_ids=None):
+        def tracking_external_counts(conn, include_cpi=False, source_ids=None, **kwargs):
             calls.append({
                 "include_cpi": include_cpi,
                 "source_ids": set(source_ids or ()),
             })
-            return real_external_counts(conn, include_cpi=include_cpi, source_ids=source_ids)
+            return real_external_counts(conn, include_cpi=include_cpi, source_ids=source_ids, **kwargs)
 
         monkeypatch.setattr(
             mcp_server,
@@ -4524,6 +4524,93 @@ class TestIndexing:
         assert any("source IN" in sql and "GROUP BY source" in sql for sql, _ in statements)
         assert any("source IN" in sql and "relation = 'calls'" in sql for sql, _ in statements)
 
+    def test_hotspots_edge_count_helpers_use_source_relation_index(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        source_id = "Vault.sol::Vault.entry()"
+        db.insert_edge(source_id, "Vault.sol::Vault.total", "writes_state")
+        db.insert_edge(
+            source_id,
+            "External.doThing()",
+            "calls",
+            attributes=json.dumps({"unresolved": True}),
+        )
+
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, wrapped):
+                self._wrapped = wrapped
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._wrapped.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._wrapped.close()
+
+        conn = CountingConnection(db.get_connection())
+        try:
+            write_counts = mcp_server._write_counts_for_sources(conn, {source_id})
+            external_counts = mcp_server._external_call_counts(conn, source_ids={source_id})
+            broad_write_counts = mcp_server._write_counts_for_sources(conn)
+            broad_external_counts = mcp_server._external_call_counts(conn)
+        finally:
+            conn.close()
+
+        assert write_counts == {source_id: 1}
+        assert external_counts == {source_id: 1}
+        assert broad_write_counts == {source_id: 1}
+        assert broad_external_counts == {source_id: 1}
+        assert any(
+            "FROM edges INDEXED BY idx_edges_source_relation" in sql
+            and "relation = 'writes_state'" in sql
+            for sql in statements
+        )
+        assert any(
+            "FROM edges INDEXED BY idx_edges_source_relation" in sql
+            and "relation = 'calls'" in sql
+            for sql in statements
+        )
+        assert any(
+            "FROM edges INDEXED BY idx_edges_relation_source" in sql
+            and "relation = 'writes_state'" in sql
+            for sql in statements
+        )
+        assert any(
+            "FROM edges INDEXED BY idx_edges_relation_source" in sql
+            and "relation = 'calls'" in sql
+            for sql in statements
+        )
+
+        conn = db.get_connection()
+        try:
+            conn.execute("DROP INDEX idx_edges_source_relation")
+            conn.execute("DROP INDEX idx_edges_relation_source")
+            conn.commit()
+        finally:
+            conn.close()
+
+        statements.clear()
+        conn = CountingConnection(db.get_connection())
+        try:
+            fallback_write_counts = mcp_server._write_counts_for_sources(conn, {source_id})
+            fallback_external_counts = mcp_server._external_call_counts(conn, source_ids={source_id})
+            fallback_broad_write_counts = mcp_server._write_counts_for_sources(conn)
+            fallback_broad_external_counts = mcp_server._external_call_counts(conn)
+        finally:
+            conn.close()
+
+        assert fallback_write_counts == write_counts
+        assert fallback_external_counts == external_counts
+        assert fallback_broad_write_counts == broad_write_counts
+        assert fallback_broad_external_counts == broad_external_counts
+        assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation_source" in sql for sql in statements)
+        assert any("FROM edges WHERE source IN" in sql for sql in statements)
+        assert any("FROM edges WHERE relation =" in sql for sql in statements)
+
     def test_hotspots_streams_aggregate_rows(self, tmp_db, monkeypatch):
         import mcp_server
 
@@ -4742,9 +4829,9 @@ class TestIndexing:
             key_checks.append(raw)
             return real_has_any_key(raw, keys)
 
-        def tracking_guard_counts(conn, source_ids=None):
+        def tracking_guard_counts(conn, source_ids=None, **kwargs):
             guard_scopes.append(set(source_ids or ()))
-            return real_guard_counts(conn, source_ids)
+            return real_guard_counts(conn, source_ids, **kwargs)
 
         monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
         monkeypatch.setattr(mcp_server, "_metadata_has_any_key", counting_has_any_key)
