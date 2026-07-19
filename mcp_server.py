@@ -2308,39 +2308,15 @@ _HOTSPOT_SCORE_METADATA_KEYS = (
 )
 
 
-def _iter_hotspot_candidate_rows(conn):
-    """Yield function rows that can plausibly score as hotspots."""
-    metadata_predicate, metadata_params = _metadata_any_key_predicate(_HOTSPOT_SCORE_METADATA_KEYS)
-    edge_index = (
-        " INDEXED BY idx_edges_source_relation"
-        if _sqlite_index_exists(conn, "idx_edges_source_relation")
-        else ""
-    )
+def _iter_hotspot_function_rows(conn):
+    """Yield function rows for hotspot scoring without broad metadata LIKE chains."""
     yield from conn.execute(f"""
         SELECT id, label, file, visibility, signature, line_start, metadata
-        FROM nodes AS n
-        WHERE n.type = 'function'
-          AND n.label NOT IN ('constructor', 'fallback', 'receive')
-          AND (
-            (
-              n.visibility IN ('external', 'public')
-              AND EXISTS (
-                SELECT 1
-                FROM edges AS w{edge_index}
-                WHERE w.source = n.id AND w.relation = 'writes_state'
-              )
-            )
-            OR EXISTS (
-              SELECT 1
-              FROM edges AS c{edge_index}
-              WHERE c.source = n.id
-                AND c.relation = 'calls'
-                AND c.attributes LIKE '%"unresolved"%'
-            )
-            OR {metadata_predicate}
-          )
-        ORDER BY n.rowid
-    """, metadata_params)
+        FROM nodes
+        WHERE type = 'function'
+          AND label NOT IN ('constructor', 'fallback', 'receive')
+        ORDER BY rowid
+    """)
 
 
 def _score_function(row, meta, writes, ext_calls, guard_count):
@@ -3302,16 +3278,15 @@ def cs_hotspots(
         return _query_open_error("cs_hotspots", db_path, exc)
 
     try:
-        function_rows: list[tuple] = []
-        for r in _iter_hotspot_candidate_rows(conn):
+        function_rows: list[dict] = []
+        for r in _iter_hotspot_function_rows(conn):
             if exclude_research and _is_research_metadata_raw(r["metadata"]):
                 continue
             function_rows.append(r)
 
-        function_ids = {r["id"] for r in function_rows}
         source_index_hint = " INDEXED BY idx_edges_source_relation"
-        write_map = _write_counts_for_sources(conn, function_ids, source_index_hint=source_index_hint)
-        ext_call_map = _external_call_counts(conn, source_ids=function_ids, source_index_hint=source_index_hint)
+        write_map = _write_counts_for_sources(conn)
+        ext_call_map = _external_call_counts(conn)
         writable_entry_ids = {
             r["id"]
             for r in function_rows

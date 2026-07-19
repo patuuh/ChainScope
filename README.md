@@ -295,9 +295,11 @@ raw JSON is needed. Included attack-surface metadata is capped by
 is needed. Detailed dead-code rows are also omitted by default; set
 `include_dead_code_details=true` when dead-code investigation is the current task.
 
-Broad `cs_hotspots` scans are SQL-prefiltered to likely scoring candidates
-before Python computes final risk scores. This keeps normal broad scans usable
-on larger graphs while preserving exact scoring and false-positive rejection.
+Broad `cs_hotspots` scans stream function rows, use indexed edge aggregates for
+state-write and external-call counts, and screen metadata with cached top-level
+key sets instead of wide SQL `metadata LIKE ... OR ...` chains. This keeps
+normal broad scans usable on larger graphs while preserving exact scoring and
+false-positive rejection.
 Write-count and external-call aggregate helpers use the source/relation edge
 index directly and fall back only when older graph DBs lack it.
 Traversal relation scans and guard-label lookups use composite relation indexes

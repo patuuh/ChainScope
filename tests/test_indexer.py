@@ -4795,6 +4795,7 @@ class TestIndexing:
             if "sqlite_master" not in sql
         ]
         assert len(graph_statements) == 4
+        assert not any("metadata LIKE" in sql for sql in graph_statements)
         assert any("idx_edges_relation_target" in sql for sql in statements)
         assert any("idx_edges_source_relation" in sql and "EXISTS" in sql for sql in statements)
 
@@ -5296,7 +5297,7 @@ class TestIndexing:
 
         assert hotspots["_summary"]["total_scored"] == 2
         assert {item["function"] for item in hotspots["hotspots"]} == {"entry", "reenter"}
-        assert key_checks.count(neutral_metadata) == 1
+        assert key_checks.count(neutral_metadata) == 41
         assert key_checks.count(risk_metadata) == 1
         assert parsed == [risk_metadata]
         assert guard_scopes == [{entry_id}]
