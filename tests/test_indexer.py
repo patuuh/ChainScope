@@ -2671,6 +2671,79 @@ class TestIndexing:
         raw_cross = json.loads(mcp_server.cs_cross(db=tmp_db))
         assert {item["source_label"] for item in raw_cross["calls"]} == {"call0", "call1", "call2", "call3", "call4", "run"}
 
+    def test_cross_broad_scan_uses_relation_index_when_available(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.call()",
+            label="call",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_edge(
+            source="Vault.sol::Vault.call()",
+            target="External.doThing()",
+            relation="calls",
+            attributes=json.dumps({"unresolved": True}),
+        )
+
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, top=5))
+
+        assert summary["total"] == 1
+        assert any("FROM edges e INDEXED BY idx_edges_relation" in sql for sql in statements)
+
+    def test_cross_broad_scan_falls_back_without_relation_index(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.call()",
+            label="call",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_edge(
+            source="Vault.sol::Vault.call()",
+            target="External.doThing()",
+            relation="calls",
+            attributes=json.dumps({"unresolved": True}),
+        )
+
+        conn = db.get_connection()
+        try:
+            conn.execute("DROP INDEX idx_edges_relation")
+            conn.commit()
+        finally:
+            conn.close()
+
+        summary = json.loads(mcp_server.cs_cross_summary(db=tmp_db, top=5))
+
+        assert summary["total"] == 1
+        assert summary["calls"][0]["source_label"] == "call"
+
     def test_cross_broad_scan_skips_false_attribute_parses(self, tmp_db, monkeypatch):
         import mcp_server
 

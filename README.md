@@ -295,6 +295,8 @@ For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
 choose where to inspect without dumping every trust-boundary edge. Sample calls
 are capped by `top`; source/target counters are capped by `max_counter_items`.
+Broad cross-boundary discovery uses the edge relation index when available and
+falls back cleanly for older graph DBs.
 `cs_cross_summary(from_func=...)` also streams the reachable boundary calls
 directly instead of expanding an exhaustive raw `cs_cross` result first.
 Raw `cs_cross` output is capped by `max_results=50` by default; ambiguous
@@ -503,4 +505,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`544 passed`
+`546 passed`

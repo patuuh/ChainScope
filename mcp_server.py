@@ -691,11 +691,12 @@ def _iter_guard_label_rows(conn, target_ids: set[str] | None = None):
 
 def _iter_cross_call_rows(conn, exclude_research: bool):
     """Yield true trust-boundary call rows for broad cross-boundary scans."""
-    rows = conn.execute("""
+    relation_index_hint = _edge_index_hint(conn, "idx_edges_relation")
+    rows = conn.execute(f"""
         SELECT e.source, e.target, e.attributes,
                s.label as source_label, s.file as source_file, s.metadata as source_metadata,
                t.label as target_label, t.file as target_file, t.metadata as target_metadata
-        FROM edges e
+        FROM edges e{relation_index_hint}
         LEFT JOIN nodes s ON e.source = s.id
         LEFT JOIN nodes t ON e.target = t.id
         WHERE e.relation = 'calls' AND (
