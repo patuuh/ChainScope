@@ -70,7 +70,9 @@ class TestIndexing:
         assert "max_attribute_bytes" in help_payload["exploration_tools"]["cs_cross_summary"]
         assert "include_node_ids=true" in help_payload["exploration_tools"]["cs_cross"]
         assert inspect.signature(mcp_server.cs_lookup).parameters["max_metadata_bytes"].default == 4096
+        assert inspect.signature(mcp_server.cs_lookup).parameters["max_attribute_bytes"].default == 2048
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
+        assert "max_attribute_bytes" in help_payload["exploration_tools"]["cs_lookup"]
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_callers_per_sink"].default == 10
         assert inspect.signature(mcp_server.cs_sinks).parameters["include_caller_details"].default is False
@@ -5562,6 +5564,62 @@ class TestIndexing:
         assert len(uncapped_fn["callers"]) == 5
         assert uncapped_fn["_relation_summary"]["callers"] == {"total": 5, "shown": 5, "truncated": False}
         assert "relation_truncated" not in uncapped
+
+    def test_lookup_caps_relation_attributes_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.ping()",
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id="External.sol::External.call()",
+            label="call",
+            type="function",
+            visibility="external",
+            file="External.sol",
+        )
+        attrs = {
+            "unresolved": True,
+            "interface": "IExternal",
+            "selector": "0x12345678",
+            "large_trace": [{"line": i, "expr": "external.call(payload)"} for i in range(40)],
+        }
+        db.insert_edge(
+            "Vault.sol::Vault.ping()",
+            "External.sol::External.call()",
+            "calls",
+            attributes=json.dumps(attrs),
+        )
+
+        capped = json.loads(mcp_server.cs_lookup(
+            name="ping",
+            db=tmp_db,
+            max_attribute_bytes=120,
+        ))
+        uncapped = json.loads(mcp_server.cs_lookup(
+            name="ping",
+            db=tmp_db,
+            max_attribute_bytes=0,
+        ))
+
+        capped_attrs = capped["functions"][0]["callees"][0]["attributes"]
+        assert capped_attrs["unresolved"] is True
+        assert capped_attrs["interface"] == "IExternal"
+        assert capped_attrs["_truncated"] is True
+        assert "large_trace" in capped_attrs["_keys"]
+        assert capped["attribute_truncated"] is True
+        assert capped["attribute_truncated_items"] == 1
+        assert capped["functions"][0]["callees"][0]["_attribute_summary"]["truncated"] is True
+        assert "max_attribute_bytes=0" in capped["_warnings"][0]
+
+        uncapped_attrs = uncapped["functions"][0]["callees"][0]["attributes"]
+        assert len(uncapped_attrs["large_trace"]) == 40
+        assert "attribute_truncated" not in uncapped
 
     def test_lookup_relation_caps_limit_materialized_rows(self, tmp_db, monkeypatch):
         import mcp_server

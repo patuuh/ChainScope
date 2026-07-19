@@ -244,7 +244,9 @@ lookup relation lists such as callers, callees, state reads/writes, and other
 edges are capped by `max_relation_items`; set `max_relation_items=0` only for
 exhaustive profiles. Large parsed metadata blobs are compacted by
 `max_metadata_bytes`; set `max_metadata_bytes=0` only when the full raw metadata
-is needed.
+is needed. Relation edge attributes are capped by `max_attribute_bytes=2048`;
+set `max_attribute_bytes=0` only when full call-site or edge attributes are
+needed.
 
 `cs_paths` also caps ambiguous endpoint matches, endpoint candidate lists, and
 returned paths. Use qualified endpoint names first; set
@@ -520,4 +522,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`554 passed`
+`555 passed`

@@ -299,6 +299,16 @@ def _load_metadata(raw: str | None) -> dict:
         return {}
 
 
+def _load_json_object(raw) -> dict:
+    if isinstance(raw, dict):
+        return raw
+    try:
+        value = json.loads(raw or "{}")
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
 def _include_metadata(meta: dict, exclude_research: bool) -> bool:
     """Return whether a node should be included under the current query scope."""
     return not (exclude_research and _is_research_meta(meta))
@@ -1835,7 +1845,7 @@ def cs_help() -> str:
             "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output defaults to max_per_category=25 and per-finding details to max_detail_items=10.",
         },
         "exploration_tools": {
-            "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes.",
+            "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes; relation attributes by max_attribute_bytes.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls default to max_results=50, attributes to max_attribute_bytes=2048, and omit graph IDs unless include_node_ids=true; ambiguous from_func candidates by max_start_candidates.",
@@ -5361,6 +5371,7 @@ def cs_lookup(
     max_relation_items: int = 100,
     max_candidates: int = 50,
     max_metadata_bytes: int = 4096,
+    max_attribute_bytes: int = 2048,
 ) -> str:
     """Look up a function by name and return its complete profile.
 
@@ -5385,6 +5396,7 @@ def cs_lookup(
         max_relation_items: Maximum rows per relation list in each function profile (0 disables)
         max_candidates: Maximum ambiguous match candidates to return (0 disables)
         max_metadata_bytes: Maximum serialized metadata bytes per full profile (0 disables)
+        max_attribute_bytes: Maximum serialized relation attribute bytes per item (0 disables)
     """
     if max_matches < 0:
         max_matches = 0
@@ -5394,6 +5406,8 @@ def cs_lookup(
         max_candidates = 0
     if max_metadata_bytes < 0:
         max_metadata_bytes = 0
+    if max_attribute_bytes < 0:
+        max_attribute_bytes = 0
 
     db_path = _resolve_db(db)
     try:
@@ -5471,6 +5485,7 @@ def cs_lookup(
         truncated = max_matches > 0 and total_matches > max_matches
 
         results = []
+        attribute_truncated_items = 0
         source_index_hint = _edge_index_hint(conn, "idx_edges_source_relation")
         target_index_hint = _edge_index_hint(conn, "idx_edges_target_relation")
         for node_id in profile_ids:
@@ -5491,12 +5506,23 @@ def cs_lookup(
                 relation_summary[name] = summary
 
             def _relation_item(row) -> dict | None:
+                nonlocal attribute_truncated_items
                 item = dict(row)
                 raw_meta = item.pop("metadata", None)
                 if exclude_research:
                     if _is_research_metadata_raw(raw_meta):
                         return None
                 item["source_context"] = _metadata_source_context(raw_meta)
+                if "attributes" in item:
+                    attrs, attr_summary = _cap_json_payload(
+                        _load_json_object(item.get("attributes")),
+                        max_attribute_bytes,
+                        _CROSS_ATTRIBUTE_ESSENTIAL_KEYS,
+                    )
+                    item["attributes"] = attrs
+                    if attr_summary["truncated"]:
+                        item["_attribute_summary"] = attr_summary
+                        attribute_truncated_items += 1
                 return item
 
             def _collect_relation(sql: str, params: tuple, count_sql: str) -> tuple[list, dict]:
@@ -5662,6 +5688,7 @@ def cs_lookup(
             "max_relation_items": max_relation_items,
             "max_candidates": max_candidates,
             "max_metadata_bytes": max_metadata_bytes,
+            "max_attribute_bytes": max_attribute_bytes,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "functions": results,
         }
@@ -5683,6 +5710,12 @@ def cs_lookup(
             response["relation_truncated"] = True
             response.setdefault("_warnings", []).append(
                 "Some cs_lookup relation lists were capped. Set max_relation_items=0 for exhaustive relation output."
+            )
+        if attribute_truncated_items:
+            response["attribute_truncated"] = True
+            response["attribute_truncated_items"] = attribute_truncated_items
+            response.setdefault("_warnings", []).append(
+                "Some cs_lookup relation attributes were capped. Set max_attribute_bytes=0 for exhaustive relation attributes."
             )
         if truncated:
             response["_warning"] = (
