@@ -207,6 +207,9 @@ default. If you want a time-limited partial build or query, pass
 graph reads continue until the client or host stops them.
 MCP `cs_profile` also caps large output sections with `max_output_items`; set
 `max_output_items=0` only when an exhaustive workspace inventory is intentional.
+MCP responses are compact JSON by default so agents spend context on graph
+signal rather than indentation whitespace. CLI wrappers still pretty-print JSON
+when their `--json` output mode is used.
 
 If a build is time-limited or partial, ChainScope prioritizes production
 protocol roots such as `src/`, `contracts/`, `programs/`, `pallets/`, and
@@ -495,4 +498,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`541 passed`
+`542 passed`

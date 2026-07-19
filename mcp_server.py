@@ -39,6 +39,14 @@ def _resolve_db(db: str | None) -> str:
     return db or DEFAULT_DB
 
 
+def _json_response(payload, *, default=None) -> str:
+    """Compact JSON for MCP context efficiency."""
+    kwargs = {"separators": (",", ":")}
+    if default is not None:
+        kwargs["default"] = default
+    return json.dumps(payload, **kwargs)
+
+
 def _sqlite_uri(db_path: str, params: str) -> str:
     path = os.path.abspath(os.path.expanduser(db_path))
     return f"file:{quote(path, safe='/:')}?{params}"
@@ -1372,10 +1380,10 @@ def _empty_graph_hint(db_path: str, build_info: object | None) -> str | None:
 
 def _query_open_error(tool: str, db_path: str, exc: sqlite3.Error) -> str:
     """Return a consistent JSON error for graph query open failures."""
-    return json.dumps({
+    return _json_response({
         "error": f"Unable to open graph database '{db_path}': {exc}",
         "tool": tool,
-    }, indent=2)
+    })
 
 
 def _query_sqlite_error(
@@ -1393,7 +1401,7 @@ def _query_sqlite_error(
         })
     else:
         payload["error"] = f"SQLite error while running {tool}: {exc}"
-    return json.dumps(payload, indent=2)
+    return _json_response(payload)
 
 
 def _profile_repository_worker(
@@ -1453,10 +1461,10 @@ def cs_profile(
 
     repo = Path(repo_path)
     if not repo.is_dir():
-        return json.dumps({
+        return _json_response({
             "error": f"Error: {repo_path} is not a directory",
             "repo_path": repo_path,
-        }, indent=2)
+        })
 
     if timeout_seconds and timeout_seconds > 0:
         ctx_name = "fork" if "fork" in mp.get_all_start_methods() else mp.get_start_method()
@@ -1475,35 +1483,34 @@ def cs_profile(
             if proc.is_alive():
                 proc.kill()
                 proc.join(2)
-            return json.dumps({
+            return _json_response({
                 "error": f"cs_profile timed out after {timeout_seconds}s",
                 "repo_path": repo_path,
                 "strategy": strategy,
                 "include_research": include_research,
                 "timed_out": True,
                 "_hint": "Profile a narrower repo_path or increase timeout_seconds.",
-            }, indent=2)
+            })
         try:
             status, payload = out_queue.get_nowait()
         except queue_mod.Empty:
             status, payload = ("error", f"profile worker exited with code {proc.exitcode} and returned no result")
         if status == "ok":
-            return json.dumps(_cap_profile_output(payload, max_output_items), indent=2)
-        return json.dumps({
+            return _json_response(_cap_profile_output(payload, max_output_items))
+        return _json_response({
             "error": f"cs_profile failed: {payload}",
             "repo_path": repo_path,
             "strategy": strategy,
             "include_research": include_research,
-        }, indent=2)
+        })
 
     from core.project_profile import profile_repository
 
-    return json.dumps(
+    return _json_response(
         _cap_profile_output(
             profile_repository(repo_path, top=top, strategy=strategy, include_research=include_research),
             max_output_items,
-        ),
-        indent=2,
+        )
     )
 
 
@@ -1544,11 +1551,11 @@ def cs_build(
 
     repo = Path(repo_path)
     if not repo.is_dir():
-        return json.dumps({
+        return _json_response({
             "error": f"Error: {repo_path} is not a directory",
             "repo_path": repo_path,
             "tool": "cs_build",
-        }, indent=2)
+        })
 
     db_path = db or DEFAULT_DB
     lang_override = lang or None
@@ -1560,7 +1567,7 @@ def cs_build(
     stats = indexer.index(db_path, deadline=deadline)
     status = "partial_timeout" if stats.get("timed_out") else "success"
 
-    return json.dumps({
+    return _json_response({
         "status": status,
         "chain": indexer.detected_chain,
         "all_chains": sorted(indexer.all_chains),
@@ -1584,7 +1591,7 @@ def cs_build(
             "cs_defi — DeFi-specific vulnerability patterns",
             "cs_unsafe — Rust/Go/Java/Python/TypeScript/DSL security issues",
         ],
-    }, indent=2)
+    })
 
 
 @mcp.tool()
@@ -1593,7 +1600,7 @@ def cs_help() -> str:
 
     Call this first to understand the correct order of operations.
     """
-    return json.dumps({
+    return _json_response({
         "workflow": [
             "1. cs_profile(repo_path) — optional but recommended for large/mixed workspaces; output sections are capped by max_output_items.",
             "2. cs_build(repo_path) — REQUIRED before graph queries. Builds the knowledge graph; timeout_seconds is opt-in.",
@@ -1623,7 +1630,7 @@ def cs_help() -> str:
         },
         "timeout_policy": "MCP tools do not self-timeout by default. Pass timeout_seconds only when a time-limited query or partial build is intentional.",
         "_tip": "All graph query tools accept db='path/to/graph.db'. Default is graph.db in current directory.",
-    }, indent=2)
+    })
 
 
 @mcp.tool()
@@ -1759,7 +1766,7 @@ def cs_summary(
                     data["_warning"] = (
                         "cs_summary attack_surface output was capped. Increase top for more entries."
                     )
-            return json.dumps(data, indent=2)
+            return _json_response(data)
 
         node_rows = conn.execute(
             "SELECT id, label, type, visibility, file, signature, metadata FROM nodes"
@@ -1877,7 +1884,7 @@ def cs_summary(
                     "cs_summary attack_surface output was capped. Increase top for more entries."
                 )
 
-        return json.dumps(data, indent=2)
+        return _json_response(data)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_summary",
@@ -2883,7 +2890,7 @@ def cs_audit(
             ) if truncated_sections else "",
         }
 
-        return json.dumps(report, indent=2)
+        return _json_response(report)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_audit",
@@ -3017,7 +3024,7 @@ def cs_hotspots(
 
         result = _finalize_deferred_source_contexts(_ranked_results(top_heap))
 
-        return json.dumps({
+        return _json_response({
             "hotspots": result,
             "_summary": {
                 "total_scored": total_scored,
@@ -3027,7 +3034,7 @@ def cs_hotspots(
                 "top_shown": len(result),
                 "query_scope": "production_only" if exclude_research else "all_sources",
             }
-        }, indent=2)
+        })
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_hotspots",
@@ -3345,7 +3352,7 @@ def cs_defi(
             "query_scope": "production_only" if exclude_research else "all_sources",
         }
 
-        return json.dumps(results, indent=2)
+        return _json_response(results)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_defi",
@@ -3735,7 +3742,7 @@ def cs_unsafe(
             "query_scope": "production_only" if exclude_research else "all_sources",
         }
 
-        return json.dumps(results, indent=2)
+        return _json_response(results)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_unsafe",
@@ -3937,7 +3944,7 @@ def cs_sinks(
             result.setdefault("_warnings", []).append(
                 "Some caller lists were capped. Set max_callers_per_sink=0 for exhaustive caller reachability."
             )
-        return json.dumps(result, indent=2)
+        return _json_response(result)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_sinks",
@@ -4035,12 +4042,12 @@ def cs_paths(
 
         if not from_nodes:
             if exclude_research:
-                return json.dumps({"error": f"No production node found matching '{from_label}'"})
-            return json.dumps({"error": f"No node found matching '{from_label}'"})
+                return _json_response({"error": f"No production node found matching '{from_label}'"})
+            return _json_response({"error": f"No node found matching '{from_label}'"})
         if not to_nodes:
             if exclude_research:
-                return json.dumps({"error": f"No production node found matching '{to_label}'"})
-            return json.dumps({"error": f"No node found matching '{to_label}'"})
+                return _json_response({"error": f"No production node found matching '{to_label}'"})
+            return _json_response({"error": f"No node found matching '{to_label}'"})
 
         adjacency: dict[str, list[str]] = {}
 
@@ -4230,7 +4237,7 @@ def cs_paths(
                             "writes": write_labels,
                         }
 
-        return json.dumps(result, indent=2)
+        return _json_response(result)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_paths",
@@ -4304,7 +4311,7 @@ def cs_trace(
             variable_retain_limit,
         )
         if not matched_before_scope:
-            return json.dumps({"error": f"No state variable found matching '{var}'"})
+            return _json_response({"error": f"No state variable found matching '{var}'"})
 
         full_by_id: dict[str, dict] = {}
 
@@ -4332,7 +4339,7 @@ def cs_trace(
             return item
 
         if not matched_rows:
-            return json.dumps({"error": f"No production state variable found matching '{var}'"})
+            return _json_response({"error": f"No production state variable found matching '{var}'"})
 
         truncated = max_matches > 0 and total_matches > max_matches
         variable_rows = matched_rows[:max_matches or total_matches]
@@ -4517,7 +4524,7 @@ def cs_trace(
                 response.setdefault("_warnings", []).append(
                     "cs_trace candidate list was capped. Increase max_candidates or set max_candidates=0 for all candidates."
                 )
-        return json.dumps(response, indent=2)
+        return _json_response(response)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_trace",
@@ -4574,10 +4581,10 @@ def cs_cross(
                 max_start_candidates,
             )
             if not matched_before_scope:
-                return json.dumps({"error": f"No function found matching '{from_func}'"})
+                return _json_response({"error": f"No function found matching '{from_func}'"})
 
             if not matching_starts:
-                return json.dumps({"error": f"No production function found matching '{from_func}'"})
+                return _json_response({"error": f"No production function found matching '{from_func}'"})
             if matching_starts_total > 1:
                 candidates = []
                 for node in matching_starts:
@@ -4610,7 +4617,7 @@ def cs_cross(
                         "cs_cross start candidate list was capped. Increase max_start_candidates "
                         "or set max_start_candidates=0 for all candidates."
                     )
-                return json.dumps(response, indent=2)
+                return _json_response(response)
 
             shown_calls, call_summary = _collect_cross_entries(
                 _iter_reachable_cross_entries(conn, matching_starts[0], exclude_research),
@@ -4643,7 +4650,7 @@ def cs_cross(
                 f"cs_cross found {total} trust-boundary calls and returned {len(shown_calls)}. "
                 "Use cs_cross_summary first on large graphs or set max_results=0 for exhaustive raw output."
             )
-        return json.dumps(response, indent=2, default=str)
+        return _json_response(response, default=str)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_cross",
@@ -4698,13 +4705,13 @@ def cs_cross_summary(
                     max_start_candidates,
                 )
                 if not matched_before_scope:
-                    return json.dumps({
+                    return _json_response({
                         "error": f"No function found matching '{from_func}'",
                         "tool": "cs_cross_summary",
                     })
 
                 if not matching_starts:
-                    return json.dumps({
+                    return _json_response({
                         "error": f"No production function found matching '{from_func}'",
                         "tool": "cs_cross_summary",
                     })
@@ -4740,7 +4747,7 @@ def cs_cross_summary(
                             "cs_cross_summary start candidate list was capped. Increase max_start_candidates "
                             "or set max_start_candidates=0 for all candidates."
                         )
-                    return json.dumps(response, indent=2)
+                    return _json_response(response)
 
                 summary = _summarize_cross_entries(
                     _iter_reachable_cross_entries(conn, matching_starts[0], exclude_research),
@@ -4770,7 +4777,7 @@ def cs_cross_summary(
             summary.setdefault("_warnings", []).append(
                 "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
             )
-        return json.dumps(summary, indent=2, default=str)
+        return _json_response(summary, default=str)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_cross_summary",
@@ -5022,7 +5029,7 @@ def cs_state(
             or len(shown_warnings) < warnings_total
         )
 
-        return json.dumps({
+        return _json_response({
             "entities": shown_entities,
             "warnings": shown_warnings,
             "query_scope": "production_only" if exclude_research else "all_sources",
@@ -5042,7 +5049,7 @@ def cs_state(
                 "max_transitions_per_entity": max_transitions_per_entity,
                 "max_warnings": max_warnings,
             },
-        }, indent=2)
+        })
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_state",
@@ -5119,11 +5126,11 @@ def cs_lookup(
             node_type="function",
         )
         if not matched_before_scope:
-            return json.dumps({"error": f"No function found matching '{name}'"})
+            return _json_response({"error": f"No function found matching '{name}'"})
         if not matched_node_ids:
             if exclude_research:
-                return json.dumps({"error": f"No production function found matching '{name}'"})
-            return json.dumps({"error": f"No function found matching '{name}'"})
+                return _json_response({"error": f"No production function found matching '{name}'"})
+            return _json_response({"error": f"No function found matching '{name}'"})
 
         full_by_id: dict[str, dict] = {}
 
@@ -5397,7 +5404,7 @@ def cs_lookup(
                 response.setdefault("_warnings", []).append(
                     "cs_lookup candidate list was capped. Increase max_candidates or set max_candidates=0 for all candidates."
                 )
-        return json.dumps(response, indent=2)
+        return _json_response(response)
     except sqlite3.OperationalError as exc:
         return _query_sqlite_error(
             "cs_lookup",

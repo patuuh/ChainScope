@@ -75,6 +75,26 @@ class TestIndexing:
         assert hasattr(mcp_server, "_find_node_ids_capped")
         assert hasattr(mcp_server, "_find_function_rows_capped")
 
+    def test_mcp_outputs_compact_json_by_default(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.ping()",
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+
+        help_output = mcp_server.cs_help()
+        summary_output = mcp_server.cs_summary(db=tmp_db)
+
+        assert json.loads(help_output)["workflow"]
+        assert json.loads(summary_output)["functions"] == 1
+        assert "\n" not in help_output
+        assert "\n" not in summary_output
+
     def test_schema_creates_mcp_query_indexes(self, tmp_db):
         db = GraphDB(tmp_db)
         conn = db.get_connection()
