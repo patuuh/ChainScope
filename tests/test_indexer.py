@@ -57,8 +57,10 @@ class TestIndexing:
         assert "timeout_seconds are opt-in" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_audit).parameters["include_dead_code_details"].default is False
         assert inspect.signature(mcp_server.cs_audit).parameters["max_metadata_bytes"].default == 4096
+        assert inspect.signature(mcp_server.cs_audit).parameters["max_source_contexts"].default == 20
         assert "detailed dead-code rows" in help_payload["core_tools"]["cs_audit"]
         assert "max_metadata_bytes=4096" in help_payload["core_tools"]["cs_audit"]
+        assert "max_source_contexts=20" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_defi).parameters["max_per_category"].default == 25
         assert inspect.signature(mcp_server.cs_unsafe).parameters["max_per_category"].default == 25
         assert inspect.signature(mcp_server.cs_defi).parameters["max_detail_items"].default == 10
@@ -1098,6 +1100,40 @@ class TestIndexing:
         assert sections["silent_state_changes"] == {"total": 3, "shown": 1, "truncated": True}
         assert "attack_surface" in audit["_summary"]["truncated_sections"]
         assert "cs_hotspots" in audit["_summary"]["_hint"]
+
+    def test_audit_caps_source_context_counters_for_mcp_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        for i in range(8):
+            for j in range(i + 1):
+                db.insert_node(
+                    id=f"Ctx{i}.sol::Ctx{i}.fn{j}()",
+                    label=f"fn{j}",
+                    type="function",
+                    visibility="internal",
+                    file=f"Ctx{i}.sol",
+                    metadata=json.dumps({"source_context": f"context{i}"}),
+                )
+
+        capped = json.loads(mcp_server.cs_audit(db=tmp_db, max_source_contexts=3))
+        uncapped = json.loads(mcp_server.cs_audit(db=tmp_db, max_source_contexts=0))
+
+        assert list(capped["source_context_summary"]) == ["context7", "context6", "context5"]
+        assert capped["source_context_summary_info"] == {
+            "total": 8,
+            "shown": 3,
+            "truncated": True,
+        }
+        assert capped["_summary"]["max_source_contexts"] == 3
+        assert "max_source_contexts=0" in capped["_warnings"][0]
+
+        assert len(uncapped["source_context_summary"]) == 8
+        assert uncapped["source_context_summary_info"] == {
+            "total": 8,
+            "shown": 8,
+            "truncated": False,
+        }
 
     def test_audit_retains_only_top_ranked_sections(self, tmp_db, monkeypatch):
         import mcp_server

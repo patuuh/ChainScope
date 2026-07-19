@@ -1898,7 +1898,7 @@ def cs_help() -> str:
         ],
         "core_tools": {
             "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths; source-context counters are capped by max_source_contexts, and timeout_seconds is opt-in.",
-            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata, detailed dead-code rows, and timeout_seconds are opt-in; included metadata is capped by max_metadata_bytes=4096.",
+            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; source-context counters are capped by max_source_contexts=20; raw attack-surface metadata, detailed dead-code rows, and timeout_seconds are opt-in; included metadata is capped by max_metadata_bytes=4096.",
             "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build. failure_examples are capped by max_failure_examples.",
             "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
         },
@@ -2513,6 +2513,7 @@ def cs_audit(
     include_metadata: bool = False,
     include_dead_code_details: bool = False,
     max_metadata_bytes: int = 4096,
+    max_source_contexts: int = 20,
 ) -> str:
     """Generate a comprehensive security audit report in one call.
 
@@ -2531,11 +2532,14 @@ def cs_audit(
         include_metadata: Include raw metadata JSON in attack-surface rows
         include_dead_code_details: Include detailed dead-code rows instead of totals only
         max_metadata_bytes: Maximum serialized attack-surface metadata bytes when include_metadata=true (0 disables)
+        max_source_contexts: Maximum source-context counters returned (0 disables)
     """
     if top < 0:
         top = 0
     if max_metadata_bytes < 0:
         max_metadata_bytes = 0
+    if max_source_contexts < 0:
+        max_source_contexts = 0
 
     db_path = _resolve_db(db)
     try:
@@ -2709,7 +2713,12 @@ def cs_audit(
                         detection_counts[key] = detection_counts.get(key, 0) + 1
 
         report["detections"] = dict(sorted(detection_counts.items(), key=lambda x: -x[1]))
-        report["source_context_summary"] = dict(sorted(source_context_counts.items(), key=lambda x: (-x[1], x[0])))
+        source_context_summary, source_context_summary_info = _capped_count_mapping(
+            source_context_counts,
+            max_source_contexts,
+        )
+        report["source_context_summary"] = source_context_summary
+        report["source_context_summary_info"] = source_context_summary_info
 
         # --- 3. Precompute shared data structures ---
         function_ids = {row["id"] for row in all_funcs}
@@ -3193,6 +3202,7 @@ def cs_audit(
             "include_metadata": include_metadata,
             "include_dead_code_details": include_dead_code_details,
             "max_metadata_bytes": max_metadata_bytes,
+            "max_source_contexts": max_source_contexts,
             "sections": sections,
             "truncated_sections": truncated_sections,
             "truncated": bool(truncated_sections),
@@ -3206,6 +3216,10 @@ def cs_audit(
             report["metadata_truncated_attack_surface"] = attack_surface_metadata_truncated
             report.setdefault("_warnings", []).append(
                 "Some cs_audit attack-surface metadata blobs were capped. Set max_metadata_bytes=0 for full metadata."
+            )
+        if source_context_summary_info["truncated"]:
+            report.setdefault("_warnings", []).append(
+                "cs_audit source-context counters were capped. Set max_source_contexts=0 for exhaustive source-context counters."
             )
 
         return _json_response(report)

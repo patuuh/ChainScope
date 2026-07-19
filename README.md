@@ -292,7 +292,9 @@ instead of treating the overview as exhaustive. Raw attack-surface metadata is
 omitted by default for MCP context; set `include_metadata=true` only when that
 raw JSON is needed. Included attack-surface metadata is capped by
 `max_metadata_bytes=4096`; set `max_metadata_bytes=0` only when full metadata
-is needed. Detailed dead-code rows are also omitted by default; set
+is needed. Source-context counters are capped by `max_source_contexts=20`; set
+`max_source_contexts=0` only when every provenance bucket is needed. Detailed
+dead-code rows are also omitted by default; set
 `include_dead_code_details=true` when dead-code investigation is the current task.
 
 Broad `cs_hotspots` scans stream function rows, use indexed edge aggregates for
@@ -547,4 +549,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`559 passed`
+`560 passed`
