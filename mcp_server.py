@@ -312,6 +312,7 @@ def _metadata_string_fragments(key: str, value: str) -> tuple[str, str]:
 
 _JSON_DECODER = json.JSONDecoder()
 _MISSING_METADATA_VALUE = object()
+_METADATA_PROBE_CACHE_MAX_BYTES = 16_384
 
 
 def _skip_json_string(raw: str, pos: int) -> int:
@@ -329,8 +330,7 @@ def _skip_json_string(raw: str, pos: int) -> int:
     return len(raw)
 
 
-@lru_cache(maxsize=8192)
-def _metadata_raw_value_cached(raw: str, key: str):
+def _metadata_raw_value_uncached(raw: str, key: str):
     needle = json.dumps(key)
     depth = 0
     pos = 0
@@ -363,14 +363,20 @@ def _metadata_raw_value_cached(raw: str, key: str):
     return _MISSING_METADATA_VALUE
 
 
+@lru_cache(maxsize=8192)
+def _metadata_raw_value_cached(raw: str, key: str):
+    return _metadata_raw_value_uncached(raw, key)
+
+
 def _metadata_raw_value(raw, key: str):
     if not isinstance(raw, str) or not key:
         return _MISSING_METADATA_VALUE
+    if len(raw) > _METADATA_PROBE_CACHE_MAX_BYTES:
+        return _metadata_raw_value_uncached(raw, key)
     return _metadata_raw_value_cached(raw, key)
 
 
-@lru_cache(maxsize=8192)
-def _metadata_top_level_key_tuple(raw: str) -> tuple[str, ...]:
+def _metadata_top_level_key_tuple_uncached(raw: str) -> tuple[str, ...]:
     keys: list[str] = []
     seen: set[str] = set()
     depth = 0
@@ -401,9 +407,16 @@ def _metadata_top_level_key_tuple(raw: str) -> tuple[str, ...]:
     return tuple(keys)
 
 
+@lru_cache(maxsize=8192)
+def _metadata_top_level_key_tuple(raw: str) -> tuple[str, ...]:
+    return _metadata_top_level_key_tuple_uncached(raw)
+
+
 def _metadata_top_level_keys(raw) -> set[str]:
     if not isinstance(raw, str):
         return set()
+    if len(raw) > _METADATA_PROBE_CACHE_MAX_BYTES:
+        return set(_metadata_top_level_key_tuple_uncached(raw))
     return set(_metadata_top_level_key_tuple(raw))
 
 

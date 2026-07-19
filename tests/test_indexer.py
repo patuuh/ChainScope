@@ -563,6 +563,27 @@ class TestIndexing:
         assert info.misses == 3
         assert info.hits == 3
 
+    def test_metadata_probe_caches_skip_oversized_blobs(self):
+        import mcp_server
+
+        mcp_server._metadata_raw_value_cached.cache_clear()
+        mcp_server._metadata_top_level_key_tuple.cache_clear()
+        raw = json.dumps({
+            "source_context": "script",
+            "is_sink": True,
+            "large": "x" * (mcp_server._METADATA_PROBE_CACHE_MAX_BYTES + 1),
+        })
+
+        assert mcp_server._metadata_source_context(raw) == "script"
+        assert mcp_server._metadata_source_context(raw) == "script"
+        assert mcp_server._metadata_raw_value_truthy(raw, "is_sink") is True
+        assert mcp_server._metadata_raw_value_truthy(raw, "is_sink") is True
+        assert mcp_server._metadata_has_any_key(raw, ("is_sink",)) is True
+        assert mcp_server._metadata_has_any_key(raw, ("source_context",)) is True
+
+        assert mcp_server._metadata_raw_value_cached.cache_info().currsize == 0
+        assert mcp_server._metadata_top_level_key_tuple.cache_info().currsize == 0
+
     def test_summary_exclude_research_uses_raw_metadata_filters(self, tmp_db, monkeypatch):
         import mcp_server
 
