@@ -327,7 +327,8 @@ SQLite error. Preferred/fallback edge-index groups are resolved with one schema
 lookup so broad MCP scans do not repeatedly probe `sqlite_master`.
 The core graph API used by local workflows also filters traversal, reverse-call,
 accessor, guard, and attack-surface edge queries through composite indexes, with
-direct single-column index fallback for older graph DBs.
+direct single-column index fallback for older graph DBs. Local graph path
+formatting batches node-label loads and ambiguity counts for capped paths.
 MCP broad scans also cache repeated raw metadata probes so common fields such as
 `source_context`, `is_sink`, and `sink_type` do not require repeated JSON scans.
 Top-level metadata key sets are cached too, while oversized metadata blobs are

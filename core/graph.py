@@ -7,6 +7,7 @@ from core.schema import GraphDB
 
 # Edge types that BFS traversal follows (execution flow)
 TRAVERSAL_EDGES = {"calls", "flows_to", "inherits"}
+SQLITE_IN_CHUNK_SIZE = 500
 
 
 def _qualified_label_from_id(node_id: str) -> str:
@@ -87,6 +88,55 @@ def _relation_target_index_hint(conn) -> str:
 
 def _target_relation_index_hint(conn) -> str:
     return _edge_index_hint_any(conn, "idx_edges_target_relation", "idx_edges_target")
+
+
+def _chunked_values(values):
+    unique = list(dict.fromkeys(values))
+    for idx in range(0, len(unique), SQLITE_IN_CHUNK_SIZE):
+        yield unique[idx:idx + SQLITE_IN_CHUNK_SIZE]
+
+
+def _labels_by_id(conn, node_ids) -> dict[str, str]:
+    labels: dict[str, str] = {}
+    for batch in _chunked_values(node_ids):
+        placeholders = ",".join("?" for _ in batch)
+        for row in conn.execute(
+            f"SELECT id, label FROM nodes WHERE id IN ({placeholders})",
+            tuple(batch),
+        ):
+            labels[row["id"]] = row["label"]
+    return labels
+
+
+def _label_counts(conn, labels) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for batch in _chunked_values(labels):
+        placeholders = ",".join("?" for _ in batch)
+        for row in conn.execute(
+            f"SELECT label, COUNT(*) AS cnt FROM nodes WHERE label IN ({placeholders}) GROUP BY label",
+            tuple(batch),
+        ):
+            counts[row["label"]] = row["cnt"]
+    return counts
+
+
+def _format_label_paths(conn, paths: list[tuple[str, ...]]) -> list[list[str]]:
+    node_ids = [node_id for path in paths for node_id in path]
+    labels = _labels_by_id(conn, node_ids)
+    label_counts = _label_counts(conn, labels.values())
+    formatted = []
+    for path in paths:
+        path_labels = []
+        for node_id in path:
+            label = labels.get(node_id)
+            if label is None:
+                path_labels.append(node_id)
+            elif label_counts.get(label, 0) > 1:
+                path_labels.append(_qualified_label_from_id(node_id))
+            else:
+                path_labels.append(label)
+        formatted.append(path_labels)
+    return formatted
 
 
 class Graph:
@@ -181,37 +231,20 @@ class Graph:
         conn = self.db.get_connection()
         try:
             adj = self._build_adjacency(conn)
-            results = []
+            result_paths: list[tuple[str, ...]] = []
             queue = deque([[start_id]])
-            while queue and len(results) < max_paths:
+            while queue and len(result_paths) < max_paths:
                 path = queue.popleft()
                 current = path[-1]
                 if current == end_id and len(path) > 1:
-                    labels = []
-                    for node_id in path:
-                        row = conn.execute(
-                            "SELECT label FROM nodes WHERE id=?", (node_id,)
-                        ).fetchone()
-                        if row:
-                            label = row["label"]
-                            # Check if label is ambiguous (multiple nodes share it)
-                            count = conn.execute(
-                                "SELECT COUNT(*) as cnt FROM nodes WHERE label=?", (label,)
-                            ).fetchone()["cnt"]
-                            if count > 1:
-                                # Use qualified label from ID
-                                label = _qualified_label_from_id(node_id)
-                            labels.append(label)
-                        else:
-                            labels.append(node_id)
-                    results.append(labels)
+                    result_paths.append(tuple(path))
                     continue
                 if len(path) > max_depth:
                     continue
                 for neighbor in adj.get(current, []):
                     if neighbor not in path:  # Avoid cycles
                         queue.append(path + [neighbor])
-            return results
+            return _format_label_paths(conn, result_paths)
         finally:
             conn.close()
 

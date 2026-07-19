@@ -52,6 +52,34 @@ class TestPathFinding:
         assert len(paths) >= 1
         assert ["f1", "f2", "f3", "f4"] in paths
 
+    def test_find_all_paths_batches_label_formatting(self, graph_with_chain):
+        statements = []
+        real_get_connection = graph_with_chain.db.get_connection
+
+        class CountingConnection:
+            def __init__(self, wrapped):
+                self._wrapped = wrapped
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                if normalized == "SELECT label FROM nodes WHERE id=?":
+                    raise AssertionError("Graph path labels should load in batches")
+                if normalized == "SELECT COUNT(*) as cnt FROM nodes WHERE label=?":
+                    raise AssertionError("Graph path label counts should load in batches")
+                return self._wrapped.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._wrapped.close()
+
+        graph_with_chain.db.get_connection = lambda: CountingConnection(real_get_connection())
+
+        paths = graph_with_chain.find_all_paths("a::f1", "a::f4", max_paths=10)
+
+        assert ["f1", "f2", "f3", "f4"] in paths
+        assert any("FROM nodes WHERE id IN" in sql for sql in statements)
+        assert any("FROM nodes WHERE label IN" in sql and "GROUP BY label" in sql for sql in statements)
+
     def test_max_depth_limits_search(self, graph_with_chain):
         path = graph_with_chain.find_path("a::f1", "a::f4", max_depth=2)
         assert path == []
