@@ -328,7 +328,9 @@ scanned uncached so long-lived MCP servers do not retain them. Repeated detector
 key groups are cached as sets for broad audit and scanner passes.
 Follow-up tools such as `cs_cross`, `cs_sinks`, `cs_paths`, `cs_trace`, and
 `cs_lookup` use composite edge indexes when present, but fall back cleanly for
-older graph DBs that were built before those indexes existed.
+older graph DBs that were built before those indexes existed. Reachability
+follow-ups such as `cs_cross(from_func=...)` and `cs_sinks` batch node cache
+lookups per frontier instead of issuing one node query per traversed edge.
 
 Broad `cs_state` output is also capped by entity groups, transitions per entity,
 warnings, and summary entity total counters. Raw transition metadata is retained

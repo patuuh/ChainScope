@@ -4029,6 +4029,8 @@ class TestIndexing:
                     raise AssertionError("cs_cross(from_func) should not scan all traversal edges")
                 if normalized == "SELECT source, target, attributes FROM edges WHERE relation = 'calls'":
                     raise AssertionError("cs_cross(from_func) should not scan all call edges")
+                if normalized.startswith("SELECT id, label, type, visibility, file") and "WHERE id = ?" in normalized:
+                    raise AssertionError("cs_cross(from_func) should batch node cache lookups")
                 return self._conn.execute(sql, *args, **kwargs)
 
             def close(self):
@@ -4048,6 +4050,7 @@ class TestIndexing:
         assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
         assert any("e.source = ? AND e.relation IN" in sql for sql in statements)
         assert any("e.source = ? AND e.relation = 'calls'" in sql for sql in statements)
+        assert any("FROM nodes WHERE id IN" in sql for sql in statements)
 
     def test_cross_from_func_ignores_non_function_candidates(self, tmp_db):
         import mcp_server
@@ -4708,6 +4711,8 @@ class TestIndexing:
                     raise AssertionError("cs_sinks should not preload all function nodes")
                 if normalized == "SELECT source, target FROM edges WHERE relation = 'calls'":
                     raise AssertionError("cs_sinks should not preload all call edges")
+                if normalized.startswith("SELECT id, label, type, visibility, file") and "WHERE id = ?" in normalized:
+                    raise AssertionError("cs_sinks should batch node cache lookups")
                 return self._conn.execute(sql, *args, **kwargs)
 
             def close(self):
@@ -4729,7 +4734,7 @@ class TestIndexing:
         assert result["sinks"][0]["caller_summary"] == {"total": 1, "shown": 1, "truncated": False}
         assert any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
         assert any("WHERE e.target = ? AND e.relation = 'calls'" in sql for sql in statements)
-        assert any("FROM nodes WHERE id = ?" in sql for sql in statements)
+        assert any("FROM nodes WHERE id IN" in sql for sql in statements)
 
     def test_sinks_caps_callers_before_metadata_formatting(self, tmp_db, monkeypatch):
         import mcp_server

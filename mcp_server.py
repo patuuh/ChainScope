@@ -887,15 +887,28 @@ def _finalize_cross_entry_contexts(entry: dict) -> dict:
 
 
 def _node_for_id(conn, node_id: str, node_cache: dict[str, dict | None]) -> dict | None:
-    if node_id not in node_cache:
-        rows = conn.execute(
-            "SELECT id, label, type, visibility, file, line_start, line_end, signature, metadata "
-            "FROM nodes WHERE id = ?",
-            (node_id,),
-        )
-        row = rows.fetchone() if hasattr(rows, "fetchone") else next(iter(rows), None)
-        node_cache[node_id] = dict(row) if row else None
+    _populate_node_cache(conn, [node_id], node_cache)
     return node_cache[node_id]
+
+
+def _populate_node_cache(conn, node_ids, node_cache: dict[str, dict | None]) -> None:
+    missing = list(dict.fromkeys(node_id for node_id in node_ids if node_id not in node_cache))
+    if not missing:
+        return
+    for chunk in range(0, len(missing), SQLITE_IN_CHUNK_SIZE):
+        batch = missing[chunk:chunk + SQLITE_IN_CHUNK_SIZE]
+        placeholders = ",".join("?" for _ in batch)
+        found = set()
+        for row in conn.execute(
+            "SELECT id, label, type, visibility, file, line_start, line_end, signature, metadata "
+            f"FROM nodes WHERE id IN ({placeholders})",
+            tuple(batch),
+        ):
+            node_cache[row["id"]] = dict(row)
+            found.add(row["id"])
+        for node_id in batch:
+            if node_id not in found:
+                node_cache[node_id] = None
 
 
 def _iter_reachable_traversal_targets(conn, source_id: str, source_index_hint: str = ""):
@@ -950,22 +963,33 @@ def _iter_reachable_cross_entries(conn, start_row: dict, exclude_research: bool)
     while pos < len(queue):
         current = queue[pos]
         pos += 1
-        for row in _iter_reachable_traversal_targets(conn, current, source_index_hint):
-            target_id = row["target"]
+        target_ids = [
+            row["target"]
+            for row in _iter_reachable_traversal_targets(conn, current, source_index_hint)
+            if row["target"] not in reachable
+        ]
+        _populate_node_cache(conn, target_ids, node_by_id)
+        for target_id in target_ids:
             if target_id in reachable:
                 continue
-            target_node = _node_for_id(conn, target_id, node_by_id)
+            target_node = node_by_id.get(target_id)
             if not _node_allowed(target_node):
                 continue
             reachable.add(target_id)
             queue.append(target_id)
 
     for source_id in sorted(reachable):
-        for row in _iter_trust_boundary_call_edges_from_source(conn, source_id, source_index_hint):
-            target = _node_for_id(conn, row["target"], node_by_id)
+        call_rows = list(_iter_trust_boundary_call_edges_from_source(conn, source_id, source_index_hint))
+        _populate_node_cache(
+            conn,
+            [row["target"] for row in call_rows] + [row["source"] for row in call_rows],
+            node_by_id,
+        )
+        for row in call_rows:
+            target = node_by_id.get(row["target"])
             if target and not _node_allowed(target):
                 continue
-            source_row = _node_for_id(conn, row["source"], node_by_id)
+            source_row = node_by_id.get(row["source"])
             raw_attrs = row["attributes"]
             if not _edge_attrs_may_have_enabled_key(raw_attrs, ("unresolved", "sink", "cross_boundary")):
                 continue
@@ -4271,13 +4295,18 @@ def cs_sinks(
                 while pos < len(queue):
                     target_id, distance = queue[pos]
                     pos += 1
-                    for row in _iter_callers_for_target(conn, target_id, target_index_hint):
-                        caller_id = row["source"]
+                    caller_ids = [
+                        row["source"]
+                        for row in _iter_callers_for_target(conn, target_id, target_index_hint)
+                        if row["source"] not in visited
+                    ]
+                    _populate_node_cache(conn, caller_ids, node_map)
+                    for caller_id in caller_ids:
                         if caller_id in visited:
                             continue
                         visited.add(caller_id)
                         queue.append((caller_id, distance + 1))
-                        caller = _node_for_id(conn, caller_id, node_map)
+                        caller = node_map.get(caller_id)
                         if not caller or caller.get("type") != "function":
                             continue
                         if exclude_research:
