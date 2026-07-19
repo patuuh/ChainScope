@@ -6074,8 +6074,9 @@ class TestIndexing:
             for sql in statements
         )
         assert not any(
-            sql.startswith("SELECT COUNT(*) FROM edges AS e JOIN")
-            or sql.startswith("SELECT COUNT(*) FROM edges e JOIN")
+            sql.startswith("SELECT COUNT(*)")
+            and "FROM edges" in sql
+            and "JOIN nodes" in sql
             for sql in statements
         )
 

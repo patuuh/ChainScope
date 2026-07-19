@@ -5807,7 +5807,7 @@ def cs_lookup(
                 WHERE e.target = ? AND e.relation = 'calls'
             """, (node_id,), f"""
                 SELECT COUNT(*)
-                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                FROM edges AS e{target_index_hint}
                 WHERE e.target = ? AND e.relation = 'calls'
             """)
             _set_relation("callers", callers, callers_summary)
@@ -5821,7 +5821,7 @@ def cs_lookup(
                         WHERE e.target = ? AND e.relation = 'calls'
                     """, (caller["id"],), f"""
                         SELECT COUNT(*)
-                        FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                        FROM edges AS e{target_index_hint}
                         WHERE e.target = ? AND e.relation = 'calls'
                     """)
 
@@ -5833,7 +5833,7 @@ def cs_lookup(
                 WHERE e.source = ? AND e.relation = 'calls'
             """, (node_id,), f"""
                 SELECT COUNT(*)
-                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                FROM edges AS e{source_index_hint}
                 WHERE e.source = ? AND e.relation = 'calls'
             """)
             _set_relation("callees", callees, callees_summary)
@@ -5847,7 +5847,7 @@ def cs_lookup(
                         WHERE e.source = ? AND e.relation = 'calls'
                     """, (callee["id"],), f"""
                         SELECT COUNT(*)
-                        FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                        FROM edges AS e{source_index_hint}
                         WHERE e.source = ? AND e.relation = 'calls'
                     """)
 
@@ -5858,7 +5858,7 @@ def cs_lookup(
                 WHERE e.source = ? AND e.relation = 'reads_state'
             """, (node_id,), f"""
                 SELECT COUNT(*)
-                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                FROM edges AS e{source_index_hint}
                 WHERE e.source = ? AND e.relation = 'reads_state'
             """)
             _set_relation("state_reads", state_reads, state_reads_summary)
@@ -5870,7 +5870,7 @@ def cs_lookup(
                 WHERE e.source = ? AND e.relation = 'writes_state'
             """, (node_id,), f"""
                 SELECT COUNT(*)
-                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                FROM edges AS e{source_index_hint}
                 WHERE e.source = ? AND e.relation = 'writes_state'
             """)
             _set_relation("state_writes", state_writes, state_writes_summary)
@@ -5882,7 +5882,7 @@ def cs_lookup(
                 WHERE e.target = ? AND e.relation = 'guards'
             """, (node_id,), f"""
                 SELECT COUNT(*)
-                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                FROM edges AS e{target_index_hint}
                 WHERE e.target = ? AND e.relation = 'guards'
             """)
             _set_relation("guards", guards, guards_summary)
@@ -5895,7 +5895,7 @@ def cs_lookup(
                       ('calls', 'reads_state', 'writes_state')
             """, (node_id,), f"""
                 SELECT COUNT(*)
-                FROM edges AS e{source_index_hint} JOIN nodes n ON e.target = n.id
+                FROM edges AS e{source_index_hint}
                 WHERE e.source = ? AND e.relation NOT IN
                       ('calls', 'reads_state', 'writes_state')
             """)
@@ -5908,7 +5908,7 @@ def cs_lookup(
                 WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')
             """, (node_id,), f"""
                 SELECT COUNT(*)
-                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                FROM edges AS e{target_index_hint}
                 WHERE e.target = ? AND e.relation NOT IN ('calls', 'guards')
             """)
             if other_in_summary["total"]:

@@ -244,7 +244,8 @@ full function profiles and `max_candidates` caps ambiguous candidate lists; set
 either value to `0` only when exhaustive output is intentional. Individual
 lookup relation lists such as callers, callees, state reads/writes, and other
 edges are capped by `max_relation_items`; set `max_relation_items=0` only for
-exhaustive profiles. Large parsed metadata blobs are compacted by
+exhaustive profiles. Capped relation totals use edge-only counts before fetching
+shown node details. Large parsed metadata blobs are compacted by
 `max_metadata_bytes`; set `max_metadata_bytes=0` only when the full raw metadata
 is needed. Relation edge attributes are capped by `max_attribute_bytes=2048`;
 set `max_attribute_bytes=0` only when full call-site or edge attributes are
