@@ -4945,8 +4945,8 @@ class TestIndexing:
             sql for sql in graph_statements
             if "FROM nodes" in sql and "WHERE type = 'function'" in sql
         ]
-        assert len(graph_statements) == 5
-        assert len(function_streams) == 2
+        assert len(graph_statements) == 4
+        assert len(function_streams) == 1
         assert not any("metadata LIKE" in sql for sql in graph_statements)
         assert any("idx_edges_relation_target" in sql for sql in statements)
         assert any("idx_edges_source_relation" in sql and "EXISTS" in sql for sql in statements)
@@ -5425,9 +5425,11 @@ class TestIndexing:
         real_load = mcp_server._load_metadata
         real_guard_counts = mcp_server._guard_counts_for_writable_entries
         real_has_any_key = mcp_server._metadata_has_any_key
+        real_iter_hotspot_rows = mcp_server._iter_hotspot_function_rows
         parsed = []
         guard_scopes = []
         key_checks = []
+        hotspot_row_passes = 0
 
         def counting_load(raw):
             parsed.append(raw)
@@ -5441,9 +5443,15 @@ class TestIndexing:
             guard_scopes.append(set(source_ids or ()))
             return real_guard_counts(conn, source_ids, **kwargs)
 
+        def tracking_hotspot_rows(conn):
+            nonlocal hotspot_row_passes
+            hotspot_row_passes += 1
+            yield from real_iter_hotspot_rows(conn)
+
         monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
         monkeypatch.setattr(mcp_server, "_metadata_has_any_key", counting_has_any_key)
         monkeypatch.setattr(mcp_server, "_guard_counts_for_writable_entries", tracking_guard_counts)
+        monkeypatch.setattr(mcp_server, "_iter_hotspot_function_rows", tracking_hotspot_rows)
 
         hotspots = json.loads(mcp_server.cs_hotspots(db=tmp_db, top=10))
 
@@ -5453,6 +5461,7 @@ class TestIndexing:
         assert key_checks.count(risk_metadata) == 1
         assert parsed == [risk_metadata]
         assert guard_scopes == [{entry_id}]
+        assert hotspot_row_passes == 1
 
     def test_lookup_query_connection_falls_back_to_immutable(self, tmp_db, monkeypatch):
         import mcp_server

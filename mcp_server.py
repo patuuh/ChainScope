@@ -3310,11 +3310,21 @@ def cs_hotspots(
         write_map = _write_counts_for_sources(conn)
         ext_call_map = _external_call_counts(conn)
         writable_entry_ids = set()
+        hotspot_candidates: list[tuple[dict, int, int, bool]] = []
         for r in _iter_hotspot_function_rows(conn):
             if exclude_research and _is_research_metadata_raw(r["metadata"]):
                 continue
-            if r["visibility"] in ("external", "public") and write_map.get(r["id"], 0) > 0:
-                writable_entry_ids.add(r["id"])
+            writes = write_map.get(r["id"], 0)
+            ext_calls = ext_call_map.get(r["id"], 0)
+            is_writable_entry = r["visibility"] in ("external", "public") and writes > 0
+            relation_scored = is_writable_entry or ext_calls > 0
+            has_score_metadata = _metadata_has_any_key(r["metadata"], _HOTSPOT_SCORE_METADATA_KEYS)
+            if not relation_scored and not has_score_metadata:
+                continue
+            row = dict(r)
+            if is_writable_entry:
+                writable_entry_ids.add(row["id"])
+            hotspot_candidates.append((row, writes, ext_calls, has_score_metadata))
         guard_map = _guard_counts_for_writable_entries(
             conn,
             writable_entry_ids,
@@ -3327,19 +3337,11 @@ def cs_hotspots(
         medium = 0
         top_heap: list[tuple[int, int, dict]] = []
         sequence = 0
-        for r in _iter_hotspot_function_rows(conn):
-            if exclude_research and _is_research_metadata_raw(r["metadata"]):
-                continue
-            writes = write_map.get(r["id"], 0)
-            ext_calls = ext_call_map.get(r["id"], 0)
+        for r, writes, ext_calls, has_score_metadata in hotspot_candidates:
             guards = 0
             vis = r["visibility"]
             if vis in ("external", "public") and writes > 0:
                 guards = guard_map.get(r["id"], 0)
-            relation_scored = (vis in ("external", "public") and writes > 0) or ext_calls > 0
-            has_score_metadata = _metadata_has_any_key(r["metadata"], _HOTSPOT_SCORE_METADATA_KEYS)
-            if not relation_scored and not has_score_metadata:
-                continue
 
             meta = _load_metadata(r["metadata"]) if has_score_metadata else {}
 
