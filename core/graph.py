@@ -37,12 +37,14 @@ class Graph:
     def _build_adjacency(self, conn) -> dict[str, list[str]]:
         """Build forward adjacency list from traversal edges."""
         rows = conn.execute(
-            "SELECT source, target, relation FROM edges"
+            """
+            SELECT source, target, relation
+            FROM edges INDEXED BY idx_edges_relation_source
+            WHERE relation IN ('calls', 'flows_to', 'inherits')
+            """
         ).fetchall()
         adj: dict[str, list[str]] = {}
         for row in rows:
-            if row["relation"] not in TRAVERSAL_EDGES:
-                continue
             src = row["source"]
             if src not in adj:
                 adj[src] = []
@@ -52,7 +54,11 @@ class Graph:
     def _build_reverse_adjacency(self, conn) -> dict[str, list[str]]:
         """Build reverse adjacency list (target -> callers) for backward BFS."""
         rows = conn.execute(
-            "SELECT source, target FROM edges WHERE relation = 'calls'"
+            """
+            SELECT source, target
+            FROM edges INDEXED BY idx_edges_relation_target
+            WHERE relation = 'calls'
+            """
         ).fetchall()
         rev: dict[str, list[str]] = {}
         for row in rows:
@@ -146,7 +152,8 @@ class Graph:
         try:
             rows = conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start, n.line_end
-                FROM edges e JOIN nodes n ON e.source = n.id
+                FROM edges e INDEXED BY idx_edges_target_relation
+                JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = ?
             """, (state_var_id, relation)).fetchall()
             return [dict(r) for r in rows]
@@ -159,7 +166,8 @@ class Graph:
         try:
             rows = conn.execute("""
                 SELECT n.id, n.label, n.file, n.visibility
-                FROM edges e JOIN nodes n ON e.source = n.id
+                FROM edges e INDEXED BY idx_edges_target_relation
+                JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
             """, (node_id,)).fetchall()
             return [dict(r) for r in rows]
@@ -172,7 +180,8 @@ class Graph:
         try:
             rows = conn.execute("""
                 SELECT n.id, n.label, n.file, n.type
-                FROM edges e JOIN nodes n ON e.source = n.id
+                FROM edges e INDEXED BY idx_edges_target_relation
+                JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'guards'
             """, (node_id,)).fetchall()
             return [dict(r) for r in rows]
@@ -263,7 +272,8 @@ class Graph:
             write_map: dict[str, int] = {}
             rows = conn.execute(
                 "SELECT source, COUNT(DISTINCT target) as cnt "
-                "FROM edges WHERE relation='writes_state' GROUP BY source"
+                "FROM edges INDEXED BY idx_edges_relation_source "
+                "WHERE relation='writes_state' GROUP BY source"
             ).fetchall()
             for r in rows:
                 write_map[r["source"]] = r["cnt"]

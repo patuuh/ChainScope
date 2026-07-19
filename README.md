@@ -285,6 +285,8 @@ Write-count and external-call aggregate helpers use the source/relation edge
 index directly and fall back only when older graph DBs lack it.
 Traversal relation scans and guard-label lookups use composite relation indexes
 the same way, so audit-style broad scans avoid avoidable edge-table walks.
+The core graph API used by local workflows also filters traversal, reverse-call,
+accessor, guard, and attack-surface edge queries through composite indexes.
 MCP broad scans also cache repeated raw metadata probes so common fields such as
 `source_context`, `is_sink`, and `sink_type` do not require repeated JSON scans.
 Top-level metadata key sets are cached too, while oversized metadata blobs are
@@ -512,4 +514,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`550 passed`
+`551 passed`

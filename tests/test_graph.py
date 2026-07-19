@@ -106,3 +106,34 @@ class TestGuards:
         guards = g.get_guards_for("a::deposit")
         assert len(guards) == 1
         assert guards[0]["label"] == "onlyOwner"
+
+
+class TestGraphQueryIndexes:
+    def test_graph_api_uses_composite_edge_indexes(self, graph_with_chain):
+        statements = []
+        real_get_connection = graph_with_chain.db.get_connection
+
+        class CountingConnection:
+            def __init__(self, wrapped):
+                self._wrapped = wrapped
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._wrapped.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._wrapped.close()
+
+        graph_with_chain.db.get_connection = lambda: CountingConnection(real_get_connection())
+
+        assert graph_with_chain.find_path("a::f1", "a::f4") == ["f1", "f2", "f3", "f4"]
+        assert graph_with_chain.get_state_accessors("a::balance", "writes_state")[0]["id"] == "a::f3"
+        assert graph_with_chain.get_callers("a::f4")[0]["id"] == "a::f3"
+        assert graph_with_chain.get_guards_for("a::f1") == []
+        assert {item["wrapper_label"] for item in graph_with_chain.propagate_sinks(["f4"])} == {"f1", "f2", "f3"}
+        assert graph_with_chain.get_attack_surface()[0]["id"] == "a::f1"
+
+        assert any("INDEXED BY idx_edges_relation_source" in sql and "relation IN" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation_target" in sql and "relation = 'calls'" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_target_relation" in sql and "e.target = ?" in sql for sql in statements)
+        assert any("INDEXED BY idx_edges_relation_source" in sql and "writes_state" in sql for sql in statements)
