@@ -1515,6 +1515,10 @@ def _append_top(items: list, item, total: int, top: int) -> int:
     return total
 
 
+def _retain_state_transition_metadata(entity_retained: bool, transition_cap: int, current_count: int) -> bool:
+    return entity_retained and (transition_cap == 0 or current_count < transition_cap)
+
+
 def _collect_mapped_items(items, mapper, max_items: int) -> tuple[list, dict]:
     max_items = max(max_items, 0)
     total = 0
@@ -5481,7 +5485,11 @@ def cs_state(
                 current_entity_retained = bool(
                     entity or max_entities == 0 or len(shown_entities) < max_entities
                 )
-            if current_entity_retained:
+            if _retain_state_transition_metadata(
+                current_entity_retained,
+                max_transitions_per_entity,
+                len(current_transitions),
+            ):
                 item["_function_metadata_raw"] = raw_meta
             current_transitions.append(item)
         _flush_current_entity()

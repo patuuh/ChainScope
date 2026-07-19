@@ -321,9 +321,10 @@ Follow-up tools such as `cs_cross`, `cs_sinks`, `cs_paths`, `cs_trace`, and
 older graph DBs that were built before those indexes existed.
 
 Broad `cs_state` output is also capped by entity groups, transitions per entity,
-warnings, and summary entity total counters. Prefer `entity=` when investigating
-one state machine, or set the state caps to `0` when you intentionally need
-every transition or entity total.
+warnings, and summary entity total counters. Raw transition metadata is retained
+only for transitions that can be shown after `max_transitions_per_entity`.
+Prefer `entity=` when investigating one state machine, or set the state caps to
+`0` when you intentionally need every transition or entity total.
 
 For large graphs, prefer `cs_cross_summary` before broad `cs_cross`. It returns
 totals, top source files, top targets, and bounded sample calls so agents can
@@ -553,4 +554,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`563 passed`
+`564 passed`

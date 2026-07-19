@@ -103,6 +103,15 @@ class TestIndexing:
         assert hasattr(mcp_server, "_find_node_ids_capped")
         assert hasattr(mcp_server, "_find_function_rows_capped")
 
+    def test_state_transition_metadata_retention_follows_output_cap(self):
+        import mcp_server
+
+        assert mcp_server._retain_state_transition_metadata(False, 2, 0) is False
+        assert mcp_server._retain_state_transition_metadata(True, 2, 0) is True
+        assert mcp_server._retain_state_transition_metadata(True, 2, 1) is True
+        assert mcp_server._retain_state_transition_metadata(True, 2, 2) is False
+        assert mcp_server._retain_state_transition_metadata(True, 0, 100) is True
+
     def test_mcp_outputs_compact_json_by_default(self, tmp_db):
         import mcp_server
 
@@ -7818,6 +7827,11 @@ class TestIndexing:
 
         assert list(capped["entities"]) == ["State0", "State1"]
         assert all(len(transitions) == 2 for transitions in capped["entities"].values())
+        assert all(
+            item["source_context"] == "production"
+            for transitions in capped["entities"].values()
+            for item in transitions
+        )
         assert len(capped["warnings"]) == 3
         assert capped["_summary"]["entities_total"] == 5
         assert capped["_summary"]["entities_shown"] == 2
