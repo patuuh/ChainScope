@@ -281,6 +281,8 @@ task.
 Broad `cs_hotspots` scans are SQL-prefiltered to likely scoring candidates
 before Python computes final risk scores. This keeps normal broad scans usable
 on larger graphs while preserving exact scoring and false-positive rejection.
+MCP broad scans also cache repeated raw metadata probes so common fields such as
+`source_context`, `is_sink`, and `sink_type` do not require repeated JSON scans.
 
 Broad `cs_state` output is also capped by entity groups, transitions per entity,
 and warnings. Prefer `entity=` when investigating one state machine, or set the
@@ -498,4 +500,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`542 passed`
+`543 passed`

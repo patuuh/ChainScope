@@ -541,6 +541,28 @@ class TestIndexing:
         assert mcp_server._metadata_has_any_key(top_level_sink, ("nested",)) is True
         assert mcp_server._metadata_top_level_key_tuple.cache_info().hits == 1
 
+    def test_metadata_raw_value_cache_reuses_repeated_key_probes(self):
+        import mcp_server
+
+        mcp_server._metadata_raw_value_cached.cache_clear()
+        raw = json.dumps({
+            "source_context": "script",
+            "sink_type": "fund_transfer",
+            "is_sink": True,
+            "large": ["x"] * 20,
+        })
+
+        assert mcp_server._metadata_source_context(raw) == "script"
+        assert mcp_server._metadata_source_context(raw) == "script"
+        assert mcp_server._metadata_string_value(raw, "sink_type") == "fund_transfer"
+        assert mcp_server._metadata_string_value(raw, "sink_type") == "fund_transfer"
+        assert mcp_server._metadata_raw_value_truthy(raw, "is_sink") is True
+        assert mcp_server._metadata_raw_value_truthy(raw, "is_sink") is True
+
+        info = mcp_server._metadata_raw_value_cached.cache_info()
+        assert info.misses == 3
+        assert info.hits == 3
+
     def test_summary_exclude_research_uses_raw_metadata_filters(self, tmp_db, monkeypatch):
         import mcp_server
 

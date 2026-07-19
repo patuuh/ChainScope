@@ -329,9 +329,8 @@ def _skip_json_string(raw: str, pos: int) -> int:
     return len(raw)
 
 
-def _metadata_raw_value(raw, key: str):
-    if not isinstance(raw, str) or not key:
-        return _MISSING_METADATA_VALUE
+@lru_cache(maxsize=8192)
+def _metadata_raw_value_cached(raw: str, key: str):
     needle = json.dumps(key)
     depth = 0
     pos = 0
@@ -362,6 +361,12 @@ def _metadata_raw_value(raw, key: str):
             depth = max(depth - 1, 0)
         pos += 1
     return _MISSING_METADATA_VALUE
+
+
+def _metadata_raw_value(raw, key: str):
+    if not isinstance(raw, str) or not key:
+        return _MISSING_METADATA_VALUE
+    return _metadata_raw_value_cached(raw, key)
 
 
 @lru_cache(maxsize=8192)
