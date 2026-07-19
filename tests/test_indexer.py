@@ -52,7 +52,9 @@ class TestIndexing:
         assert "timeout_seconds is opt-in" in help_payload["core_tools"]["cs_summary"]
         assert "timeout_seconds are opt-in" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_audit).parameters["include_dead_code_details"].default is False
+        assert inspect.signature(mcp_server.cs_audit).parameters["max_metadata_bytes"].default == 4096
         assert "detailed dead-code rows" in help_payload["core_tools"]["cs_audit"]
+        assert "max_metadata_bytes=4096" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_defi).parameters["max_per_category"].default == 25
         assert inspect.signature(mcp_server.cs_unsafe).parameters["max_per_category"].default == 25
         assert inspect.signature(mcp_server.cs_defi).parameters["max_detail_items"].default == 10
@@ -1074,6 +1076,13 @@ class TestIndexing:
             include_metadata=True,
             include_dead_code_details=True,
         ))
+        capped = json.loads(mcp_server.cs_audit(
+            db=tmp_db,
+            top=1,
+            include_metadata=True,
+            include_dead_code_details=True,
+            max_metadata_bytes=200,
+        ))
 
         assert compact["_summary"]["include_metadata"] is False
         assert compact["_summary"]["include_dead_code_details"] is False
@@ -1087,8 +1096,20 @@ class TestIndexing:
         }
         assert detailed["_summary"]["include_metadata"] is True
         assert detailed["_summary"]["include_dead_code_details"] is True
+        assert detailed["_summary"]["max_metadata_bytes"] == 4096
         assert json.loads(detailed["attack_surface"][0]["metadata"])["large"] == ["x"] * 50
+        assert detailed["attack_surface"][0]["_metadata_summary"]["truncated"] is False
         assert detailed["dead_code"]["direct_entry_points"][0]["function"] == "set"
+        capped_metadata = json.loads(capped["attack_surface"][0]["metadata"])
+        assert capped["_summary"]["max_metadata_bytes"] == 200
+        assert capped["metadata_truncated"] is True
+        assert capped["metadata_truncated_attack_surface"] == 1
+        assert capped["attack_surface"][0]["_metadata_summary"]["truncated"] is True
+        assert capped_metadata["source_context"] == "production"
+        assert capped_metadata["_truncated"] is True
+        assert "large" in capped_metadata["_keys"]
+        assert "large" not in capped_metadata
+        assert "max_metadata_bytes=0" in capped["_warnings"][0]
 
     def test_audit_counts_only_enabled_sink_markers(self, tmp_db, monkeypatch):
         import mcp_server

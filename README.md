@@ -280,9 +280,10 @@ intentional. Per-finding scanner detail lists such as `risks`, `sinks`,
 which sections were truncated so agents can drill down with specialized tools
 instead of treating the overview as exhaustive. Raw attack-surface metadata is
 omitted by default for MCP context; set `include_metadata=true` only when that
-raw JSON is needed. Detailed dead-code rows are also omitted by default; set
-`include_dead_code_details=true` when dead-code investigation is the current
-task.
+raw JSON is needed. Included attack-surface metadata is capped by
+`max_metadata_bytes=4096`; set `max_metadata_bytes=0` only when full metadata
+is needed. Detailed dead-code rows are also omitted by default; set
+`include_dead_code_details=true` when dead-code investigation is the current task.
 
 Broad `cs_hotspots` scans are SQL-prefiltered to likely scoring candidates
 before Python computes final risk scores. This keeps normal broad scans usable

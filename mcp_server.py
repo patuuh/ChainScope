@@ -1248,6 +1248,19 @@ def _cap_metadata_payload(meta: dict, max_bytes: int) -> tuple[dict, dict]:
     }
 
 
+def _cap_raw_metadata_json(raw: str | None, max_bytes: int) -> tuple[str, dict]:
+    """Cap raw metadata JSON while preserving the historical string payload."""
+    encoded = raw or "{}"
+    if max_bytes <= 0 or len(encoded) <= max_bytes:
+        return encoded, {
+            "bytes": len(encoded),
+            "max_bytes": max_bytes,
+            "truncated": False,
+        }
+    compact, summary = _cap_metadata_payload(_load_metadata(encoded), max_bytes)
+    return json.dumps(compact, separators=(",", ":"), default=str), summary
+
+
 def _cap_json_payload(value, max_bytes: int, essential_keys: tuple[str, ...] = ()) -> tuple[object, dict]:
     encoded = json.dumps(value, default=str)
     if max_bytes <= 0 or len(encoded) <= max_bytes:
@@ -1835,7 +1848,7 @@ def cs_help() -> str:
         ],
         "core_tools": {
             "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths; timeout_seconds is opt-in.",
-            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata, detailed dead-code rows, and timeout_seconds are opt-in.",
+            "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata, detailed dead-code rows, and timeout_seconds are opt-in; included metadata is capped by max_metadata_bytes=4096.",
             "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build.",
             "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
         },
@@ -2449,6 +2462,7 @@ def cs_audit(
     timeout_seconds: int = 0,
     include_metadata: bool = False,
     include_dead_code_details: bool = False,
+    max_metadata_bytes: int = 4096,
 ) -> str:
     """Generate a comprehensive security audit report in one call.
 
@@ -2466,9 +2480,12 @@ def cs_audit(
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
         include_metadata: Include raw metadata JSON in attack-surface rows
         include_dead_code_details: Include detailed dead-code rows instead of totals only
+        max_metadata_bytes: Maximum serialized attack-surface metadata bytes when include_metadata=true (0 disables)
     """
     if top < 0:
         top = 0
+    if max_metadata_bytes < 0:
+        max_metadata_bytes = 0
 
     db_path = _resolve_db(db)
     try:
@@ -2706,6 +2723,7 @@ def cs_audit(
         attack_surface_heap: list[tuple[int, int, dict]] = []
         attack_surface_total = 0
         attack_surface_sequence = 0
+        attack_surface_metadata_truncated = 0
         for row in all_funcs:
             if row["visibility"] not in ("public", "external"):
                 continue
@@ -2721,7 +2739,7 @@ def cs_audit(
                 "state_writes": write_count,
             }
             if include_metadata:
-                attack_entry["metadata"] = row["metadata"]
+                attack_entry["_metadata_raw"] = row["metadata"]
             _keep_ranked_result(
                 attack_surface_heap,
                 attack_entry,
@@ -2731,7 +2749,21 @@ def cs_audit(
             )
             attack_surface_sequence += 1
         if attack_surface_total:
-            report["attack_surface"] = _ranked_results(attack_surface_heap)
+            attack_surface = _ranked_results(attack_surface_heap)
+            if include_metadata:
+                for attack_entry in attack_surface:
+                    raw_meta = attack_entry.pop("_metadata_raw", None)
+                    attack_entry["metadata"], metadata_summary = _cap_raw_metadata_json(
+                        raw_meta,
+                        max_metadata_bytes,
+                    )
+                    attack_entry["_metadata_summary"] = metadata_summary
+                    if metadata_summary["truncated"]:
+                        attack_surface_metadata_truncated += 1
+            else:
+                for attack_entry in attack_surface:
+                    attack_entry.pop("_metadata_raw", None)
+            report["attack_surface"] = attack_surface
 
         # --- 5. Top hotspots (inline scoring) ---
         hotspot_heap: list[tuple[int, int, dict]] = []
@@ -3110,6 +3142,7 @@ def cs_audit(
             "query_scope": report["query_scope"],
             "include_metadata": include_metadata,
             "include_dead_code_details": include_dead_code_details,
+            "max_metadata_bytes": max_metadata_bytes,
             "sections": sections,
             "truncated_sections": truncated_sections,
             "truncated": bool(truncated_sections),
@@ -3118,6 +3151,12 @@ def cs_audit(
                 "cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
             ) if truncated_sections else "",
         }
+        if attack_surface_metadata_truncated:
+            report["metadata_truncated"] = True
+            report["metadata_truncated_attack_surface"] = attack_surface_metadata_truncated
+            report.setdefault("_warnings", []).append(
+                "Some cs_audit attack-surface metadata blobs were capped. Set max_metadata_bytes=0 for full metadata."
+            )
 
         return _json_response(report)
     except sqlite3.OperationalError as exc:
