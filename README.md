@@ -268,7 +268,9 @@ truncated; increase `top` when you need a broader entry-point inventory.
 Scanner category output from `cs_defi` and `cs_unsafe` is capped by
 `max_per_category=25` by default. The summary still reports full category
 totals; set `max_per_category=0` only when an exhaustive category dump is
-intentional.
+intentional. Per-finding scanner detail lists such as `risks`, `sinks`,
+`operations`, and `unchecked_calls` are capped by `max_detail_items=10`; set
+`max_detail_items=0` only when exhaustive detector detail is needed.
 
 `cs_audit` is a top-N overview. Its `_summary` reports full section totals and
 which sections were truncated so agents can drill down with specialized tools
@@ -514,4 +516,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`551 passed`
+`552 passed`

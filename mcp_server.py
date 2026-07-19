@@ -1018,6 +1018,28 @@ def _category_truncation(results: dict, category_totals: dict[str, int]) -> dict
     return truncated
 
 
+def _cap_scanner_detail_lists(results: dict, max_detail_items: int) -> int:
+    if max_detail_items <= 0:
+        return 0
+    truncated_items = 0
+    for values in results.values():
+        if not isinstance(values, list):
+            continue
+        for item in values:
+            if not isinstance(item, dict):
+                continue
+            detail_summary = {}
+            for key, value in list(item.items()):
+                if not isinstance(value, list) or len(value) <= max_detail_items:
+                    continue
+                item[key] = value[:max_detail_items]
+                detail_summary[key] = _section_summary(len(value), max_detail_items)
+            if detail_summary:
+                item["_detail_summary"] = detail_summary
+                truncated_items += 1
+    return truncated_items
+
+
 def _metadata_rows_by_key(
     rows: Iterable,
     keys: list[str],
@@ -1735,8 +1757,8 @@ def cs_help() -> str:
         },
         "scanner_tools": {
             "cs_hotspots": "Composite risk scorer — broad scan with SQL candidate prefilters and detailed reasons (score >= 8 = critical). Covers: access control, validation, overflow, proxy, unchecked calls.",
-            "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter; category output defaults to max_per_category=25.",
-            "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output defaults to max_per_category=25.",
+            "cs_defi": "DeFi patterns: timestamp, oracle, ERC20, signature, slippage, downcasts, flash loans, callbacks, Anchor, Move/Clarity/Vyper transfer sinks. Use category= to filter; category output defaults to max_per_category=25 and per-finding details to max_detail_items=10.",
+            "cs_unsafe": "Rust/Go/Java/Python/TypeScript/DSL issues: unsafe blocks, panics, races, type assertions, SQL injection, command execution, deserialization, private key handling, dead params. Use category= to filter; category output defaults to max_per_category=25 and per-finding details to max_detail_items=10.",
         },
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes.",
@@ -3182,6 +3204,7 @@ def cs_defi(
     exclude_research: bool = False,
     timeout_seconds: int = 0,
     max_per_category: int = 25,
+    max_detail_items: int = 10,
 ) -> str:
     """Find DeFi-specific vulnerability patterns in Solidity contracts.
 
@@ -3207,9 +3230,12 @@ def cs_defi(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
         max_per_category: Maximum findings to return per category (default: 25; 0 disables)
+        max_detail_items: Maximum detail entries per finding list field (default: 10; 0 disables)
     """
     if max_per_category < 0:
         max_per_category = 0
+    if max_detail_items < 0:
+        max_detail_items = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3466,6 +3492,7 @@ def cs_defi(
             _set_category("cross_contract_calls", "cross_contract_calls", cc_fns)
 
         # Summary
+        detail_truncated_items = _cap_scanner_detail_lists(results, max_detail_items)
         total = sum(category_totals.values())
         truncated_categories = _category_truncation(results, category_totals)
         shown_total = sum(len(v) for v in results.values() if isinstance(v, list))
@@ -3475,10 +3502,17 @@ def cs_defi(
             "categories": list(results.keys()),
             "category_totals": category_totals,
             "truncated_categories": truncated_categories,
-            "truncated": bool(truncated_categories),
+            "truncated": bool(truncated_categories) or detail_truncated_items > 0,
             "max_per_category": max_per_category,
+            "max_detail_items": max_detail_items,
+            "detail_truncated": detail_truncated_items > 0,
+            "detail_truncated_items": detail_truncated_items,
             "query_scope": "production_only" if exclude_research else "all_sources",
         }
+        if detail_truncated_items:
+            results.setdefault("_warnings", []).append(
+                "Some scanner detail lists were capped. Set max_detail_items=0 for exhaustive per-finding details."
+            )
 
         return _json_response(results)
     except sqlite3.OperationalError as exc:
@@ -3500,6 +3534,7 @@ def cs_unsafe(
     exclude_research: bool = False,
     timeout_seconds: int = 0,
     max_per_category: int = 25,
+    max_detail_items: int = 10,
 ) -> str:
     """Find Rust/Go/Java/Python/TypeScript/DSL security issues.
 
@@ -3516,9 +3551,12 @@ def cs_unsafe(
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
         max_per_category: Maximum findings to return per category (default: 25; 0 disables)
+        max_detail_items: Maximum detail entries per finding list field (default: 10; 0 disables)
     """
     if max_per_category < 0:
         max_per_category = 0
+    if max_detail_items < 0:
+        max_detail_items = 0
 
     db_path = _resolve_db(db)
     try:
@@ -3856,6 +3894,7 @@ def cs_unsafe(
             _set_category("dead_params", "dead_params", dp_fns)
 
         # Summary
+        detail_truncated_items = _cap_scanner_detail_lists(results, max_detail_items)
         total = sum(category_totals.values())
         truncated_categories = _category_truncation(results, category_totals)
         shown_total = sum(len(v) for v in results.values() if isinstance(v, list))
@@ -3865,10 +3904,17 @@ def cs_unsafe(
             "categories": list(results.keys()),
             "category_totals": category_totals,
             "truncated_categories": truncated_categories,
-            "truncated": bool(truncated_categories),
+            "truncated": bool(truncated_categories) or detail_truncated_items > 0,
             "max_per_category": max_per_category,
+            "max_detail_items": max_detail_items,
+            "detail_truncated": detail_truncated_items > 0,
+            "detail_truncated_items": detail_truncated_items,
             "query_scope": "production_only" if exclude_research else "all_sources",
         }
+        if detail_truncated_items:
+            results.setdefault("_warnings", []).append(
+                "Some scanner detail lists were capped. Set max_detail_items=0 for exhaustive per-finding details."
+            )
 
         return _json_response(results)
     except sqlite3.OperationalError as exc:

@@ -55,8 +55,12 @@ class TestIndexing:
         assert "detailed dead-code rows" in help_payload["core_tools"]["cs_audit"]
         assert inspect.signature(mcp_server.cs_defi).parameters["max_per_category"].default == 25
         assert inspect.signature(mcp_server.cs_unsafe).parameters["max_per_category"].default == 25
+        assert inspect.signature(mcp_server.cs_defi).parameters["max_detail_items"].default == 10
+        assert inspect.signature(mcp_server.cs_unsafe).parameters["max_detail_items"].default == 10
         assert "max_per_category=25" in help_payload["scanner_tools"]["cs_defi"]
         assert "max_per_category=25" in help_payload["scanner_tools"]["cs_unsafe"]
+        assert "max_detail_items=10" in help_payload["scanner_tools"]["cs_defi"]
+        assert "max_detail_items=10" in help_payload["scanner_tools"]["cs_unsafe"]
         assert inspect.signature(mcp_server.cs_cross).parameters["max_results"].default == 50
         assert inspect.signature(mcp_server.cs_cross).parameters["include_node_ids"].default is False
         assert "max_results=50" in help_payload["exploration_tools"]["cs_cross"]
@@ -1938,6 +1942,78 @@ class TestIndexing:
         assert capped_unsafe["_summary"]["max_per_category"] == 2
         assert len(uncapped_unsafe["command_execution"]) == 5
         assert uncapped_unsafe["_summary"]["truncated"] is False
+
+    def test_scanners_cap_finding_detail_lists_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.swap(uint256)",
+            label="swap",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            line_start=10,
+            metadata=json.dumps({
+                "oracle_risk": [{"line": i, "source": f"feed{i}"} for i in range(8)],
+                "source_context": "production",
+            }),
+        )
+        db.insert_node(
+            id="ops.py::run_cmd",
+            label="run_cmd",
+            type="function",
+            file="ops.py",
+            line_start=1,
+            metadata=json.dumps({
+                "command_injection_risk": [{"line": i, "call": "subprocess.run"} for i in range(7)],
+                "language": "python",
+                "source_context": "production",
+            }),
+        )
+
+        capped_defi = json.loads(mcp_server.cs_defi(
+            db=tmp_db,
+            category="oracle",
+            max_detail_items=3,
+        ))
+        uncapped_defi = json.loads(mcp_server.cs_defi(
+            db=tmp_db,
+            category="oracle",
+            max_detail_items=0,
+        ))
+        capped_unsafe = json.loads(mcp_server.cs_unsafe(
+            db=tmp_db,
+            category="command",
+            max_detail_items=2,
+        ))
+        uncapped_unsafe = json.loads(mcp_server.cs_unsafe(
+            db=tmp_db,
+            category="command",
+            max_detail_items=0,
+        ))
+
+        oracle = capped_defi["oracle_manipulation"][0]
+        assert len(oracle["risks"]) == 3
+        assert oracle["_detail_summary"]["risks"] == {"total": 8, "shown": 3, "truncated": True}
+        assert capped_defi["_summary"]["max_detail_items"] == 3
+        assert capped_defi["_summary"]["truncated"] is True
+        assert capped_defi["_summary"]["detail_truncated"] is True
+        assert capped_defi["_summary"]["detail_truncated_items"] == 1
+        assert "max_detail_items=0" in capped_defi["_warnings"][0]
+        assert len(uncapped_defi["oracle_manipulation"][0]["risks"]) == 8
+        assert uncapped_defi["_summary"]["detail_truncated"] is False
+
+        command = capped_unsafe["command_execution"][0]
+        assert len(command["risks"]) == 2
+        assert command["_detail_summary"]["risks"] == {"total": 7, "shown": 2, "truncated": True}
+        assert capped_unsafe["_summary"]["max_detail_items"] == 2
+        assert capped_unsafe["_summary"]["truncated"] is True
+        assert capped_unsafe["_summary"]["detail_truncated"] is True
+        assert capped_unsafe["_summary"]["detail_truncated_items"] == 1
+        assert "max_detail_items=0" in capped_unsafe["_warnings"][0]
+        assert len(uncapped_unsafe["command_execution"][0]["risks"]) == 7
+        assert uncapped_unsafe["_summary"]["detail_truncated"] is False
 
     def test_scanners_ignore_empty_metadata_findings(self, tmp_db, monkeypatch):
         import mcp_server
