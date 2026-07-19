@@ -2584,10 +2584,7 @@ def cs_audit(
         adj: dict[str, list[str]] = {}
         call_rev_adj: dict[str, list[str]] = {}
         called_targets: set[str] = set()
-        for r in conn.execute(
-            "SELECT source, target, relation FROM edges WHERE relation IN (?, ?, ?)",
-            TRAVERSAL_RELATIONS,
-        ):
+        for r in _iter_edges_for_relations(conn, TRAVERSAL_RELATIONS):
             if scoped_node_ids is not None and (
                 r["source"] not in scoped_node_ids or r["target"] not in scoped_node_ids
             ):

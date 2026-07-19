@@ -1443,6 +1443,10 @@ class TestIndexing:
         assert audit["reentrancy"][0]["modifiers"]
         assert audit["taint_summary"]["total"] == 80
         assert len(statements) <= 20
+        assert any(
+            "INDEXED BY idx_edges_relation_source" in sql and "relation IN" in sql
+            for sql in statements
+        )
         assert not any(
             "WHERE e.target = ? AND e.relation = 'guards'" in " ".join(sql.split())
             for sql in statements
