@@ -1850,7 +1850,7 @@ def cs_help() -> str:
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls default to max_results=50, attributes to max_attribute_bytes=2048, and omit graph IDs unless include_node_ids=true; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top, counters by max_counter_items, and sample attributes by max_attribute_bytes.",
-            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50 and callers per sink at max_callers_per_sink=10; use include_metadata and include_caller_details for verbose output.",
+            "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50, callers per sink at max_callers_per_sink=10, and included metadata at max_metadata_bytes=4096; use include_metadata and include_caller_details for verbose output.",
             "cs_state": "State machine transitions and lifecycle analysis. Broad output is capped by max_entities, max_transitions_per_entity, and max_warnings.",
         },
         "timeout_policy": "MCP tools do not self-timeout by default. Pass timeout_seconds only when a time-limited query or partial build is intentional.",
@@ -4028,6 +4028,7 @@ def cs_sinks(
     max_callers_per_sink: int = 10,
     include_metadata: bool = False,
     include_caller_details: bool = False,
+    max_metadata_bytes: int = 4096,
 ) -> str:
     """List dangerous sink nodes and bounded caller reachability.
 
@@ -4045,11 +4046,14 @@ def cs_sinks(
         max_callers_per_sink: Maximum reachable callers per expanded sink (default: 10; 0 disables)
         include_metadata: Include full parsed sink metadata in each sink result
         include_caller_details: Include caller signature and line_end fields
+        max_metadata_bytes: Maximum serialized sink metadata bytes when include_metadata=true (0 disables)
     """
     if max_results < 0:
         max_results = 0
     if max_callers_per_sink < 0:
         max_callers_per_sink = 0
+    if max_metadata_bytes < 0:
+        max_metadata_bytes = 0
 
     db_path = _resolve_db(db)
     try:
@@ -4070,6 +4074,7 @@ def cs_sinks(
 
         sinks = []
         total = 0
+        metadata_truncated_count = 0
         by_type: dict[str, int] = {}
         for row in sink_rows:
             raw_meta = row["metadata"]
@@ -4099,7 +4104,10 @@ def cs_sinks(
                 ),
             }
             if include_metadata:
-                sink_entry["metadata"] = meta
+                sink_entry["metadata"], metadata_summary = _cap_metadata_payload(meta, max_metadata_bytes)
+                sink_entry["_metadata_summary"] = metadata_summary
+                if metadata_summary["truncated"]:
+                    metadata_truncated_count += 1
             total = _append_capped(sinks, sink_entry, total, max_results)
 
         shown_sinks = sinks
@@ -4187,6 +4195,7 @@ def cs_sinks(
             "max_callers_per_sink": max_callers_per_sink,
             "include_metadata": include_metadata,
             "include_caller_details": include_caller_details,
+            "max_metadata_bytes": max_metadata_bytes,
             "by_type": dict(sorted(by_type.items(), key=lambda item: (-item[1], item[0]))),
             "sinks": shown_sinks,
         }
@@ -4202,6 +4211,12 @@ def cs_sinks(
             result["caller_truncated_sinks"] = caller_truncated_count
             result.setdefault("_warnings", []).append(
                 "Some caller lists were capped. Set max_callers_per_sink=0 for exhaustive caller reachability."
+            )
+        if metadata_truncated_count:
+            result["metadata_truncated"] = True
+            result["metadata_truncated_sinks"] = metadata_truncated_count
+            result.setdefault("_warnings", []).append(
+                "Some sink metadata blobs were capped. Set max_metadata_bytes=0 for full sink metadata."
             )
         return _json_response(result)
     except sqlite3.OperationalError as exc:

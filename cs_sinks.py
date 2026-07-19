@@ -43,6 +43,7 @@ def sinks(
     max_callers_per_sink: int = typer.Option(10, "--max-callers-per-sink", help="Max reachable callers per sink (0 = all)"),
     include_metadata: bool = typer.Option(False, "--include-metadata", help="Include full parsed sink metadata in JSON results"),
     include_caller_details: bool = typer.Option(False, "--include-caller-details", help="Include caller signature and line_end fields in MCP results"),
+    max_metadata_bytes: int = typer.Option(4096, "--max-metadata-bytes", help="Max serialized sink metadata bytes with --include-metadata (0 = all)"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     result = json.loads(mcp_server.cs_sinks(
@@ -54,6 +55,7 @@ def sinks(
         max_callers_per_sink=max_callers_per_sink,
         include_metadata=include_metadata,
         include_caller_details=include_caller_details,
+        max_metadata_bytes=max_metadata_bytes,
     ))
 
     if "error" in result:

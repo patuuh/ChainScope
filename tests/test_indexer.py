@@ -76,7 +76,9 @@ class TestIndexing:
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_callers_per_sink"].default == 10
         assert inspect.signature(mcp_server.cs_sinks).parameters["include_caller_details"].default is False
+        assert inspect.signature(mcp_server.cs_sinks).parameters["max_metadata_bytes"].default == 4096
         assert "max_callers_per_sink=10" in help_payload["exploration_tools"]["cs_sinks"]
+        assert "max_metadata_bytes=4096" in help_payload["exploration_tools"]["cs_sinks"]
 
     def test_mcp_uses_capped_node_match_helpers(self):
         import mcp_server
@@ -3971,6 +3973,14 @@ class TestIndexing:
             sink_type="fund_transfer",
             max_results=1,
             include_metadata=True,
+            max_metadata_bytes=0,
+        ))
+        capped = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+            include_metadata=True,
+            max_metadata_bytes=200,
         ))
 
         assert compact["include_metadata"] is False
@@ -3978,7 +3988,18 @@ class TestIndexing:
         assert compact["sinks"][0]["source_context"] == "production"
         assert "metadata" not in compact["sinks"][0]
         assert detailed["include_metadata"] is True
+        assert detailed["max_metadata_bytes"] == 0
         assert detailed["sinks"][0]["metadata"]["large"] == ["x"] * 50
+        assert "metadata_truncated" not in detailed
+        assert capped["include_metadata"] is True
+        assert capped["max_metadata_bytes"] == 200
+        assert capped["metadata_truncated"] is True
+        assert capped["metadata_truncated_sinks"] == 1
+        assert capped["sinks"][0]["_metadata_summary"]["truncated"] is True
+        assert capped["sinks"][0]["metadata"]["_truncated"] is True
+        assert "large" in capped["sinks"][0]["metadata"]["_keys"]
+        assert "large" not in capped["sinks"][0]["metadata"]
+        assert "max_metadata_bytes=0" in capped["_warnings"][0]
 
     def test_sinks_prefilters_sink_type_before_metadata_parse(self, tmp_db, monkeypatch):
         import mcp_server

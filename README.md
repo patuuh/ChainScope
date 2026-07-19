@@ -326,10 +326,12 @@ Broad `cs_sinks` output is capped by sink count and reachable callers per sink
 (`max_results=50`, `max_callers_per_sink=10` by default). The response still
 reports total sinks, type counts, and caller truncation. Full parsed sink
 metadata is omitted by default for MCP context; set `include_metadata=true` only
-when the raw sink metadata is needed. Caller rows omit verbose fields by
-default; set `include_caller_details=true` when caller signatures and `line_end`
-are needed. Set `max_results=0` or
-`max_callers_per_sink=0` only when exhaustive sink expansion is intentional.
+when the raw sink metadata is needed. Included sink metadata is capped by
+`max_metadata_bytes=4096`; set `max_metadata_bytes=0` only when full sink
+metadata is needed. Caller rows omit verbose fields by default; set
+`include_caller_details=true` when caller signatures and `line_end` are needed.
+Set `max_results=0` or `max_callers_per_sink=0` only when exhaustive sink
+expansion is intentional.
 
 ## Query surface
 
@@ -378,6 +380,7 @@ are needed. Set `max_results=0` or
 - `python cs_state.py --max-entities 0 --max-transitions-per-entity 0 --max-warnings 0 ...`
 - `python cs_sinks.py ...`
 - `python cs_sinks.py --max-results 0 --max-callers-per-sink 0 ...`
+- `python cs_sinks.py --include-metadata --max-metadata-bytes 0 --json ...`
 - `python cs_sinks.py --include-metadata --include-caller-details --json ...`
 
 ## Research mode
