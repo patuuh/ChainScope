@@ -280,7 +280,9 @@ metadata is needed.
 Set `max_source_contexts=0` only when every custom provenance bucket is needed.
 `cs_summary --attack-surface` is also a bounded overview. Its `_summary` reports
 the total entry points, how many were shown, and whether the list was truncated;
-increase `top` when you need a broader entry-point inventory.
+increase `top` when you need a broader entry-point inventory. All-source
+attack-surface summaries fetch and format function metadata only for retained
+top rows.
 
 Scanner category output from `cs_defi` and `cs_unsafe` is capped by
 `max_per_category=25` by default. The summary still reports full category

@@ -2057,14 +2057,12 @@ def cs_summary(
                 attack_surface_nodes: dict[str, dict] = {}
                 for row in conn.execute(
                     """
-                    SELECT id, label, visibility, file, signature, metadata
+                    SELECT id, label, visibility, file, signature
                     FROM nodes
                     WHERE type = 'function' AND visibility IN ('public', 'external')
                     """
                 ):
-                    row_dict = dict(row)
-                    row_dict["_source_context"] = _metadata_source_context(row["metadata"])
-                    attack_surface_nodes[row["id"]] = row_dict
+                    attack_surface_nodes[row["id"]] = dict(row)
 
                 adjacency: dict[str, list[str]] = {}
                 for row in _iter_edges_for_relations(conn, TRAVERSAL_RELATIONS, validate_nodes=True):
@@ -2085,7 +2083,6 @@ def cs_summary(
                         "signature": row["signature"],
                         "reachable_count": len(reachable),
                         "state_writes": write_count,
-                        "source_context": row.get("_source_context", "production"),
                     }
                     _keep_sorted_result(
                         surface,
@@ -2094,6 +2091,14 @@ def cs_summary(
                         top,
                     )
                 data["attack_surface"] = _sorted_results(surface)
+                surface_metadata = _fetch_node_metadata_by_ids(
+                    conn,
+                    {item["id"] for item in data["attack_surface"]},
+                )
+                for item in data["attack_surface"]:
+                    item["source_context"] = _metadata_source_context(
+                        surface_metadata.get(item["id"])
+                    )
                 attack_surface_summary = _section_summary(surface_total, len(data["attack_surface"]))
                 attack_surface_summary["top"] = top
                 data["_summary"] = {

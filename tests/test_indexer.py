@@ -894,15 +894,18 @@ class TestIndexing:
         import mcp_server
 
         db = GraphDB(tmp_db)
+        metadata_by_func = {}
         for i in range(4):
             func_id = f"Vault.sol::Vault.entry{i}()"
             state_id = f"Vault.sol::Vault.total{i}"
+            metadata_by_func[func_id] = json.dumps({"source_context": f"custom{i}", "large": ["x"] * 20})
             db.insert_node(
                 id=func_id,
                 label=f"entry{i}",
                 type="function",
                 visibility="external",
                 file="Vault.sol",
+                metadata=metadata_by_func[func_id],
             )
             db.insert_node(
                 id=state_id,
@@ -916,8 +919,10 @@ class TestIndexing:
 
         real_open = mcp_server._open_query_connection
         real_load = mcp_server._load_metadata
+        real_source_context = mcp_server._metadata_source_context
         statements = []
         parsed = []
+        formatted_contexts = []
 
         class CountingConnection:
             def __init__(self, conn):
@@ -945,7 +950,12 @@ class TestIndexing:
             parsed.append(raw)
             return real_load(raw)
 
+        def counting_source_context(raw):
+            formatted_contexts.append(raw)
+            return real_source_context(raw)
+
         monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+        monkeypatch.setattr(mcp_server, "_metadata_source_context", counting_source_context)
 
         summary = json.loads(mcp_server.cs_summary(db=tmp_db, attack_surface=True, top=2))
 
@@ -957,7 +967,17 @@ class TestIndexing:
         }
         assert any("GROUP BY type" in sql for sql in statements)
         assert any("GROUP BY e.relation" in sql for sql in statements)
-        assert any("WHERE type = 'function' AND visibility IN" in sql for sql in statements)
+        attack_surface_queries = [
+            sql for sql in statements
+            if "WHERE type = 'function' AND visibility IN" in sql
+        ]
+        assert attack_surface_queries
+        assert all("metadata" not in sql for sql in attack_surface_queries)
+        metadata_queries = [
+            sql for sql in statements
+            if sql.startswith("SELECT id, metadata FROM nodes WHERE id IN")
+        ]
+        assert metadata_queries
         assert any("e.relation IN" in sql and "JOIN nodes" in sql for sql in statements)
         assert any(
             "e.relation = 'writes_state'" in sql
@@ -966,6 +986,14 @@ class TestIndexing:
             for sql in statements
         )
         assert parsed == []
+        assert formatted_contexts == [
+            metadata_by_func["Vault.sol::Vault.entry0()"],
+            metadata_by_func["Vault.sol::Vault.entry1()"],
+        ]
+        assert [item["source_context"] for item in summary["attack_surface"]] == [
+            "custom0",
+            "custom1",
+        ]
 
     def test_summary_streams_rows_for_attack_surface(self, monkeypatch):
         import mcp_server
