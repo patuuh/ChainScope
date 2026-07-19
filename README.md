@@ -207,6 +207,8 @@ default. If you want a time-limited partial build or query, pass
 graph reads continue until the client or host stops them.
 MCP `cs_profile` also caps large output sections with `max_output_items`; set
 `max_output_items=0` only when an exhaustive workspace inventory is intentional.
+MCP `cs_build` caps extractor `failure_examples` with `max_failure_examples`;
+set `max_failure_examples=0` only when the full stored failure sample is needed.
 MCP responses are compact JSON by default so agents spend context on graph
 signal rather than indentation whitespace. CLI wrappers still pretty-print JSON
 when their `--json` output mode is used.
@@ -370,6 +372,7 @@ expansion is intentional.
 - `python cs_profile.py --max-output-items 0 ...`
 - `python cs_build.py ...`
 - `python cs_build.py --json ...`
+- `python cs_build.py --max-failure-examples 0 --json ...`
 - `python cs_summary.py ...`
 - `python cs_summary.py --max-source-contexts 0 --json ...`
 - `python cs_summary.py --attack-surface --top 10 ...`
@@ -542,4 +545,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`558 passed`
+`559 passed`

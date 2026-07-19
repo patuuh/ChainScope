@@ -30,6 +30,7 @@ class TestIndexing:
         assert mcp_server.DEFAULT_MCP_BUILD_TIMEOUT_SECONDS == 0
         assert mcp_server.DEFAULT_MCP_QUERY_TIMEOUT_SECONDS == 0
         assert inspect.signature(mcp_server.cs_build).parameters["timeout_seconds"].default == 0
+        assert inspect.signature(mcp_server.cs_build).parameters["max_failure_examples"].default == 5
         assert inspect.signature(mcp_server.cs_profile).parameters["timeout_seconds"].default == 0
         for tool in (
             mcp_server.cs_summary,
@@ -49,6 +50,7 @@ class TestIndexing:
 
         help_payload = json.loads(mcp_server.cs_help())
         assert "do not self-timeout by default" in help_payload["timeout_policy"]
+        assert "max_failure_examples" in help_payload["core_tools"]["cs_build"]
         assert "timeout_seconds is opt-in" in help_payload["core_tools"]["cs_summary"]
         assert inspect.signature(mcp_server.cs_summary).parameters["max_source_contexts"].default == 20
         assert "max_source_contexts" in help_payload["core_tools"]["cs_summary"]
@@ -148,6 +150,48 @@ class TestIndexing:
         assert result["tool"] == "cs_build"
         assert result["repo_path"] == "/not/a/dir"
         assert "not a directory" in result["error"]
+
+    def test_build_caps_failure_examples_for_mcp_context(self, tmp_path, tmp_db, monkeypatch):
+        import mcp_server
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        for i in range(8):
+            (repo / f"Contract{i}.sol").write_text(
+                "pragma solidity ^0.8.0;\ncontract A { function foo() public {} }"
+            )
+
+        class BrokenExtractor:
+            def extract_from_source(self, source, file_path):
+                raise RuntimeError("boom")
+
+        monkeypatch.setattr(Indexer, "_get_extractor", lambda self, chain: BrokenExtractor())
+
+        capped = json.loads(
+            mcp_server.cs_build(
+                repo_path=str(repo),
+                db=tmp_db,
+                max_failure_examples=3,
+            )
+        )
+        uncapped = json.loads(
+            mcp_server.cs_build(
+                repo_path=str(repo),
+                db=str(tmp_path / "uncapped.db"),
+                max_failure_examples=0,
+            )
+        )
+
+        assert capped["extractor_failures"] == 8
+        assert capped["failed_files"] == 8
+        assert len(capped["failure_examples"]) == 3
+        assert capped["failure_examples_summary"] == {"total": 8, "shown": 3, "truncated": True}
+        assert capped["max_failure_examples"] == 3
+        assert "max_failure_examples=0" in capped["_warnings"][0]
+
+        assert len(uncapped["failure_examples"]) == 8
+        assert uncapped["failure_examples_summary"] == {"total": 8, "shown": 8, "truncated": False}
+        assert uncapped["_warnings"] == []
 
     def test_profile_caps_large_sections_for_mcp_context(self, tmp_path):
         import mcp_server

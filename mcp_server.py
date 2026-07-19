@@ -1789,6 +1789,7 @@ def cs_build(
     lang: str = "",
     include_research: bool = False,
     timeout_seconds: int = DEFAULT_MCP_BUILD_TIMEOUT_SECONDS,
+    max_failure_examples: int = 5,
 ) -> str:
     """Build a knowledge graph from a source repository.
 
@@ -1814,6 +1815,7 @@ def cs_build(
         lang: Override chain detection — one of: solidity, vyper, move, clarity, cairo, sway, ton, proto, xdr, anchor, substrate, soroban, cpp, rust, go, java, typescript, python
         include_research: Include scripts/poc/fuzz/invariant/certora-style research artifacts
         timeout_seconds: Optional MCP-side build budget. Set >0 to write a partial graph on timeout; 0 disables.
+        max_failure_examples: Maximum extractor failure examples to return. Set 0 to disable response capping.
     """
     from core.indexer import Indexer
 
@@ -1834,6 +1836,21 @@ def cs_build(
         deadline = time.monotonic() + timeout_seconds
     stats = indexer.index(db_path, deadline=deadline)
     status = "partial_timeout" if stats.get("timed_out") else "success"
+    failure_examples = stats["failure_examples"]
+    failure_examples_total = len(failure_examples)
+    if max_failure_examples and max_failure_examples > 0:
+        failure_examples = failure_examples[:max_failure_examples]
+    failure_examples_summary = {
+        "total": failure_examples_total,
+        "shown": len(failure_examples),
+        "truncated": len(failure_examples) < failure_examples_total,
+    }
+    warnings = []
+    if failure_examples_summary["truncated"]:
+        warnings.append(
+            f"failure_examples truncated to {len(failure_examples)} of {failure_examples_total}; "
+            "set max_failure_examples=0 to return all stored examples"
+        )
 
     return _json_response({
         "status": status,
@@ -1841,6 +1858,7 @@ def cs_build(
         "all_chains": sorted(indexer.all_chains),
         "include_research": include_research,
         "timeout_seconds": timeout_seconds,
+        "max_failure_examples": max_failure_examples,
         "timed_out": stats.get("timed_out", False),
         "database": db_path,
         "files_considered": stats["files_considered"],
@@ -1848,11 +1866,13 @@ def cs_build(
         "extractor_runs": stats["extractor_runs"],
         "extractor_failures": stats["extractor_failures"],
         "failed_files": stats["failed_files"],
-        "failure_examples": stats["failure_examples"],
+        "failure_examples": failure_examples,
+        "failure_examples_summary": failure_examples_summary,
         "nodes": stats["nodes"],
         "edges": stats["edges"],
         "transitions": stats["transitions"],
         "confidence": stats["confidence"],
+        "_warnings": warnings,
         "_next_steps": [
             "cs_audit — full security report (stats, hotspots, reentrancy, taint, events, deadcode, sinks)",
             "cs_hotspots — top functions ranked by composite risk score",
@@ -1879,7 +1899,7 @@ def cs_help() -> str:
         "core_tools": {
             "cs_summary": "Fast graph health and stats check. Use this before broad scans to catch empty or wrong db paths; source-context counters are capped by max_source_contexts, and timeout_seconds is opt-in.",
             "cs_audit": "Top-N security overview with attack surface, hotspots, taint paths, sinks, dead code, and access gaps. Check _summary for truncated sections; raw attack-surface metadata, detailed dead-code rows, and timeout_seconds are opt-in; included metadata is capped by max_metadata_bytes=4096.",
-            "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build.",
+            "cs_build": "Build the graph. MCP does not self-timeout by default; pass timeout_seconds for an intentional partial build. failure_examples are capped by max_failure_examples.",
             "cs_profile": "Profile a repo/workspace before building. Large output sections are capped by max_output_items; use max_output_items=0 for exhaustive profile sections.",
         },
         "scanner_tools": {

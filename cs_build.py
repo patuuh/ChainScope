@@ -14,6 +14,7 @@ def build(
     lang: str = typer.Option(None, help="Override detection (solidity/vyper/move/clarity/cairo/sway/ton/proto/xdr/anchor/substrate/soroban/cpp/rust/go/java/typescript/python)"),
     include_research: bool = typer.Option(False, help="Include scripts/poc/fuzz/invariant/certora research artifacts"),
     timeout_seconds: int = typer.Option(0, help="Stop indexing after N seconds and write a partial graph (0 disables)"),
+    max_failure_examples: int = typer.Option(5, "--max-failure-examples", help="Max extractor failure examples in output (0 disables cap)"),
     codeql: bool = typer.Option(False, help="Enable CodeQL taint analysis"),
     build_cmd: str = typer.Option(None, "--build", help="Build command for CodeQL"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
@@ -24,6 +25,7 @@ def build(
         lang=lang or "",
         include_research=include_research,
         timeout_seconds=timeout_seconds,
+        max_failure_examples=max_failure_examples,
     ))
 
     if "error" in data:
@@ -63,7 +65,7 @@ def build(
         f"extractor failures={data['extractor_failures']}"
     )
     if data["failure_examples"]:
-        typer.echo(f"Failure examples: {data['failure_examples'][:5]}")
+        typer.echo(f"Failure examples: {data['failure_examples']}")
     if data.get("codeql"):
         if data["codeql"]["status"] == "success":
             typer.echo(f"CodeQL: {data['codeql']['edges_added']} taint edges added")
