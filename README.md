@@ -345,7 +345,8 @@ Broad `cs_sinks` output is capped by sink count and reachable callers per sink
 (`max_results=50`, `max_callers_per_sink=10` by default). The response still
 reports total sinks, type counts, and caller truncation. Full parsed sink
 metadata is omitted by default for MCP context; set `include_metadata=true` only
-when the raw sink metadata is needed. Included sink metadata is capped by
+when the raw sink metadata is needed. Raw sink metadata is not retained in
+default sink buffers. Included sink metadata is capped by
 `max_metadata_bytes=4096` and formatted only for shown sinks; set
 `max_metadata_bytes=0` only when full sink metadata is needed. Caller rows omit
 verbose fields by default; set
@@ -551,4 +552,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`561 passed`
+`562 passed`

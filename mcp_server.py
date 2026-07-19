@@ -4182,15 +4182,16 @@ def cs_sinks(
                 "signature": row["signature"],
                 "sink_type": current_type,
                 "source_context": _metadata_source_context(raw_meta),
-                "_metadata_raw": raw_meta,
             }
+            if include_metadata:
+                sink_entry["_metadata_raw"] = raw_meta
             total = _append_capped(sinks, sink_entry, total, max_results)
 
         shown_sinks = sinks
         sink_summary = _section_summary(total, len(shown_sinks))
-        for sink in shown_sinks:
-            raw_meta = sink.pop("_metadata_raw", None)
-            if include_metadata:
+        if include_metadata:
+            for sink in shown_sinks:
+                raw_meta = sink.pop("_metadata_raw", None)
                 sink["metadata"], metadata_summary = _cap_metadata_payload(
                     _load_metadata(raw_meta),
                     max_metadata_bytes,

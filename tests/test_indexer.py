@@ -4178,6 +4178,45 @@ class TestIndexing:
         ]
         assert max(sink_buffer_sizes) == 3
 
+    def test_sinks_omits_raw_metadata_from_default_sink_buffer(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.transfer()",
+            label="transfer",
+            type="function",
+            visibility="public",
+            file="Vault.sol",
+            metadata=json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+                "large": ["x"] * 50,
+            }),
+        )
+
+        real_append = mcp_server._append_capped
+        retained_sink_entries = []
+
+        def tracking_append(items, item, total, limit):
+            if isinstance(item, dict) and item.get("sink_type") == "fund_transfer":
+                retained_sink_entries.append(dict(item))
+            return real_append(items, item, total, limit)
+
+        monkeypatch.setattr(mcp_server, "_append_capped", tracking_append)
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=1,
+        ))
+
+        assert result["shown"] == 1
+        assert retained_sink_entries
+        assert "_metadata_raw" not in retained_sink_entries[0]
+        assert "metadata" not in result["sinks"][0]
+
     def test_sinks_omit_metadata_by_default_for_mcp_context(self, tmp_db):
         import mcp_server
 
