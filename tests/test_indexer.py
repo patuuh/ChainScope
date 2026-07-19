@@ -6193,6 +6193,69 @@ class TestIndexing:
         }
         assert parsed == [target_metadata]
 
+    def test_lookup_formats_attributes_only_for_retained_filtered_relations(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        db.insert_node(
+            id="Vault.sol::Vault.ping()",
+            label="ping",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+            metadata=json.dumps({"source_context": "production"}),
+        )
+        attrs_by_label = {}
+        for i in range(8):
+            caller_id = f"Caller{i:02d}.sol::Caller{i:02d}.callPing()"
+            attrs_by_label[f"callPing{i:02d}"] = json.dumps({
+                "unresolved": True,
+                "large_trace": [i] * 20,
+            })
+            db.insert_node(
+                id=caller_id,
+                label=f"callPing{i:02d}",
+                type="function",
+                visibility="external",
+                file=f"Caller{i:02d}.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+            db.insert_edge(
+                caller_id,
+                "Vault.sol::Vault.ping()",
+                "calls",
+                attributes=attrs_by_label[f"callPing{i:02d}"],
+            )
+
+        real_load_json = mcp_server._load_json_object
+        parsed_attrs = []
+
+        def counting_load_json(raw):
+            parsed_attrs.append(raw)
+            return real_load_json(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_json_object", counting_load_json)
+
+        lookup = json.loads(mcp_server.cs_lookup(
+            name="ping",
+            db=tmp_db,
+            exclude_research=True,
+            max_relation_items=2,
+            max_attribute_bytes=0,
+        ))
+
+        callers = lookup["functions"][0]["callers"]
+        assert [caller["label"] for caller in callers] == ["callPing00", "callPing01"]
+        assert lookup["functions"][0]["_relation_summary"]["callers"] == {
+            "total": 8,
+            "shown": 2,
+            "truncated": True,
+        }
+        assert parsed_attrs == [
+            attrs_by_label["callPing00"],
+            attrs_by_label["callPing01"],
+        ]
+
     def test_trace_filters_research_state_accessors(self, tmp_path, tmp_db):
         import mcp_server
 

@@ -248,7 +248,8 @@ exhaustive profiles. Large parsed metadata blobs are compacted by
 `max_metadata_bytes`; set `max_metadata_bytes=0` only when the full raw metadata
 is needed. Relation edge attributes are capped by `max_attribute_bytes=2048`;
 set `max_attribute_bytes=0` only when full call-site or edge attributes are
-needed.
+needed. Hidden relation rows are counted but do not format attributes after the
+relation cap is reached.
 
 `cs_paths` also caps ambiguous endpoint matches, endpoint candidate lists, and
 returned paths. Use qualified endpoint names first; set
@@ -555,4 +556,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`564 passed`
+`565 passed`

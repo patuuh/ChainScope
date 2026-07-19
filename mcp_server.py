@@ -5715,7 +5715,7 @@ def cs_lookup(
                 info[name] = shown
                 relation_summary[name] = summary
 
-            def _relation_item(row) -> dict | None:
+            def _relation_item(row, include_attributes: bool = True) -> dict | None:
                 nonlocal attribute_truncated_items
                 item = dict(row)
                 raw_meta = item.pop("metadata", None)
@@ -5723,7 +5723,7 @@ def cs_lookup(
                     if _is_research_metadata_raw(raw_meta):
                         return None
                 item["source_context"] = _metadata_source_context(raw_meta)
-                if "attributes" in item:
+                if include_attributes and "attributes" in item:
                     attrs, attr_summary = _cap_json_payload(
                         _load_json_object(item.get("attributes")),
                         max_attribute_bytes,
@@ -5758,11 +5758,12 @@ def cs_lookup(
                 items = []
                 total = 0
                 for row in conn.execute(sql, params):
-                    item = _relation_item(row)
+                    retained = max_relation_items == 0 or len(items) < max_relation_items
+                    item = _relation_item(row, include_attributes=retained)
                     if item is None:
                         continue
                     total += 1
-                    if max_relation_items == 0 or len(items) < max_relation_items:
+                    if retained:
                         items.append(item)
                 return items, {
                     "total": total,
