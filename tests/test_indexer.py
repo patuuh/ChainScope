@@ -103,6 +103,71 @@ class TestIndexing:
         assert hasattr(mcp_server, "_find_node_ids_capped")
         assert hasattr(mcp_server, "_find_function_rows_capped")
 
+        class LazyRow:
+            def __init__(self, row, allow_materialize=True):
+                self._row = row
+                self._allow_materialize = allow_materialize
+
+            def __getitem__(self, key):
+                return self._row[key]
+
+            def keys(self):
+                if not self._allow_materialize:
+                    raise AssertionError("hidden candidates should not materialize row dictionaries")
+                return self._row.keys()
+
+        class FakeConn:
+            def execute(self, sql, params):
+                return [
+                    LazyRow({
+                        "id": "Vault.sol::Vault.ping0()",
+                        "label": "ping",
+                        "type": "function",
+                        "visibility": "external",
+                        "file": "Vault.sol",
+                        "line_start": 1,
+                        "line_end": None,
+                        "signature": "ping()",
+                        "metadata": "{}",
+                    }),
+                    LazyRow({
+                        "id": "Vault.sol::Vault.ping1()",
+                        "label": "ping",
+                        "type": "function",
+                        "visibility": "external",
+                        "file": "Vault.sol",
+                        "line_start": 2,
+                        "line_end": None,
+                        "signature": "ping()",
+                        "metadata": "{}",
+                    }),
+                    LazyRow({
+                        "id": "Vault.sol::Vault.ping2()",
+                        "label": "ping",
+                        "type": "function",
+                        "visibility": "external",
+                        "file": "Vault.sol",
+                        "line_start": 3,
+                        "line_end": None,
+                        "signature": "ping()",
+                        "metadata": "{}",
+                    }, allow_materialize=False),
+                ]
+
+        rows, total, matched = mcp_server._find_function_rows_capped(
+            FakeConn(),
+            "ping",
+            exclude_research=False,
+            retain_limit=2,
+        )
+
+        assert matched is True
+        assert total == 3
+        assert [row["id"] for row in rows] == [
+            "Vault.sol::Vault.ping0()",
+            "Vault.sol::Vault.ping1()",
+        ]
+
     def test_state_transition_metadata_retention_follows_output_cap(self):
         import mcp_server
 

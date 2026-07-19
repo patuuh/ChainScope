@@ -164,11 +164,13 @@ def _find_function_rows_capped(
         matched_before_scope = False
         for row in conn.execute(sql, params):
             matched_before_scope = True
-            item = dict(row)
             if exclude_research:
-                if _is_research_metadata_raw(item.get("metadata")):
+                if _is_research_metadata_raw(row["metadata"]):
                     continue
-            total = _append_capped(rows, item, total, retain_limit)
+            if retain_limit == 0 or len(rows) < retain_limit:
+                total = _append_capped(rows, dict(row), total, retain_limit)
+            else:
+                total += 1
         if total or matched_before_scope:
             return rows, total, matched_before_scope
     return [], 0, False
@@ -187,11 +189,13 @@ def _find_nodes_bounded(
         matched_before_scope = False
         for row in conn.execute(sql, params):
             matched_before_scope = True
-            item = dict(row)
             if exclude_research:
-                if _is_research_metadata_raw(item.get("metadata")):
+                if _is_research_metadata_raw(row["metadata"]):
                     continue
-            total = _append_capped(rows, item, total, retain_limit)
+            if retain_limit == 0 or len(rows) < retain_limit:
+                total = _append_capped(rows, dict(row), total, retain_limit)
+            else:
+                total += 1
         if total or matched_before_scope:
             return rows, total, matched_before_scope
     return [], 0, False
@@ -230,11 +234,13 @@ def _find_state_vars_bounded(
         matched_before_scope = False
         for row in conn.execute(sql, params):
             matched_before_scope = True
-            item = dict(row)
             if exclude_research:
-                if _is_research_metadata_raw(item.get("metadata")):
+                if _is_research_metadata_raw(row["metadata"]):
                     continue
-            total = _append_capped(rows, item, total, retain_limit)
+            if retain_limit == 0 or len(rows) < retain_limit:
+                total = _append_capped(rows, dict(row), total, retain_limit)
+            else:
+                total += 1
         if total or matched_before_scope:
             return rows, total, matched_before_scope
     return [], 0, False

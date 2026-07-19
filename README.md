@@ -250,7 +250,8 @@ shown node details. Large parsed metadata blobs are compacted by
 is needed. Relation edge attributes are capped by `max_attribute_bytes=2048`;
 set `max_attribute_bytes=0` only when full call-site or edge attributes are
 needed. Hidden relation rows are counted but do not format attributes after the
-relation cap is reached.
+relation cap is reached. Shared ambiguous-match helpers also count hidden
+candidate rows without materializing preview dictionaries after candidate caps.
 
 `cs_paths` also caps ambiguous endpoint matches, endpoint candidate lists, and
 returned paths. Use qualified endpoint names first; set
