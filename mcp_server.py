@@ -208,6 +208,25 @@ def _count_label_matches(conn, label: str) -> int:
     ).fetchone()[0]
 
 
+def _populate_label_counts(conn, labels, label_counts: dict[str, int]) -> None:
+    missing = list(dict.fromkeys(label for label in labels if label not in label_counts))
+    if not missing:
+        return
+    for chunk in range(0, len(missing), SQLITE_IN_CHUNK_SIZE):
+        batch = missing[chunk:chunk + SQLITE_IN_CHUNK_SIZE]
+        placeholders = ",".join("?" for _ in batch)
+        found = set()
+        for row in conn.execute(
+            f"SELECT label, COUNT(*) AS cnt FROM nodes WHERE label IN ({placeholders}) GROUP BY label",
+            tuple(batch),
+        ):
+            label_counts[row["label"]] = row["cnt"]
+            found.add(row["label"])
+        for label in batch:
+            if label not in found:
+                label_counts[label] = 0
+
+
 def _find_state_vars_bounded(
     conn,
     var: str,
@@ -4645,6 +4664,13 @@ def cs_paths(
             if path_limit_reached:
                 break
 
+        path_node_ids = list(dict.fromkeys(node_id for path in all_path_ids for node_id in path))
+        _populate_node_cache(conn, path_node_ids, node_by_id)
+        _populate_label_counts(
+            conn,
+            [node["label"] for node in node_by_id.values() if node],
+            label_counts,
+        )
         all_paths = [[_label_for_node(node_id) for node_id in path] for path in all_path_ids]
         result = {
             "from": from_label,

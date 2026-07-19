@@ -7421,6 +7421,60 @@ class TestIndexing:
         assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
         assert any("e.source = ? AND e.relation IN" in sql for sql in statements)
 
+    def test_paths_batches_result_label_counts(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.start()"
+        mid_id = "Vault.sol::Vault.mid()"
+        finish_id = "Vault.sol::Vault.finish()"
+        for node_id, label in (
+            (start_id, "start"),
+            (mid_id, "mid"),
+            (finish_id, "finish"),
+        ):
+            db.insert_node(
+                id=node_id,
+                label=label,
+                type="function",
+                file="Vault.sol",
+                metadata=json.dumps({"source_context": "production"}),
+            )
+        db.insert_edge(start_id, mid_id, "calls")
+        db.insert_edge(mid_id, finish_id, "calls")
+
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                if normalized == "SELECT COUNT(*) FROM nodes WHERE label = ?":
+                    raise AssertionError("cs_paths should batch result label counts")
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
+
+        paths = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+        ))
+
+        assert paths["paths"] == [["start", "mid", "finish"]]
+        assert any("FROM nodes WHERE label IN" in sql and "GROUP BY label" in sql for sql in statements)
+
     def test_paths_uses_tuple_paths_in_bfs_queue(self, tmp_db, monkeypatch):
         import mcp_server
         from collections import deque as real_deque
