@@ -4234,6 +4234,59 @@ class TestIndexing:
         assert "large" not in capped["sinks"][0]["metadata"]
         assert "max_metadata_bytes=0" in capped["_warnings"][0]
 
+    def test_sinks_formats_metadata_only_for_shown_sinks(self, tmp_db, monkeypatch):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        metadata_by_label = {}
+        for i in range(12):
+            label = f"transfer{i:02d}"
+            metadata_by_label[label] = json.dumps({
+                "is_sink": True,
+                "sink_type": "fund_transfer",
+                "source_context": "production",
+                "large": [label] * 20,
+            })
+            db.insert_node(
+                id=f"Vault{i:02d}.sol::Vault{i:02d}.transfer()",
+                label=label,
+                type="function",
+                visibility="public",
+                file=f"Vault{i:02d}.sol",
+                line_start=i + 1,
+                metadata=metadata_by_label[label],
+            )
+
+        real_load = mcp_server._load_metadata
+        parsed = []
+
+        def counting_load(raw):
+            parsed.append(raw)
+            return real_load(raw)
+
+        monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+
+        result = json.loads(mcp_server.cs_sinks(
+            db=tmp_db,
+            sink_type="fund_transfer",
+            max_results=3,
+            include_metadata=True,
+            max_metadata_bytes=0,
+        ))
+
+        assert result["total"] == 12
+        assert result["shown"] == 3
+        assert [sink["label"] for sink in result["sinks"]] == [
+            "transfer00",
+            "transfer01",
+            "transfer02",
+        ]
+        assert parsed == [
+            metadata_by_label["transfer00"],
+            metadata_by_label["transfer01"],
+            metadata_by_label["transfer02"],
+        ]
+
     def test_sinks_prefilters_sink_type_before_metadata_parse(self, tmp_db, monkeypatch):
         import mcp_server
 
