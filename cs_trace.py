@@ -24,7 +24,8 @@ def trace(
         "--max-accessors-per-relation",
         help="Max writers and readers to return independently (0 = all)",
     ),
-    include_metadata: bool = typer.Option(False, "--include-metadata", help="Include full parsed variable metadata in JSON results"),
+    include_metadata: bool = typer.Option(False, "--include-metadata", help="Include parsed variable metadata in JSON results"),
+    max_metadata_bytes: int = typer.Option(4096, "--max-metadata-bytes", help="Max serialized variable metadata bytes with --include-metadata (0 = all)"),
     exclude_research: bool = typer.Option(False, "--exclude-research", help="Exclude research-mode nodes"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -38,6 +39,7 @@ def trace(
         max_callers_per_accessor=max_callers_per_accessor,
         max_accessors_per_relation=max_accessors_per_relation,
         include_metadata=include_metadata,
+        max_metadata_bytes=max_metadata_bytes,
     ))
 
     if "error" in data:

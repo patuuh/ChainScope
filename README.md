@@ -262,6 +262,8 @@ exhaustive trace output. Writer and reader lists are capped independently by
 is intentional. When using `show_callers`, caller lists are capped by
 `max_callers_per_accessor`. Full parsed variable metadata is omitted by
 default; set `include_metadata=true` only when that raw metadata is needed.
+Included variable metadata is capped by `max_metadata_bytes=4096`; set
+`max_metadata_bytes=0` only when full variable metadata is needed.
 
 `cs_summary --attack-surface` is also a bounded overview. Its `_summary`
 reports the total entry points, how many were shown, and whether the list was
@@ -369,6 +371,7 @@ expansion is intentional.
 - `python cs_trace.py --max-accessors-per-relation 0 ...`
 - `python cs_trace.py --show-callers --max-callers-per-accessor 0 ...`
 - `python cs_trace.py --include-metadata --json ...`
+- `python cs_trace.py --include-metadata --max-metadata-bytes 0 --json ...`
 - `python cs_cross.py --summary ...`
 - `python cs_cross.py --summary --max-counter-items 0 ...`
 - `python cs_cross.py ...`

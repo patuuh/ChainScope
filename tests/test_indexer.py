@@ -79,6 +79,8 @@ class TestIndexing:
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_metadata_bytes"].default == 4096
         assert "max_callers_per_sink=10" in help_payload["exploration_tools"]["cs_sinks"]
         assert "max_metadata_bytes=4096" in help_payload["exploration_tools"]["cs_sinks"]
+        assert inspect.signature(mcp_server.cs_trace).parameters["max_metadata_bytes"].default == 4096
+        assert "max_metadata_bytes=4096" in help_payload["exploration_tools"]["cs_trace"]
 
     def test_mcp_uses_capped_node_match_helpers(self):
         import mcp_server
@@ -6097,7 +6099,18 @@ class TestIndexing:
         )
 
         compact = json.loads(mcp_server.cs_trace(var="total", db=tmp_db))
-        detailed = json.loads(mcp_server.cs_trace(var="total", db=tmp_db, include_metadata=True))
+        detailed = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            include_metadata=True,
+            max_metadata_bytes=0,
+        ))
+        capped = json.loads(mcp_server.cs_trace(
+            var="total",
+            db=tmp_db,
+            include_metadata=True,
+            max_metadata_bytes=200,
+        ))
 
         assert compact["include_metadata"] is False
         assert compact["variable"]["source_context"] == "production"
@@ -6105,7 +6118,19 @@ class TestIndexing:
         assert "metadata" not in compact["variables"][0]
         assert compact["writers"][0]["source_context"] == "production"
         assert detailed["include_metadata"] is True
+        assert detailed["max_metadata_bytes"] == 0
         assert detailed["variable"]["metadata"]["large"] == ["x"] * 50
+        assert "metadata_truncated" not in detailed
+        assert capped["include_metadata"] is True
+        assert capped["max_metadata_bytes"] == 200
+        assert capped["metadata_truncated"] is True
+        assert capped["metadata_truncated_variables"] == 1
+        assert capped["variable"]["_metadata_summary"]["truncated"] is True
+        assert capped["variable"]["metadata"]["source_context"] == "production"
+        assert capped["variable"]["metadata"]["_truncated"] is True
+        assert "large" in capped["variable"]["metadata"]["_keys"]
+        assert "large" not in capped["variable"]["metadata"]
+        assert "max_metadata_bytes=0" in capped["_warnings"][0]
 
     def test_trace_retains_only_capped_variable_rows(self, tmp_db, monkeypatch):
         import mcp_server

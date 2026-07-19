@@ -1847,7 +1847,7 @@ def cs_help() -> str:
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes; relation attributes by max_attribute_bytes.",
             "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
-            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, and show_callers lists by max_callers_per_accessor; full variable metadata is opt-in with include_metadata.",
+            "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, show_callers lists by max_callers_per_accessor, and included metadata by max_metadata_bytes=4096.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls default to max_results=50, attributes to max_attribute_bytes=2048, and omit graph IDs unless include_node_ids=true; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top, counters by max_counter_items, and sample attributes by max_attribute_bytes.",
             "cs_sinks": "Dangerous sink inventory with bounded caller reachability. Defaults cap sinks at max_results=50, callers per sink at max_callers_per_sink=10, and included metadata at max_metadata_bytes=4096; use include_metadata and include_caller_details for verbose output.",
@@ -4540,6 +4540,7 @@ def cs_trace(
     max_callers_per_accessor: int = 20,
     max_accessors_per_relation: int = 100,
     include_metadata: bool = False,
+    max_metadata_bytes: int = 4096,
 ) -> str:
     """Trace all functions that read or write a state variable.
 
@@ -4557,6 +4558,7 @@ def cs_trace(
         max_callers_per_accessor: Maximum callers attached to each reader/writer when show_callers is true (0 disables)
         max_accessors_per_relation: Maximum writers and readers returned independently (0 disables)
         include_metadata: Include full parsed state-variable metadata
+        max_metadata_bytes: Maximum serialized variable metadata bytes when include_metadata=true (0 disables)
     """
     if max_matches < 0:
         max_matches = 0
@@ -4566,6 +4568,8 @@ def cs_trace(
         max_callers_per_accessor = 0
     if max_accessors_per_relation < 0:
         max_accessors_per_relation = 0
+    if max_metadata_bytes < 0:
+        max_metadata_bytes = 0
 
     db_path = _resolve_db(db)
     try:
@@ -4591,8 +4595,10 @@ def cs_trace(
             return _json_response({"error": f"No state variable found matching '{var}'"})
 
         full_by_id: dict[str, dict] = {}
+        metadata_truncated_count = 0
 
         def _state_var_for_row(row) -> dict:
+            nonlocal metadata_truncated_count
             cached = full_by_id.get(row["id"])
             if cached is not None:
                 return cached
@@ -4609,7 +4615,10 @@ def cs_trace(
                 else _metadata_source_context(item.get("metadata"))
             )
             if include_metadata:
-                item["metadata"] = meta
+                item["metadata"], metadata_summary = _cap_metadata_payload(meta, max_metadata_bytes)
+                item["_metadata_summary"] = metadata_summary
+                if metadata_summary["truncated"]:
+                    metadata_truncated_count += 1
             else:
                 item.pop("metadata", None)
             full_by_id[item["id"]] = item
@@ -4623,7 +4632,15 @@ def cs_trace(
         variables = [_state_var_for_row(row) for row in variable_rows]
 
         def _candidate_for_row(row) -> dict:
-            item = _state_var_for_row(row)
+            item = full_by_id.get(row["id"])
+            if item is None:
+                return {
+                    "id": row["id"],
+                    "label": row["label"],
+                    "file": row["file"],
+                    "signature": row.get("signature", ""),
+                    "source_context": _metadata_source_context(row.get("metadata")),
+                }
             return {
                 "id": item["id"],
                 "label": item["label"],
@@ -4764,12 +4781,19 @@ def cs_trace(
             "max_callers_per_accessor": max_callers_per_accessor,
             "max_accessors_per_relation": max_accessors_per_relation,
             "include_metadata": include_metadata,
+            "max_metadata_bytes": max_metadata_bytes,
             "query_scope": "production_only" if exclude_research else "all_sources",
             "writers": writers,
             "readers": readers,
             "writers_summary": writers_summary,
             "readers_summary": readers_summary,
         }
+        if metadata_truncated_count:
+            response["metadata_truncated"] = True
+            response["metadata_truncated_variables"] = metadata_truncated_count
+            response.setdefault("_warnings", []).append(
+                "Some cs_trace variable metadata blobs were capped. Set max_metadata_bytes=0 for full variable metadata."
+            )
         accessor_truncated = writers_summary["truncated"] or readers_summary["truncated"]
         if accessor_truncated:
             response["accessor_truncated"] = True
