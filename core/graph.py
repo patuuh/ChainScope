@@ -1,6 +1,7 @@
 """Graph operations: BFS, path-finding, state tracing, sink propagation."""
 
 import json
+import sqlite3
 from collections import deque
 from core.schema import GraphDB
 
@@ -28,6 +29,15 @@ def _qualified_label_from_id(node_id: str) -> str:
     return node_id
 
 
+def _execute_with_index_fallback(conn, sql: str, params: tuple = (), index_name: str = ""):
+    try:
+        return conn.execute(sql, params)
+    except sqlite3.OperationalError as exc:
+        if index_name and f"no such index: {index_name}" in str(exc):
+            return conn.execute(sql.replace(f" INDEXED BY {index_name}", ""), params)
+        raise
+
+
 class Graph:
     """Query interface over a ChainScope knowledge graph."""
 
@@ -36,12 +46,15 @@ class Graph:
 
     def _build_adjacency(self, conn) -> dict[str, list[str]]:
         """Build forward adjacency list from traversal edges."""
-        rows = conn.execute(
+        rows = _execute_with_index_fallback(
+            conn,
             """
             SELECT source, target, relation
             FROM edges INDEXED BY idx_edges_relation_source
             WHERE relation IN ('calls', 'flows_to', 'inherits')
-            """
+            """,
+            (),
+            "idx_edges_relation_source",
         ).fetchall()
         adj: dict[str, list[str]] = {}
         for row in rows:
@@ -53,12 +66,15 @@ class Graph:
 
     def _build_reverse_adjacency(self, conn) -> dict[str, list[str]]:
         """Build reverse adjacency list (target -> callers) for backward BFS."""
-        rows = conn.execute(
+        rows = _execute_with_index_fallback(
+            conn,
             """
             SELECT source, target
             FROM edges INDEXED BY idx_edges_relation_target
             WHERE relation = 'calls'
-            """
+            """,
+            (),
+            "idx_edges_relation_target",
         ).fetchall()
         rev: dict[str, list[str]] = {}
         for row in rows:
@@ -150,12 +166,12 @@ class Graph:
         """Find all functions that read/write a state variable."""
         conn = self.db.get_connection()
         try:
-            rows = conn.execute("""
+            rows = _execute_with_index_fallback(conn, """
                 SELECT n.id, n.label, n.file, n.visibility, n.line_start, n.line_end
                 FROM edges e INDEXED BY idx_edges_target_relation
                 JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = ?
-            """, (state_var_id, relation)).fetchall()
+            """, (state_var_id, relation), "idx_edges_target_relation").fetchall()
             return [dict(r) for r in rows]
         finally:
             conn.close()
@@ -164,12 +180,12 @@ class Graph:
         """Find all direct callers of a function."""
         conn = self.db.get_connection()
         try:
-            rows = conn.execute("""
+            rows = _execute_with_index_fallback(conn, """
                 SELECT n.id, n.label, n.file, n.visibility
                 FROM edges e INDEXED BY idx_edges_target_relation
                 JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'calls'
-            """, (node_id,)).fetchall()
+            """, (node_id,), "idx_edges_target_relation").fetchall()
             return [dict(r) for r in rows]
         finally:
             conn.close()
@@ -178,12 +194,12 @@ class Graph:
         """Find all modifiers/guards protecting a function."""
         conn = self.db.get_connection()
         try:
-            rows = conn.execute("""
+            rows = _execute_with_index_fallback(conn, """
                 SELECT n.id, n.label, n.file, n.type
                 FROM edges e INDEXED BY idx_edges_target_relation
                 JOIN nodes n ON e.source = n.id
                 WHERE e.target = ? AND e.relation = 'guards'
-            """, (node_id,)).fetchall()
+            """, (node_id,), "idx_edges_target_relation").fetchall()
             return [dict(r) for r in rows]
         finally:
             conn.close()
@@ -270,10 +286,13 @@ class Graph:
 
             # Precompute per-node write counts
             write_map: dict[str, int] = {}
-            rows = conn.execute(
+            rows = _execute_with_index_fallback(
+                conn,
                 "SELECT source, COUNT(DISTINCT target) as cnt "
                 "FROM edges INDEXED BY idx_edges_relation_source "
-                "WHERE relation='writes_state' GROUP BY source"
+                "WHERE relation='writes_state' GROUP BY source",
+                (),
+                "idx_edges_relation_source",
             ).fetchall()
             for r in rows:
                 write_map[r["source"]] = r["cnt"]
