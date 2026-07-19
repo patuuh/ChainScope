@@ -251,7 +251,10 @@ needed.
 `cs_paths` also caps ambiguous endpoint matches, endpoint candidate lists, and
 returned paths. Use qualified endpoint names first; set
 `max_endpoint_matches=0`, `max_endpoint_candidates=0`, or `max_paths=0` only
-when exhaustive path search is intentional.
+when exhaustive path search is intentional. Optional guard and state
+annotations are capped per path node by `max_guards_per_node=20` and
+`max_state_access_per_node=25`; set either to `0` only when exhaustive
+annotations are needed.
 
 The same rule applies to broad `cs_trace` variable queries. Names like
 `total`, `owner`, or `balance` are capped by default and return compact
@@ -369,6 +372,8 @@ expansion is intentional.
 - `python cs_paths.py ...`
 - `python cs_paths.py --max-paths 0 --max-endpoint-matches 0 ...`
 - `python cs_paths.py --max-endpoint-candidates 0 ...`
+- `python cs_paths.py --show-guards --max-guards-per-node 0 ...`
+- `python cs_paths.py --show-state --max-state-access-per-node 0 ...`
 - `python cs_trace.py ...`
 - `python cs_trace.py --max-matches 0 ...`
 - `python cs_trace.py --max-candidates 0 ...`
@@ -532,4 +537,4 @@ pytest -q
 
 Result at the time of this README update:
 
-`556 passed`
+`557 passed`

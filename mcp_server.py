@@ -1880,7 +1880,7 @@ def cs_help() -> str:
         },
         "exploration_tools": {
             "cs_lookup": "Function profile: callers, callees, state reads/writes, guards, edges. Common names are capped by max_matches; candidates by max_candidates; relation lists by max_relation_items; large metadata blobs by max_metadata_bytes; relation attributes by max_attribute_bytes.",
-            "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, and paths by max_paths.",
+            "cs_paths": "Find call paths between two functions. Ambiguous endpoints are capped by max_endpoint_matches, candidates by max_endpoint_candidates, paths by max_paths, and optional guard/state annotations by max_guards_per_node and max_state_access_per_node.",
             "cs_trace": "Trace readers/writers of a state variable. Ambiguous names are capped by max_matches, candidates by max_candidates, accessor lists by max_accessors_per_relation, show_callers lists by max_callers_per_accessor, and included metadata by max_metadata_bytes=4096.",
             "cs_cross": "Cross-contract/module boundary calls. Raw calls default to max_results=50, attributes to max_attribute_bytes=2048, and omit graph IDs unless include_node_ids=true; ambiguous from_func candidates by max_start_candidates.",
             "cs_cross_summary": "Bounded trust-boundary overview for large graphs; sample calls are capped by top, counters by max_counter_items, and sample attributes by max_attribute_bytes.",
@@ -4286,6 +4286,8 @@ def cs_paths(
     max_paths: int = 10,
     max_endpoint_matches: int = 20,
     max_endpoint_candidates: int = 50,
+    max_guards_per_node: int = 20,
+    max_state_access_per_node: int = 25,
     show_guards: bool = False,
     show_state: bool = False,
     exclude_research: bool = False,
@@ -4304,6 +4306,8 @@ def cs_paths(
         max_paths: Maximum paths to return (0 disables)
         max_endpoint_matches: Maximum matching start/end nodes to search (0 disables)
         max_endpoint_candidates: Maximum ambiguous endpoint candidates to return (0 disables)
+        max_guards_per_node: Maximum guard labels attached to each path node (0 disables)
+        max_state_access_per_node: Maximum reads and writes attached to each path node independently (0 disables)
         show_guards: Annotate each hop with its modifier/guard protections
         show_state: Annotate each hop with state variable reads/writes
         exclude_research: Exclude nodes originating from research-mode files
@@ -4317,6 +4321,10 @@ def cs_paths(
         max_endpoint_matches = 0
     if max_endpoint_candidates < 0:
         max_endpoint_candidates = 0
+    if max_guards_per_node < 0:
+        max_guards_per_node = 0
+    if max_state_access_per_node < 0:
+        max_state_access_per_node = 0
 
     db_path = _resolve_db(db)
     try:
@@ -4467,6 +4475,8 @@ def cs_paths(
                 "max_depth": max_depth,
                 "max_endpoint_matches": max_endpoint_matches,
                 "max_endpoint_candidates": max_endpoint_candidates,
+                "max_guards_per_node": max_guards_per_node,
+                "max_state_access_per_node": max_state_access_per_node,
                 "from_matches_total": from_matches_total,
                 "from_matches_used": len(selected_from_nodes),
                 "to_matches_total": to_matches_total,
@@ -4509,6 +4519,7 @@ def cs_paths(
 
         if show_guards:
             result["guards"] = {}
+            guard_truncated_count = 0
             seen: set[str] = set()
             for path in all_path_ids:
                 for node_id in path:
@@ -4519,18 +4530,38 @@ def cs_paths(
                         SELECT n.id, n.label, n.metadata
                         FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
                         WHERE e.target = ? AND e.relation = 'guards'
+                        ORDER BY n.file, n.label, n.id
                     """.format(target_index_hint=target_index_hint), (node_id,))
                     labels = []
+                    total = 0
                     for guard in guards:
                         if exclude_research:
                             if _is_research_metadata_raw(guard["metadata"]):
                                 continue
-                        labels.append(guard["label"])
+                        total += 1
+                        if max_guards_per_node == 0 or len(labels) < max_guards_per_node:
+                            labels.append(guard["label"])
                     if labels:
-                        result["guards"][_label_for_node(node_id)] = labels
+                        label = _label_for_node(node_id)
+                        result["guards"][label] = labels
+                        if total > len(labels):
+                            result.setdefault("guard_summary", {})[label] = _section_summary(
+                                total,
+                                len(labels),
+                            )
+                            guard_truncated_count += 1
+            if guard_truncated_count:
+                result["guard_truncated"] = True
+                result["guard_truncated_nodes"] = guard_truncated_count
+                result["_summary"]["annotation_truncated"] = True
+                result["_summary"]["truncated"] = True
+                result.setdefault("_warnings", []).append(
+                    "Some cs_paths guard annotations were capped. Set max_guards_per_node=0 for exhaustive guards."
+                )
 
         if show_state:
             result["state_access"] = {}
+            state_truncated_count = 0
             seen: set[str] = set()
             for path in all_path_ids:
                 for node_id in path:
@@ -4548,17 +4579,38 @@ def cs_paths(
                     )
                     read_labels = []
                     write_labels = []
+                    read_total = 0
+                    write_total = 0
                     for row in access_rows:
                         label = row["target"].split("::")[-1]
                         if row["relation"] == "reads_state":
-                            read_labels.append(label)
+                            read_total += 1
+                            if max_state_access_per_node == 0 or len(read_labels) < max_state_access_per_node:
+                                read_labels.append(label)
                         else:
-                            write_labels.append(label)
+                            write_total += 1
+                            if max_state_access_per_node == 0 or len(write_labels) < max_state_access_per_node:
+                                write_labels.append(label)
                     if read_labels or write_labels:
-                        result["state_access"][_label_for_node(node_id)] = {
+                        label = _label_for_node(node_id)
+                        result["state_access"][label] = {
                             "reads": read_labels,
                             "writes": write_labels,
                         }
+                        if read_total > len(read_labels) or write_total > len(write_labels):
+                            result.setdefault("state_access_summary", {})[label] = {
+                                "reads": _section_summary(read_total, len(read_labels)),
+                                "writes": _section_summary(write_total, len(write_labels)),
+                            }
+                            state_truncated_count += 1
+            if state_truncated_count:
+                result["state_access_truncated"] = True
+                result["state_access_truncated_nodes"] = state_truncated_count
+                result["_summary"]["annotation_truncated"] = True
+                result["_summary"]["truncated"] = True
+                result.setdefault("_warnings", []).append(
+                    "Some cs_paths state annotations were capped. Set max_state_access_per_node=0 for exhaustive reads/writes."
+                )
 
         return _json_response(result)
     except sqlite3.OperationalError as exc:

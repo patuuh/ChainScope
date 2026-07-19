@@ -75,6 +75,10 @@ class TestIndexing:
         assert inspect.signature(mcp_server.cs_lookup).parameters["max_attribute_bytes"].default == 2048
         assert "max_metadata_bytes" in help_payload["exploration_tools"]["cs_lookup"]
         assert "max_attribute_bytes" in help_payload["exploration_tools"]["cs_lookup"]
+        assert inspect.signature(mcp_server.cs_paths).parameters["max_guards_per_node"].default == 20
+        assert inspect.signature(mcp_server.cs_paths).parameters["max_state_access_per_node"].default == 25
+        assert "max_guards_per_node" in help_payload["exploration_tools"]["cs_paths"]
+        assert "max_state_access_per_node" in help_payload["exploration_tools"]["cs_paths"]
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_results"].default == 50
         assert inspect.signature(mcp_server.cs_sinks).parameters["max_callers_per_sink"].default == 10
         assert inspect.signature(mcp_server.cs_sinks).parameters["include_caller_details"].default is False
@@ -7198,6 +7202,99 @@ class TestIndexing:
         assert any("INDEXED BY idx_edges_source_relation" in sql for sql in statements)
         assert any("INDEXED BY idx_edges_target_relation" in sql for sql in statements)
         assert any("e.relation IN ('reads_state', 'writes_state')" in sql for sql in statements)
+
+    def test_paths_caps_guard_and_state_annotations_for_llm_context(self, tmp_db):
+        import mcp_server
+
+        db = GraphDB(tmp_db)
+        start_id = "Vault.sol::Vault.start()"
+        finish_id = "Vault.sol::Vault.finish()"
+        db.insert_node(
+            id=start_id,
+            label="start",
+            type="function",
+            visibility="external",
+            file="Vault.sol",
+        )
+        db.insert_node(
+            id=finish_id,
+            label="finish",
+            type="function",
+            visibility="internal",
+            file="Vault.sol",
+        )
+        db.insert_edge(start_id, finish_id, "calls")
+        for i in range(5):
+            guard_id = f"Vault.sol::Vault.onlyRole{i}"
+            db.insert_node(
+                id=guard_id,
+                label=f"onlyRole{i}",
+                type="modifier",
+                file="Vault.sol",
+            )
+            db.insert_edge(guard_id, start_id, "guards")
+        for i in range(4):
+            read_id = f"Vault.sol::Vault.read{i}"
+            write_id = f"Vault.sol::Vault.write{i}"
+            db.insert_node(
+                id=read_id,
+                label=f"read{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_node(
+                id=write_id,
+                label=f"write{i}",
+                type="state_var",
+                file="Vault.sol",
+            )
+            db.insert_edge(start_id, read_id, "reads_state")
+            db.insert_edge(start_id, write_id, "writes_state")
+
+        capped = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            show_guards=True,
+            show_state=True,
+            max_guards_per_node=2,
+            max_state_access_per_node=2,
+        ))
+        uncapped = json.loads(mcp_server.cs_paths(
+            from_label="start",
+            to_label="finish",
+            db=tmp_db,
+            show_guards=True,
+            show_state=True,
+            max_guards_per_node=0,
+            max_state_access_per_node=0,
+        ))
+
+        assert capped["_summary"]["max_guards_per_node"] == 2
+        assert capped["_summary"]["max_state_access_per_node"] == 2
+        assert capped["_summary"]["annotation_truncated"] is True
+        assert capped["_summary"]["truncated"] is True
+        assert capped["guards"]["start"] == ["onlyRole0", "onlyRole1"]
+        assert capped["guard_summary"]["start"] == {"total": 5, "shown": 2, "truncated": True}
+        assert capped["guard_truncated"] is True
+        assert capped["state_access"]["start"]["reads"] == ["Vault.read0", "Vault.read1"]
+        assert capped["state_access"]["start"]["writes"] == ["Vault.write0", "Vault.write1"]
+        assert capped["state_access_summary"]["start"] == {
+            "reads": {"total": 4, "shown": 2, "truncated": True},
+            "writes": {"total": 4, "shown": 2, "truncated": True},
+        }
+        assert capped["state_access_truncated"] is True
+        assert "max_guards_per_node=0" in capped["_warnings"][0]
+        assert "max_state_access_per_node=0" in capped["_warnings"][1]
+
+        assert uncapped["_summary"]["max_guards_per_node"] == 0
+        assert uncapped["_summary"]["max_state_access_per_node"] == 0
+        assert "annotation_truncated" not in uncapped["_summary"]
+        assert uncapped["guards"]["start"] == [f"onlyRole{i}" for i in range(5)]
+        assert uncapped["state_access"]["start"]["reads"] == [f"Vault.read{i}" for i in range(4)]
+        assert uncapped["state_access"]["start"]["writes"] == [f"Vault.write{i}" for i in range(4)]
+        assert "guard_truncated" not in uncapped
+        assert "state_access_truncated" not in uncapped
 
     def test_paths_show_state_omits_empty_state_access_entries(self, tmp_db):
         import mcp_server
