@@ -6664,12 +6664,31 @@ class TestIndexing:
 
         real_load = mcp_server._load_metadata
         parsed = []
+        real_open = mcp_server._open_query_connection
+        statements = []
 
         def counting_load(raw):
             parsed.append(raw)
             return real_load(raw)
 
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                normalized = " ".join(sql.split())
+                statements.append(normalized)
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
         monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+        monkeypatch.setattr(
+            mcp_server,
+            "_open_query_connection",
+            lambda *args, **kwargs: CountingConnection(real_open(*args, **kwargs)),
+        )
 
         capped = json.loads(mcp_server.cs_trace(
             var="total",
@@ -6692,6 +6711,8 @@ class TestIndexing:
         assert uncapped["writers_summary"] == {"total": 8, "shown": 8, "truncated": False}
         assert "accessor_truncated" not in uncapped
         assert parsed == []
+        assert any("COUNT(DISTINCT e.source)" in sql for sql in statements)
+        assert any("SELECT DISTINCT n.id" in sql and "LIMIT ?" in sql for sql in statements)
 
     def test_trace_streams_accessor_and_caller_rows(self, tmp_db, monkeypatch):
         import mcp_server
@@ -6745,7 +6766,8 @@ class TestIndexing:
 
             def execute(self, sql, *args, **kwargs):
                 cursor = self._conn.execute(sql, *args, **kwargs)
-                if "COUNT(*)" in " ".join(sql.split()):
+                normalized = " ".join(sql.split())
+                if "COUNT(*)" in normalized or "COUNT(DISTINCT e.source)" in normalized:
                     return cursor
                 return StreamingRows(cursor)
 

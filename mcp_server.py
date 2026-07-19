@@ -4809,6 +4809,15 @@ def cs_trace(
                 ORDER BY n.file, n.line_start, n.id
             """, (var_id, relation))
 
+        def _capped_accessor_rows(var_id: str, relation: str):
+            return conn.execute(f"""
+                SELECT DISTINCT n.id, n.label, n.file, n.visibility, n.line_start, n.line_end, n.metadata
+                FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                WHERE e.target = ? AND e.relation = ?
+                ORDER BY n.file, n.line_start, n.id
+                LIMIT ?
+            """, (var_id, relation, max_accessors_per_relation))
+
         def _accessor_item(row) -> dict | None:
             item = dict(row)
             raw_meta = item.pop("metadata", None)
@@ -4827,6 +4836,25 @@ def cs_trace(
             return items
 
         def _collect_accessors(relation: str) -> tuple[list[dict], dict]:
+            if len(variables) == 1 and max_accessors_per_relation > 0 and not exclude_research:
+                var_id = variables[0]["id"]
+                total = conn.execute(
+                    f"""
+                    SELECT COUNT(DISTINCT e.source)
+                    FROM edges AS e{target_index_hint}
+                    WHERE e.target = ? AND e.relation = ?
+                    """,
+                    (var_id, relation),
+                ).fetchone()[0]
+                if total == 0:
+                    return [], _section_summary(0, 0)
+                shown = []
+                for row in _capped_accessor_rows(var_id, relation):
+                    item = _accessor_item(row)
+                    if item is not None:
+                        shown.append(item)
+                return _finalize_accessor_items(shown), _section_summary(total, len(shown))
+
             retained = []
             seen: set[str] = set()
             total = 0

@@ -266,7 +266,8 @@ candidates when ambiguous. `max_matches` caps fully traced variables and
 `max_candidates` caps the candidate list; set either value to `0` only for
 exhaustive trace output. Writer and reader lists are capped independently by
 `max_accessors_per_relation`; set it to `0` only when exhaustive accessor output
-is intentional. When using `show_callers`, caller lists are capped by
+is intentional. Single-variable capped traces use indexed distinct counts plus
+limited accessor rows instead of scanning every accessor. When using `show_callers`, caller lists are capped by
 `max_callers_per_accessor`. Full parsed variable metadata is omitted by
 default; set `include_metadata=true` only when that raw metadata is needed.
 Included variable metadata is capped by `max_metadata_bytes=4096`; set
