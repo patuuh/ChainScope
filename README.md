@@ -328,6 +328,8 @@ older graph DBs that were built before those indexes existed.
 Broad `cs_state` output is also capped by entity groups, transitions per entity,
 warnings, and summary entity total counters. Raw transition metadata is retained
 only for transitions that can be shown after `max_transitions_per_entity`.
+All-source broad state scans fetch function metadata only for shown transitions;
+`exclude_research=true` keeps metadata in the stream because filtering needs it.
 Prefer `entity=` when investigating one state machine, or set the state caps to
 `0` when you intentionally need every transition or entity total.
 

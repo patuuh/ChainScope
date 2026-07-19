@@ -8221,13 +8221,30 @@ class TestIndexing:
                 db.insert_transition(f"State{i}", f"S{j}", f"S{j + 1}", fn_id)
 
         real_load = mcp_server._load_metadata
+        real_open = mcp_server._open_query_connection
         parsed = []
+        statements = []
 
         def counting_load(raw):
             parsed.append(raw)
             return real_load(raw)
 
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append((" ".join(sql.split()), args))
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        def counting_open(*args, **kwargs):
+            return CountingConnection(real_open(*args, **kwargs))
+
         monkeypatch.setattr(mcp_server, "_load_metadata", counting_load)
+        monkeypatch.setattr(mcp_server, "_open_query_connection", counting_open)
 
         state = json.loads(mcp_server.cs_state(
             db=tmp_db,
@@ -8244,6 +8261,24 @@ class TestIndexing:
             for transitions in state["entities"].values()
             for item in transitions
         )
+        transition_queries = [
+            sql for sql, _args in statements
+            if "FROM state_transitions st" in sql
+        ]
+        metadata_queries = [
+            (sql, args) for sql, args in statements
+            if sql.startswith("SELECT id, metadata FROM nodes WHERE id IN")
+        ]
+        assert transition_queries
+        assert all("NULL as function_metadata" in sql for sql in transition_queries)
+        assert metadata_queries
+        fetched_ids = set()
+        for _sql, args in metadata_queries:
+            fetched_ids.update(args[0])
+        assert fetched_ids == {
+            "Vault0.sol::Vault0.advance()",
+            "Vault1.sol::Vault1.advance()",
+        }
 
     def test_state_skips_untagged_source_context_parses(self, tmp_db, monkeypatch):
         import mcp_server

@@ -262,6 +262,19 @@ def _iter_nodes_by_ids(conn, node_ids: list[str]):
                 yield rows_by_id[node_id]
 
 
+def _fetch_node_metadata_by_ids(conn, node_ids: set[str]) -> dict[str, str | None]:
+    """Fetch node metadata in batches for IDs that survived output caps."""
+    metadata_by_id: dict[str, str | None] = {}
+    for chunk in _chunked_ids(node_ids):
+        placeholders = ",".join("?" for _ in chunk)
+        for row in conn.execute(
+            f"SELECT id, metadata FROM nodes WHERE id IN ({placeholders})",
+            tuple(chunk),
+        ):
+            metadata_by_id[row["id"]] = row["metadata"]
+    return metadata_by_id
+
+
 def _fetch_nodes_by_ids(conn, node_ids: list[str]) -> list[dict]:
     """Fetch full node rows in batches while preserving input order."""
     return list(_iter_nodes_by_ids(conn, node_ids))
@@ -5361,10 +5374,15 @@ def cs_state(
         return _query_open_error("cs_state", db_path, exc)
 
     try:
+        metadata_column = (
+            "n.metadata as function_metadata"
+            if exclude_research
+            else "NULL as function_metadata"
+        )
         if entity:
             rows = conn.execute(
-                """
-                SELECT st.*, n.file as function_file, n.label as function_label, n.metadata as function_metadata
+                f"""
+                SELECT st.*, n.file as function_file, n.label as function_label, {metadata_column}
                 FROM state_transitions st
                 LEFT JOIN nodes n ON st.function_id = n.id
                 WHERE st.entity = ?
@@ -5373,8 +5391,8 @@ def cs_state(
                 (entity,)
             )
         else:
-            rows = conn.execute("""
-                SELECT st.*, n.file as function_file, n.label as function_label, n.metadata as function_metadata
+            rows = conn.execute(f"""
+                SELECT st.*, n.file as function_file, n.label as function_label, {metadata_column}
                 FROM state_transitions st
                 LEFT JOIN nodes n ON st.function_id = n.id
                 ORDER BY st.entity, st.from_state, st.to_state, st.function_id
@@ -5539,18 +5557,28 @@ def cs_state(
                 current_entity_retained,
                 max_transitions_per_entity,
                 len(current_transitions),
-            ):
+            ) and raw_meta is not None:
                 item["_function_metadata_raw"] = raw_meta
             current_transitions.append(item)
         _flush_current_entity()
 
         shown_entity_names = list(shown_entities)
+        metadata_missing = {
+            item["function_id"]
+            for trans in shown_entities.values()
+            for item in trans
+            if "_function_metadata_raw" not in item
+        }
+        shown_metadata = _fetch_node_metadata_by_ids(conn, metadata_missing)
 
         for trans in shown_entities.values():
             for item in trans:
                 if "source_context" not in item:
+                    raw_meta = item.pop("_function_metadata_raw", None)
+                    if raw_meta is None:
+                        raw_meta = shown_metadata.get(item["function_id"])
                     item["source_context"] = _metadata_source_context(
-                        item.pop("_function_metadata_raw", None)
+                        raw_meta
                     )
                 else:
                     item.pop("_function_metadata_raw", None)
