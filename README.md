@@ -284,7 +284,8 @@ on larger graphs while preserving exact scoring and false-positive rejection.
 MCP broad scans also cache repeated raw metadata probes so common fields such as
 `source_context`, `is_sink`, and `sink_type` do not require repeated JSON scans.
 Top-level metadata key sets are cached too, while oversized metadata blobs are
-scanned uncached so long-lived MCP servers do not retain them.
+scanned uncached so long-lived MCP servers do not retain them. Repeated detector
+key groups are cached as sets for broad audit and scanner passes.
 Follow-up tools such as `cs_cross`, `cs_sinks`, `cs_paths`, `cs_trace`, and
 `cs_lookup` use composite edge indexes when present, but fall back cleanly for
 older graph DBs that were built before those indexes existed.

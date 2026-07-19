@@ -417,6 +417,11 @@ def _metadata_top_level_key_set(raw: str) -> frozenset[str]:
     return frozenset(_metadata_top_level_key_tuple(raw))
 
 
+@lru_cache(maxsize=128)
+def _metadata_key_group_set(keys: tuple[str, ...]) -> frozenset[str]:
+    return frozenset(keys)
+
+
 def _metadata_top_level_keys(raw) -> set[str]:
     if not isinstance(raw, str):
         return set()
@@ -1957,7 +1962,7 @@ def _is_research_metadata_raw(raw) -> bool:
 
 
 def _metadata_has_any_key(raw, keys: tuple[str, ...]) -> bool:
-    if not raw:
+    if not raw or not keys:
         return False
     if not isinstance(raw, str):
         return False
@@ -1965,7 +1970,7 @@ def _metadata_has_any_key(raw, keys: tuple[str, ...]) -> bool:
         top_level_keys = set(_metadata_top_level_key_tuple_uncached(raw))
     else:
         top_level_keys = _metadata_top_level_key_set(raw)
-    return any(key in top_level_keys for key in keys)
+    return not top_level_keys.isdisjoint(_metadata_key_group_set(keys))
 
 
 def _has_access_control(meta: dict, guard_count: int) -> bool:

@@ -547,22 +547,27 @@ class TestIndexing:
 
         mcp_server._metadata_top_level_key_tuple.cache_clear()
         mcp_server._metadata_top_level_key_set.cache_clear()
+        mcp_server._metadata_key_group_set.cache_clear()
         raw = json.dumps({
             "source_context": "production",
             "reentrancy_risk": True,
             "unchecked_calls": [{"line": 10}],
             "large": ["x"] * 20,
         })
+        keys = ("reentrancy_risk", "unchecked_calls", "missing_key")
 
-        assert mcp_server._metadata_has_any_key(raw, ("reentrancy_risk",)) is True
-        assert mcp_server._metadata_has_any_key(raw, ("unchecked_calls",)) is True
+        assert mcp_server._metadata_has_any_key(raw, keys) is True
+        assert mcp_server._metadata_has_any_key(raw, keys) is True
         assert mcp_server._metadata_has_any_key(raw, ("missing_key",)) is False
 
         tuple_info = mcp_server._metadata_top_level_key_tuple.cache_info()
         set_info = mcp_server._metadata_top_level_key_set.cache_info()
+        key_group_info = mcp_server._metadata_key_group_set.cache_info()
         assert tuple_info.misses == 1
         assert set_info.misses == 1
         assert set_info.hits == 2
+        assert key_group_info.misses == 2
+        assert key_group_info.hits == 1
 
     def test_metadata_raw_value_cache_reuses_repeated_key_probes(self):
         import mcp_server
