@@ -268,11 +268,13 @@ candidates when ambiguous. `max_matches` caps fully traced variables and
 exhaustive trace output. Writer and reader lists are capped independently by
 `max_accessors_per_relation`; set it to `0` only when exhaustive accessor output
 is intentional. Single-variable capped traces use indexed distinct counts plus
-limited accessor rows instead of scanning every accessor. When using `show_callers`, caller lists are capped by
-`max_callers_per_accessor`. Full parsed variable metadata is omitted by
-default; set `include_metadata=true` only when that raw metadata is needed.
-Included variable metadata is capped by `max_metadata_bytes=4096`; set
-`max_metadata_bytes=0` only when full variable metadata is needed.
+limited accessor rows instead of scanning every accessor. When using
+`show_callers`, caller lists are capped by `max_callers_per_accessor`; capped
+caller totals use edge-only counts before fetching shown caller details. Full
+parsed variable metadata is omitted by default; set `include_metadata=true` only
+when that raw metadata is needed. Included variable metadata is capped by
+`max_metadata_bytes=4096`; set `max_metadata_bytes=0` only when full variable
+metadata is needed.
 
 `cs_summary` caps source-context counters by `max_source_contexts=20`.
 Set `max_source_contexts=0` only when every custom provenance bucket is needed.

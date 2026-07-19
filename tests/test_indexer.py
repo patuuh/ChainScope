@@ -6594,7 +6594,7 @@ class TestIndexing:
         assert trace["candidate_summary"] == {"total": 40, "shown": 4, "truncated": True}
         assert max(variable_buffer_sizes) == 4
 
-    def test_trace_caps_show_callers_for_llm_context(self, tmp_db):
+    def test_trace_caps_show_callers_for_llm_context(self, tmp_db, monkeypatch):
         import mcp_server
 
         db = GraphDB(tmp_db)
@@ -6623,6 +6623,25 @@ class TestIndexing:
             )
             db.insert_edge(caller_id, "Vault.sol::Vault.set(uint256)", "calls")
 
+        real_open = mcp_server._open_query_connection
+        statements = []
+
+        class CountingConnection:
+            def __init__(self, conn):
+                self._conn = conn
+
+            def execute(self, sql, *args, **kwargs):
+                statements.append(" ".join(sql.split()))
+                return self._conn.execute(sql, *args, **kwargs)
+
+            def close(self):
+                self._conn.close()
+
+        def counting_open(*args, **kwargs):
+            return CountingConnection(real_open(*args, **kwargs))
+
+        monkeypatch.setattr(mcp_server, "_open_query_connection", counting_open)
+
         capped = json.loads(mcp_server.cs_trace(
             var="total",
             db=tmp_db,
@@ -6646,6 +6665,17 @@ class TestIndexing:
         assert len(uncapped_writer["callers"]) == 5
         assert uncapped_writer["callers_summary"] == {"total": 5, "shown": 5, "truncated": False}
         assert "caller_truncated" not in uncapped
+        caller_count_statements = [
+            sql for sql in statements
+            if sql.startswith("SELECT COUNT(*)")
+            and "e.relation = 'calls'" in sql
+        ]
+        assert any(
+            "FROM edges AS e INDEXED BY idx_edges_target_relation" in sql
+            and "JOIN nodes" not in sql
+            for sql in caller_count_statements
+        )
+        assert not any("JOIN nodes" in sql for sql in caller_count_statements)
 
     def test_trace_caps_accessor_lists_for_llm_context(self, tmp_db, monkeypatch):
         import mcp_server

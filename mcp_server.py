@@ -4895,7 +4895,7 @@ def cs_trace(
                 callers_total = conn.execute(
                     f"""
                     SELECT COUNT(*)
-                    FROM edges AS e{target_index_hint} JOIN nodes n ON e.source = n.id
+                    FROM edges AS e{target_index_hint}
                     WHERE e.target = ? AND e.relation = 'calls'
                     """,
                     params,
