@@ -1452,6 +1452,10 @@ def _summarize_cross_entries(
     target_limit = len(target_counts) if max_counter_items == 0 else max_counter_items
     top_source_files = _top_counter(source_file_counts, source_file_limit)
     top_targets = _top_counter(target_counts, target_limit)
+    source_contexts, source_contexts_summary = _capped_count_mapping(
+        context_counts,
+        max_counter_items,
+    )
     source_files_summary = _section_summary(len(source_file_counts), len(top_source_files))
     targets_summary = _section_summary(len(target_counts), len(top_targets))
 
@@ -1460,14 +1464,19 @@ def _summarize_cross_entries(
         "shown": len(samples),
         "truncated": total > len(samples),
         "by_attribute": dict(sorted(attr_counts.items(), key=lambda item: (-item[1], item[0]))),
-        "by_source_context": dict(sorted(context_counts.items(), key=lambda item: (-item[1], item[0]))),
+        "by_source_context": source_contexts,
         "top_source_files": top_source_files,
         "top_targets": top_targets,
         "counter_summary": {
             "max_counter_items": max_counter_items,
+            "source_contexts": source_contexts_summary,
             "top_source_files": source_files_summary,
             "top_targets": targets_summary,
-            "truncated": source_files_summary["truncated"] or targets_summary["truncated"],
+            "truncated": (
+                source_contexts_summary["truncated"]
+                or source_files_summary["truncated"]
+                or targets_summary["truncated"]
+            ),
         },
         "max_attribute_bytes": max_attribute_bytes,
         "attribute_truncated": attribute_truncated > 0,

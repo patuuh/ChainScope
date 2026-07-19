@@ -3287,6 +3287,7 @@ class TestIndexing:
                 type="function",
                 visibility="external",
                 file=f"Vault{i}.sol",
+                metadata=json.dumps({"source_context": f"context{i}"}),
             )
             db.insert_edge(
                 source=f"Vault{i}.sol::Vault{i}.call()",
@@ -3300,6 +3301,8 @@ class TestIndexing:
 
         assert len(capped["top_source_files"]) == 2
         assert len(capped["top_targets"]) == 2
+        assert capped["by_source_context"] == {"context0": 1, "context1": 1}
+        assert capped["counter_summary"]["source_contexts"] == {"total": 5, "shown": 2, "truncated": True}
         assert capped["counter_summary"]["top_source_files"] == {"total": 5, "shown": 2, "truncated": True}
         assert capped["counter_summary"]["top_targets"] == {"total": 5, "shown": 2, "truncated": True}
         assert capped["counter_summary"]["truncated"] is True
@@ -3307,6 +3310,8 @@ class TestIndexing:
 
         assert len(uncapped["top_source_files"]) == 5
         assert len(uncapped["top_targets"]) == 5
+        assert len(uncapped["by_source_context"]) == 5
+        assert uncapped["counter_summary"]["source_contexts"] == {"total": 5, "shown": 5, "truncated": False}
         assert uncapped["counter_summary"]["truncated"] is False
 
     def test_cross_caps_call_attributes_for_llm_context(self, tmp_db):
@@ -3405,6 +3410,11 @@ class TestIndexing:
             "total": 5,
             "shown": 2,
             "truncated": True,
+        }
+        assert capped["counter_summary"]["source_contexts"] == {
+            "total": 1,
+            "shown": 1,
+            "truncated": False,
         }
         assert (5, 2) in limits
         assert (5, 5) not in limits
