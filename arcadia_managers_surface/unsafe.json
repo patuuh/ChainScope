@@ -1,0 +1,666 @@
+{
+ "missing_validation": [
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/base/Slipstream.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/base/UniswapV3.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/compounders/CompounderSlipstream.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/compounders/CompounderUniswapV3.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/compounders/CompounderUniswapV4.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/rebalancers/RebalancerSlipstream.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/rebalancers/RebalancerUniswapV3.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/rebalancers/RebalancerUniswapV4.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/yield-claimers/YieldClaimerSlipstream.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/yield-claimers/YieldClaimerUniswapV3.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/yield-claimers/YieldClaimerUniswapV4.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cow-swapper/periphery/DefaultOrderHook.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "setHook",
+   "file": "src/cow-swapper/periphery/DefaultOrderHook.sol",
+   "visibility": "external",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/guardian/Guardian.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/merkl-operator/MerklOperatorBase.sol",
+   "visibility": "public",
+   "source_context": "production"
+  }
+ ],
+ "unsafe_downcasts": [
+  {
+   "function": "_claim",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 204,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 222
+    },
+    {
+     "type": "uint8",
+     "line": 224
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_burn",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 294,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 302
+    },
+    {
+     "type": "uint8",
+     "line": 304
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_decreaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 329,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 341
+    },
+    {
+     "type": "uint8",
+     "line": 343
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processSwapDelta",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 427,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 433
+    },
+    {
+     "type": "uint128",
+     "line": 437
+    },
+    {
+     "type": "uint128",
+     "line": 445
+    },
+    {
+     "type": "uint128",
+     "line": 452
+    },
+    {
+     "type": "uint128",
+     "line": 456
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_mint",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 472,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 492
+    },
+    {
+     "type": "uint8",
+     "line": 511
+    },
+    {
+     "type": "uint8",
+     "line": 513
+    },
+    {
+     "type": "uint8",
+     "line": 515
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_increaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 552,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 569
+    },
+    {
+     "type": "uint8",
+     "line": 583
+    },
+    {
+     "type": "uint8",
+     "line": 585
+    },
+    {
+     "type": "uint8",
+     "line": 587
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 223,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 242
+    },
+    {
+     "type": "uint64",
+     "line": 243
+    },
+    {
+     "type": "uint64",
+     "line": 244
+    },
+    {
+     "type": "uint64",
+     "line": 245
+    },
+    {
+     "type": "uint64",
+     "line": 246
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swap",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 454,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 474
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "toUint128",
+   "file": "src/cl-managers/libraries/LiquidityAmounts.sol",
+   "line": 21,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 23
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getRebalanceParams",
+   "file": "src/cl-managers/libraries/RebalanceLogic.sol",
+   "line": 42,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 68
+    },
+    {
+     "type": "uint160",
+     "line": 69
+    },
+    {
+     "type": "uint160",
+     "line": 70
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_approximateSqrtPriceNew",
+   "file": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "line": 113,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 148
+    },
+    {
+     "type": "uint160",
+     "line": 149
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 260,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 281
+    },
+    {
+     "type": "uint64",
+     "line": 282
+    },
+    {
+     "type": "uint64",
+     "line": 283
+    },
+    {
+     "type": "uint64",
+     "line": 284
+    },
+    {
+     "type": "uint64",
+     "line": 285
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swap",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 526,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 548
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 155,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 169
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 248,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 262
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line": 158,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 172
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "dead_params": [
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 143,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/compounders/CompounderSlipstream.sol",
+   "line": 46,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "routerTrampoline",
+    "positionManager",
+    "cLFactory",
+    "poolImplementation",
+    "rewardToken",
+    "stakedSlipstreamAm",
+    "stakedSlipstreamWrapper"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/compounders/CompounderUniswapV3.sol",
+   "line": 42,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "routerTrampoline",
+    "positionManager",
+    "uniswapV3Factory"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/compounders/CompounderUniswapV4.sol",
+   "line": 48,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "routerTrampoline",
+    "positionManager",
+    "permit2",
+    "poolManager",
+    "wrappedNative"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 154,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/rebalancers/RebalancerSlipstream.sol",
+   "line": 46,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "routerTrampoline",
+    "positionManager",
+    "cLFactory",
+    "poolImplementation",
+    "rewardToken",
+    "stakedSlipstreamAm",
+    "stakedSlipstreamWrapper"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/rebalancers/RebalancerUniswapV3.sol",
+   "line": 42,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "routerTrampoline",
+    "positionManager",
+    "uniswapV3Factory"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/rebalancers/RebalancerUniswapV4.sol",
+   "line": 49,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "routerTrampoline",
+    "positionManager",
+    "permit2",
+    "poolManager",
+    "wrappedNative"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 96,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/yield-claimers/YieldClaimerSlipstream.sol",
+   "line": 38,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "positionManager",
+    "cLFactory",
+    "poolImplementation",
+    "rewardToken",
+    "stakedSlipstreamAm",
+    "stakedSlipstreamWrapper"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/yield-claimers/YieldClaimerUniswapV3.sol",
+   "line": 32,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "positionManager",
+    "uniswapV3Factory"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cl-managers/yield-claimers/YieldClaimerUniswapV4.sol",
+   "line": 34,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "arcadiaFactory",
+    "positionManager",
+    "permit2",
+    "poolManager",
+    "wrappedNative"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 144,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approve",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 329,
+   "visibility": "external",
+   "unused_params": [
+    "token",
+    "target",
+    "amount"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/guardian/Guardian.sol",
+   "line": 68,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line": 98,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/merkl-operator/MerklOperatorBase.sol",
+   "line": 77,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 54,
+  "shown_findings": 54,
+  "categories": [
+   "missing_validation",
+   "unsafe_downcasts",
+   "dead_params"
+  ],
+  "category_totals": {
+   "missing_validation": 21,
+   "unsafe_downcasts": 16,
+   "dead_params": 17
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

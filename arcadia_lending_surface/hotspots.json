@@ -1,0 +1,348 @@
+{
+ "hotspots": [
+  {
+   "function": "borrow",
+   "file": "src/LendingPool.sol",
+   "line": 430,
+   "visibility": "external",
+   "score": 17,
+   "reasons": [
+    "entry+writes(4)",
+    "ext_calls(4)",
+    "reentrancy",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approveBeneficiary",
+   "file": "src/LendingPool.sol",
+   "line": 413,
+   "visibility": "external",
+   "score": 15,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(1)",
+    "reentrancy",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/LendingPool.sol",
+   "line": 711,
+   "visibility": "external",
+   "score": 14,
+   "reasons": [
+    "entry+writes(3)",
+    "ext_calls(2)",
+    "cross_reentrancy",
+    "oracle(1)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "depositInLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 342,
+   "visibility": "external",
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "donateToTranche",
+   "file": "src/LendingPool.sol",
+   "line": 368,
+   "visibility": "external",
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdrawFromLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 391,
+   "visibility": "external",
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_syncInterestsToLiquidityProviders",
+   "file": "src/LendingPool.sol",
+   "line": 794,
+   "visibility": "internal",
+   "score": 12,
+   "reasons": [
+    "ext_calls(2)",
+    "reentrancy",
+    "unchecked_arith",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "startLiquidation",
+   "file": "src/LendingPool.sol",
+   "line": 912,
+   "visibility": "external",
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "settleLiquidationUnhappyFlow",
+   "file": "src/LendingPool.sol",
+   "line": 1036,
+   "visibility": "external",
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "liquidityOf",
+   "file": "src/LendingPool.sol",
+   "line": 685,
+   "visibility": "external",
+   "score": 11,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_flashActionCallback",
+   "file": "src/LendingPool.sol",
+   "line": 599,
+   "visibility": "internal",
+   "score": 10,
+   "reasons": [
+    "ext_calls(2)",
+    "reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_settleLiquidationHappyFlow",
+   "file": "src/LendingPool.sol",
+   "line": 991,
+   "visibility": "internal",
+   "score": 10,
+   "reasons": [
+    "ext_calls(2)",
+    "reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_syncLiquidationFee",
+   "file": "src/LendingPool.sol",
+   "line": 1163,
+   "visibility": "internal",
+   "score": 10,
+   "reasons": [
+    "ext_calls(1)",
+    "reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAuctionCurveParameters",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 164,
+   "visibility": "external",
+   "score": 10,
+   "reasons": [
+    "entry+writes(4)",
+    "reentrancy",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAuctionCurveParameters",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 216,
+   "visibility": "external",
+   "score": 10,
+   "reasons": [
+    "entry+writes(4)",
+    "reentrancy",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "visibility": "external",
+   "score": 9,
+   "reasons": [
+    "entry+writes(3)",
+    "cross_reentrancy",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unpause",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "line": 160,
+   "visibility": "external",
+   "score": 9,
+   "reasons": [
+    "entry+writes(3)",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 259,
+   "visibility": "internal",
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "unchecked_arith",
+    "ext_call_in_loop(1)",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 312,
+   "visibility": "internal",
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "unchecked_arith",
+    "ext_call_in_loop(1)",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "totalLiquidity",
+   "file": "src/LendingPool.sol",
+   "line": 650,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "cross_reentrancy",
+    "unchecked_arith",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bid",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 381,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setTreasuryWeights",
+   "file": "src/LendingPool.sol",
+   "line": 298,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "entry+writes(5)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setTreasury",
+   "file": "src/LendingPool.sol",
+   "line": 311,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "entry+writes(2)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "flashAction",
+   "file": "src/LendingPool.sol",
+   "line": 553,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "ext_calls(2)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pause",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "line": 113,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "entry+writes(5)",
+    "privileged(2)",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_scored": 72,
+  "critical_8plus": 21,
+  "high_5to7": 18,
+  "medium_3to4": 33,
+  "top_shown": 25,
+  "query_scope": "all_sources"
+ }
+}

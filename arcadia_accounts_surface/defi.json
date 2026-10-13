@@ -1,0 +1,1136 @@
+{
+ "timestamp_dependence": [
+  {
+   "function": "transferOwnership",
+   "file": "src/accounts/AccountPlaceholder.sol",
+   "line": 199,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp <= lastActionTimestamp"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferOwnership",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 265,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp <= lastActionTimestamp"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferOwnership",
+   "file": "src/accounts/AccountV2.sol",
+   "line": 233,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp <= lastActionTimestamp"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferOwnership",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 291,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp <= lastActionTimestamp"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferOwnership",
+   "file": "src/accounts/AccountV4.sol",
+   "line": 258,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp <= lastActionTimestamp"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getLatestAnswer",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "line": 116,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "updatedAt > block.timestamp"
+    },
+    {
+     "type": "timestamp_comparison",
+     "expression": "updatedAt <= block.timestamp"
+    },
+    {
+     "type": "timestamp_arithmetic",
+     "expression": "block.timestamp - oracleInformation_"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_isSequencerDown",
+   "file": "src/registries/RegistryL2.sol",
+   "line": 178,
+   "risks": [
+    {
+     "type": "timestamp_arithmetic",
+     "expression": "block.timestamp - startedAt"
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "unchecked_erc20": [
+  {
+   "function": "transferFrom",
+   "file": "src/Factory.sol",
+   "line": 233,
+   "unchecked_calls": [
+    {
+     "target": "super.transferFrom",
+     "line": 239
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "oracle_manipulation": [
+  {
+   "function": "skim",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 1200,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 1208
+    },
+    {
+     "type": "spot_price_read",
+     "call": "IERC1155(token).balanceOf",
+     "line": 1227
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 1374,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 1386
+    },
+    {
+     "type": "spot_price_read",
+     "call": "IERC1155(token).balanceOf",
+     "line": 1408
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getTrustedReservesVolatile",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 226,
+   "risks": [
+    {
+     "type": "oracle_read",
+     "call": "getReserves",
+     "line": 233
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getTrustedReservesStable",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 275,
+   "risks": [
+    {
+     "type": "oracle_read",
+     "call": "getReserves",
+     "line": 289
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 484,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(pool).balanceOf",
+     "line": 501
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mint",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 395,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token0).balanceOf",
+     "line": 432
+    },
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token1).balanceOf",
+     "line": 433
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "burn",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 450,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "REWARD_TOKEN.balanceOf",
+     "line": 455
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claimReward",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 480,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "REWARD_TOKEN.balanceOf",
+     "line": 485
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getLatestAnswer",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "line": 116,
+   "risks": [
+    {
+     "type": "oracle_read",
+     "call": "latestRoundData",
+     "line": 121
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_isSequencerDown",
+   "file": "src/registries/RegistryL2.sol",
+   "line": 178,
+   "risks": [
+    {
+     "type": "oracle_read",
+     "call": "latestRoundData",
+     "line": 181
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "dos_risks": [
+  {
+   "function": "auctionBid",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 556,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "address(this) == IERC721(assetAddresses[i]).ownerOf",
+     "line": 571
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_withdraw",
+   "file": "src/accounts/AccountV2.sol",
+   "line": 395,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "payable(to).call{ value: assetAmounts[i] }",
+     "line": 407
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "auctionBid",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 594,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "address(this) == IERC721(assetAddresses[i]).ownerOf",
+     "line": 609
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAssetManagers",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 670,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetManager(assetManager).onSetAssetManager",
+     "line": 687
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setMerklOperators",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 772,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "MERKL_DISTRIBUTOR.operators",
+     "line": 788
+    },
+    {
+     "type": "external_call_in_loop",
+     "call": "MERKL_DISTRIBUTOR.setClaimRecipient",
+     "line": 801
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAssetManagers",
+   "file": "src/accounts/AccountV4.sol",
+   "line": 295,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetManager(assetManager).onSetAssetManager",
+     "line": 312
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setMerklOperators",
+   "file": "src/accounts/AccountV4.sol",
+   "line": 394,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "MERKL_DISTRIBUTOR.operators",
+     "line": 410
+    },
+    {
+     "type": "external_call_in_loop",
+     "call": "MERKL_DISTRIBUTOR.setClaimRecipient",
+     "line": 423
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_withdraw",
+   "file": "src/accounts/AccountV4.sol",
+   "line": 508,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "payable(to).call{ value: assetAmounts[i] }",
+     "line": 524
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_approveAllAssets",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "line": 136,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IERC721(assets[i]).approve",
+     "line": 149
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processDeposit",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 364,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IRegistry(REGISTRY)\n                    .getUsdValueExposureToUnderlyingAssetAfterDeposit",
+     "line": 399
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processWithdrawal",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 459,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IRegistry(REGISTRY)\n                .getUsdValueExposureToUnderlyingAssetAfterWithdrawal",
+     "line": 490
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "checkOracleSequence",
+   "file": "src/registries/RegistryL1.sol",
+   "line": 230,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "!IOracleModule(oracleModule).isActive",
+     "line": 244
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/registries/RegistryL1.sol",
+   "line": 278,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(\n                    assetToAssetInformation[assetAddresses[i]].assetModule\n                )\n                .getRiskFactors",
+     "line": 287
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "batchProcessDeposit",
+   "file": "src/registries/RegistryL1.sol",
+   "line": 386,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "!IAssetModule(assetToAssetInformation[assetAddress].assetModule)\n                        .isAllowed",
+     "line": 400
+    },
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(assetToAssetInformation[assetAddress].assetModule)\n                    .processDirectDeposit",
+     "line": 409
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "batchProcessWithdrawal",
+   "file": "src/registries/RegistryL1.sol",
+   "line": 430,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(assetToAssetInformation[assetAddress].assetModule)\n                    .processDirectWithdrawal",
+     "line": 452
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRateInUsd",
+   "file": "src/registries/RegistryL1.sol",
+   "line": 531,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "rate.mulDivDown",
+     "line": 544
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getValuesInUsdRecursive",
+   "file": "src/registries/RegistryL1.sol",
+   "line": 565,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(assetToAssetInformation[assets[i]].assetModule)\n                    .getValue",
+     "line": 579
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getValuesInUsd",
+   "file": "src/registries/RegistryL1.sol",
+   "line": 595,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(assetToAssetInformation[assets[i]].assetModule)\n                    .getValue",
+     "line": 611
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getValuesInNumeraire",
+   "file": "src/registries/RegistryL1.sol",
+   "line": 631,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "valuesAndRiskFactors[i].assetValue.mulDivDown",
+     "line": 653
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "checkOracleSequence",
+   "file": "src/registries/RegistryL2.sol",
+   "line": 300,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "!IOracleModule(oracleModule).isActive",
+     "line": 314
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/registries/RegistryL2.sol",
+   "line": 348,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(\n                    assetToAssetInformation[assetAddresses[i]].assetModule\n                )\n                .getRiskFactors",
+     "line": 357
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "batchProcessDeposit",
+   "file": "src/registries/RegistryL2.sol",
+   "line": 461,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "!IAssetModule(assetToAssetInformation[assetAddress].assetModule)\n                        .isAllowed",
+     "line": 475
+    },
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(assetToAssetInformation[assetAddress].assetModule)\n                    .processDirectDeposit",
+     "line": 484
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "batchProcessWithdrawal",
+   "file": "src/registries/RegistryL2.sol",
+   "line": 505,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(assetToAssetInformation[assetAddress].assetModule)\n                    .processDirectWithdrawal",
+     "line": 527
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRateInUsd",
+   "file": "src/registries/RegistryL2.sol",
+   "line": 606,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "rate.mulDivDown",
+     "line": 619
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getValuesInUsdRecursive",
+   "file": "src/registries/RegistryL2.sol",
+   "line": 642,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "IAssetModule(assetToAssetInformation[assets[i]].assetModule)\n                    .getValue",
+     "line": 656
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "frontrunning": [
+  {
+   "function": "_stakeAndClaim",
+   "file": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "line": 96,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "ERC20(asset).approve",
+     "line": 103
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mint",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 395,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "NON_FUNGIBLE_POSITION_MANAGER.approve",
+     "line": 427
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_stakeAndClaim",
+   "file": "src/asset-modules/Stargate-Finance/StakedStargateAM.sol",
+   "line": 92,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "ERC20(asset).approve",
+     "line": 93
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "unsafe_downcasts": [
+  {
+   "function": "createAccount",
+   "file": "src/Factory.sol",
+   "line": 92,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 106
+    },
+    {
+     "type": "uint160",
+     "line": 106
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getAccountAddress",
+   "file": "src/Factory.sol",
+   "line": 353,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 361
+    },
+    {
+     "type": "uint160",
+     "line": 361
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_openMarginAccount",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 352,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 357
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_openMarginAccount",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 389,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 395
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 78,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 88
+    },
+    {
+     "type": "uint64",
+     "line": 89
+    },
+    {
+     "type": "uint96",
+     "line": 103
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 341,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 362
+    },
+    {
+     "type": "uint16",
+     "line": 368
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "initialize",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 111,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 115
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 210,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 229
+    },
+    {
+     "type": "uint16",
+     "line": 229
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "decreaseLiquidity",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 384,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 429
+    },
+    {
+     "type": "uint128",
+     "line": 429
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claimFees",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 443,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 474
+    },
+    {
+     "type": "uint128",
+     "line": 474
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/ERC20-Primaries/ERC20PrimaryAM.sol",
+   "line": 47,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 52
+    },
+    {
+     "type": "uint64",
+     "line": 62
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setProtocol",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 82,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 87
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getPosition",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 243,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 252
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSqrtPriceX96",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 300,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 314
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 409,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 432
+    },
+    {
+     "type": "uint16",
+     "line": 438
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "initialize",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 132,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 138
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSqrtPriceX96",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 278,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 292
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 307,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 326
+    },
+    {
+     "type": "uint16",
+     "line": 326
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "burn",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 450,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 467
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claimReward",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 480,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 493
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "line": 63,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 78
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "line": 173,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 193
+    },
+    {
+     "type": "uint16",
+     "line": 195
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setProtocol",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 82,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 87
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getPosition",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 243,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 252
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSqrtPriceX96",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 300,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 314
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "erc_callback_reentrancy": [
+  {
+   "function": "onERC721Received",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 1317,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC1155Received",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 1325,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC721Received",
+   "file": "src/accounts/AccountV2.sol",
+   "line": 480,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC1155Received",
+   "file": "src/accounts/AccountV2.sol",
+   "line": 488,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC721Received",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 1503,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC1155Received",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 1512,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC721Received",
+   "file": "src/accounts/AccountV4.sol",
+   "line": 628,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC1155Received",
+   "file": "src/accounts/AccountV4.sol",
+   "line": 637,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC721Received",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "line": 160,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC1155Received",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "line": 168,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onERC721Received",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 534,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 103,
+  "shown_findings": 82,
+  "categories": [
+   "timestamp_dependence",
+   "unchecked_erc20",
+   "oracle_manipulation",
+   "dos_risks",
+   "frontrunning",
+   "unsafe_downcasts",
+   "erc_callback_reentrancy"
+  ],
+  "category_totals": {
+   "timestamp_dependence": 7,
+   "unchecked_erc20": 1,
+   "oracle_manipulation": 10,
+   "dos_risks": 27,
+   "frontrunning": 3,
+   "unsafe_downcasts": 44,
+   "erc_callback_reentrancy": 11
+  },
+  "truncated_categories": {
+   "dos_risks": {
+    "shown": 25,
+    "total": 27,
+    "hidden": 2
+   },
+   "unsafe_downcasts": {
+    "shown": 25,
+    "total": 44,
+    "hidden": 19
+   }
+  },
+  "truncated": true,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

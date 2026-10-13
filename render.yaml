@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: chainscope
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python render.py
+    envVars:
+      - key: PYTHONPATH
+        value: /opt/ChainScope
+      - key: HOST
+        value: "0.0.0.0"
+      - key: PORT
+        value: "8000"

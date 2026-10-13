@@ -1,0 +1,354 @@
+{
+ "hotspots": [
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "line": 63,
+   "visibility": "external",
+   "score": 15,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "reentrancy",
+    "unsafe_downcast(1)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "endUpgrade",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "line": 111,
+   "visibility": "external",
+   "score": 14,
+   "reasons": [
+    "entry+writes(1)",
+    "upgrade_surface",
+    "privileged(1)",
+    "unguarded_privileged",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addOracle",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "line": 66,
+   "visibility": "external",
+   "score": 13,
+   "reasons": [
+    "entry+writes(3)",
+    "ext_calls(1)",
+    "reentrancy",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "line": 78,
+   "visibility": "external",
+   "score": 13,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 78,
+   "visibility": "external",
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(4)",
+    "reentrancy",
+    "unsafe_downcast(3)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "line": 70,
+   "visibility": "external",
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(3)",
+    "reentrancy",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 126,
+   "visibility": "external",
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "reentrancy",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StakedStargateAM.sol",
+   "line": 67,
+   "visibility": "external",
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "reentrancy",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 247,
+   "visibility": "external",
+   "score": 12,
+   "reasons": [
+    "no_validation",
+    "upgrade_surface",
+    "privileged(1)",
+    "unguarded_privileged",
+    "dead_params(oldImplementation,oldRegistry,oldVersion,data)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 273,
+   "visibility": "external",
+   "score": 12,
+   "reasons": [
+    "no_validation",
+    "upgrade_surface",
+    "privileged(1)",
+    "unguarded_privileged",
+    "dead_params(oldImplementation,oldRegistry,oldVersion,data)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processWithdrawal",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 459,
+   "visibility": "internal",
+   "score": 12,
+   "reasons": [
+    "ext_calls(1)",
+    "reentrancy",
+    "unchecked_arith",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addGauge",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 150,
+   "visibility": "external",
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(5)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "createAccount",
+   "file": "src/Factory.sol",
+   "line": 92,
+   "visibility": "external",
+   "score": 10,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy",
+    "unsafe_downcast(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mint",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 395,
+   "visibility": "external",
+   "score": 10,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(3)",
+    "oracle(2)",
+    "frontrun(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferFrom",
+   "file": "src/Factory.sol",
+   "line": 233,
+   "visibility": "public",
+   "score": 9,
+   "reasons": [
+    "unchecked_erc20(1)",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountPlaceholder.sol",
+   "line": 175,
+   "visibility": "external",
+   "score": 9,
+   "reasons": [
+    "upgrade_surface",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unpause",
+   "file": "src/guardians/RegistryGuardian.sol",
+   "line": 97,
+   "visibility": "external",
+   "score": 9,
+   "reasons": [
+    "entry+writes(1)",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processDeposit",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 364,
+   "visibility": "internal",
+   "score": 9,
+   "reasons": [
+    "reentrancy",
+    "unchecked_arith",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccountVersion",
+   "file": "src/Factory.sol",
+   "line": 149,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "ext_calls(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setNewAccountInfo",
+   "file": "src/Factory.sol",
+   "line": 291,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(2)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_delegate",
+   "file": "src/Proxy.sol",
+   "line": 87,
+   "visibility": "internal",
+   "score": 8,
+   "reasons": [
+    "proxy(['contains_delegatecall'])",
+    "upgrade_surface",
+    "privileged(1)",
+    "assembly"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountPlaceholder.sol",
+   "line": 134,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 193,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV2.sol",
+   "line": 145,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 217,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_scored": 198,
+  "critical_8plus": 32,
+  "high_5to7": 80,
+  "medium_3to4": 86,
+  "top_shown": 25,
+  "query_scope": "all_sources"
+ }
+}

@@ -1,0 +1,472 @@
+{
+ "total": 67,
+ "shown": 25,
+ "truncated": true,
+ "by_attribute": {
+  "unresolved": 67
+ },
+ "by_source_context": {
+  "production": 67
+ },
+ "top_source_files": [
+  {
+   "name": "src/LendingPool.sol",
+   "calls": 25
+  },
+  {
+   "name": "src/Tranche.sol",
+   "calls": 14
+  },
+  {
+   "name": "src/liquidators/LiquidatorL2.sol",
+   "calls": 12
+  },
+  {
+   "name": "src/liquidators/LiquidatorL1.sol",
+   "calls": 11
+  },
+  {
+   "name": "src/DebtToken.sol",
+   "calls": 4
+  },
+  {
+   "name": "src/periphery/tranche-wrapper/TrancheWrapper.sol",
+   "calls": 1
+  }
+ ],
+ "top_targets": [
+  {
+   "name": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "calls": 11
+  },
+  {
+   "name": "src/LendingPool.sol::LendingPool.mulDivDown",
+   "calls": 4
+  },
+  {
+   "name": "src/Tranche.sol::Tranche.mulDivDown",
+   "calls": 4
+  },
+  {
+   "name": "src/Tranche.sol::Tranche.mulDivUp",
+   "calls": 4
+  },
+  {
+   "name": "src/LendingPool.sol::LendingPool.mulDivUp",
+   "calls": 3
+  },
+  {
+   "name": "src/LendingPool.sol::LendingPool.ownerOfAccount",
+   "calls": 3
+  },
+  {
+   "name": "src/DebtToken.sol::DebtToken.mulDivDown",
+   "calls": 2
+  },
+  {
+   "name": "src/DebtToken.sol::DebtToken.mulDivUp",
+   "calls": 2
+  },
+  {
+   "name": "src/Tranche.sol::Tranche.balanceOf",
+   "calls": 2
+  },
+  {
+   "name": "src/Tranche.sol::Tranche.depositPaused",
+   "calls": 2
+  }
+ ],
+ "counter_summary": {
+  "max_counter_items": 10,
+  "source_contexts": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_source_files": {
+   "total": 6,
+   "shown": 6,
+   "truncated": false
+  },
+  "top_targets": {
+   "total": 37,
+   "shown": 10,
+   "truncated": true
+  },
+  "truncated": true
+ },
+ "max_attribute_bytes": 2048,
+ "attribute_truncated": false,
+ "attribute_truncated_calls": 0,
+ "calls": [
+  {
+   "source_label": "convertToShares",
+   "source_file": "src/DebtToken.sol",
+   "source_context": "production",
+   "target_label": "src/DebtToken.sol::DebtToken.mulDivUp",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "mulDivUp",
+    "interface": "supply == 0 ? assets : assets"
+   }
+  },
+  {
+   "source_label": "convertToAssets",
+   "source_file": "src/DebtToken.sol",
+   "source_context": "production",
+   "target_label": "src/DebtToken.sol::DebtToken.mulDivUp",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "mulDivUp",
+    "interface": "supply == 0 ? shares : shares"
+   }
+  },
+  {
+   "source_label": "previewMint",
+   "source_file": "src/DebtToken.sol",
+   "source_context": "production",
+   "target_label": "src/DebtToken.sol::DebtToken.mulDivDown",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "mulDivDown",
+    "interface": "supply == 0 ? shares : shares"
+   }
+  },
+  {
+   "source_label": "previewWithdraw",
+   "source_file": "src/DebtToken.sol",
+   "source_context": "production",
+   "target_label": "src/DebtToken.sol::DebtToken.mulDivDown",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "mulDivDown",
+    "interface": "supply == 0 ? assets : assets"
+   }
+  },
+  {
+   "source_label": "depositInLendingPool",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unchecked": true,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "donateToTranche",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unchecked": true,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "withdrawFromLendingPool",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unchecked": true,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "approveBeneficiary",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.ownerOfAccount",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "ownerOfAccount",
+    "interface": "IFactory(ACCOUNT_FACTORY)"
+   }
+  },
+  {
+   "source_label": "borrow",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.ownerOfAccount",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "ownerOfAccount",
+    "interface": "IFactory(ACCOUNT_FACTORY)"
+   }
+  },
+  {
+   "source_label": "borrow",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.mulDivUp",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "mulDivUp",
+    "interface": "amount + amount"
+   }
+  },
+  {
+   "source_label": "borrow",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 6,
+    "unchecked": true,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "borrow",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.increaseOpenPosition",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 7,
+    "unresolved": true,
+    "call_name": "increaseOpenPosition",
+    "interface": "IAccount(account)"
+   }
+  },
+  {
+   "source_label": "flashAction",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.ownerOfAccount",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "ownerOfAccount",
+    "interface": "IFactory(ACCOUNT_FACTORY)"
+   }
+  },
+  {
+   "source_label": "flashAction",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.flashActionByCreditor",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 5,
+    "unresolved": true,
+    "call_name": "flashActionByCreditor",
+    "interface": "IAccount(account)"
+   }
+  },
+  {
+   "source_label": "_flashActionCallback",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.mulDivUp",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "mulDivUp",
+    "interface": "amountBorrowed + amountBorrowed"
+   }
+  },
+  {
+   "source_label": "_flashActionCallback",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unchecked": true,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "liquidityOf",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.mulDivDown",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "mulDivDown",
+    "interface": "calcUnrealisedDebt()"
+   }
+  },
+  {
+   "source_label": "skim",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "asset"
+   }
+  },
+  {
+   "source_label": "skim",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unchecked": true,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "calcUnrealisedDebt",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "_syncInterestsToLiquidityProviders",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.mulDivDown",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "mulDivDown",
+    "interface": "assets"
+   }
+  },
+  {
+   "source_label": "_syncInterestsToLiquidityProviders",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unchecked": true,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "startLiquidation",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 5,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "_settleLiquidationHappyFlow",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.safeCastTo128",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "safeCastTo128",
+    "interface": "SafeCastLib"
+   }
+  },
+  {
+   "source_label": "_settleLiquidationHappyFlow",
+   "source_file": "src/LendingPool.sol",
+   "source_context": "production",
+   "target_label": "src/LendingPool.sol::LendingPool.owner",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unchecked": true,
+    "unresolved": true,
+    "call_name": "owner",
+    "interface": "IAccount(account)"
+   }
+  }
+ ],
+ "tool": "cs_cross_summary",
+ "query_scope": "all_sources",
+ "from_func": null,
+ "_next_steps": [
+  "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+  "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+  "Use direct source review on the top source files before treating this as a finding."
+ ],
+ "_warnings": [
+  "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
+ ]
+}

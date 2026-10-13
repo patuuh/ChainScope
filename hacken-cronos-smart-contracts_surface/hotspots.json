@@ -1,0 +1,62 @@
+{
+ "hotspots": [
+  {
+   "function": "withdraw",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 41,
+   "visibility": "public",
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "unchecked_erc20(1)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "deposit",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 37,
+   "visibility": "public",
+   "score": 7,
+   "reasons": [
+    "entry+writes(1)",
+    "unchecked_arith",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approve",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 52,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "entry+writes(1)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferFrom",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 62,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_scored": 4,
+  "critical_8plus": 1,
+  "high_5to7": 3,
+  "medium_3to4": 0,
+  "top_shown": 4,
+  "query_scope": "all_sources"
+ }
+}

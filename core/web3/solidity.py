@@ -380,6 +380,192 @@ def _infer_role_guards(modifier_names, body_text):
     return sorted(roles)
 
 
+def _collect_sender_aliases(body_node) -> set[str]:
+    """Names of locals assigned from msg.sender / _msgSender().
+
+    Many contracts stash the caller in a local first, e.g.
+
+        address sender = _msgSender();
+        require(sender == admin || sender == owner(), ...);
+
+    so a guard comparing the *alias* must still be recognised as a sender check.
+    """
+    aliases: set[str] = set()
+    if body_node is None:
+        return aliases
+
+    def _is_sender_source(text: str) -> bool:
+        t = text.lower()
+        return "msg.sender" in t or "_msgsender()" in t
+
+    # `Type name = msg.sender;` / `Type name = _msgSender();`
+    for vds in _collect_nodes_by_types(
+        body_node, {"variable_declaration_statement", "variable_declaration"}
+    ):
+        if not _is_sender_source(_text(vds)):
+            continue
+        vd = _child_by_type(vds, "variable_declaration")
+        idn = _child_by_type(vd, "identifier") if vd is not None else _child_by_type(vds, "identifier")
+        if idn:
+            aliases.add(_text(idn))
+
+    # `name = msg.sender;` / `name = _msgSender();`
+    for assign in _collect_assignments(body_node):
+        if not _is_sender_source(_text(assign)):
+            continue
+        expr_children = _children_by_type(assign, "expression")
+        if expr_children:
+            lhs = _child_by_type(expr_children[0], "identifier")
+            if lhs:
+                aliases.add(_text(lhs))
+
+    return aliases
+
+
+def _detect_sender_guards(body_node):
+    """Detect inline access-control guards comparing msg.sender/_msgSender().
+
+    Catches the common idioms used by modular/namespaced contracts:
+
+        if (msg.sender != address(debtManager)) revert OnlyDebtManager();
+        require(msg.sender == owner, "not owner");
+
+    and the local-alias variant:
+
+        address sender = _msgSender();
+        require(sender == admin || sender == pauseGuardian, ...);
+
+    Returns a list of the guard condition expressions (deduplicated).
+    """
+    guards: list[str] = []
+    if body_node is None:
+        return guards
+
+    aliases = _collect_sender_aliases(body_node)
+    alias_res = [re.compile(rf"\b{re.escape(a)}\b") for a in aliases]
+
+    def _has_sender(text: str) -> bool:
+        t = text.lower()
+        if "msg.sender" in t or "_msgsender()" in t:
+            return True
+        return any(rx.search(text) for rx in alias_res)
+
+    for call in _collect_calls(body_node):
+        if _get_call_name(call) != "require":
+            continue
+        for arg in _children_by_type(call, "call_argument"):
+            if _has_sender(_text(arg)):
+                guards.append(_text(arg).strip()[:160])
+                break
+
+    for iff in _collect_nodes_by_types(body_node, {"if_statement"}):
+        cond = _child_by_type(iff, "expression")
+        if cond is None or not _has_sender(_text(cond)):
+            continue
+        body_text = _text(iff)
+        if any(tok in body_text for tok in ("revert", "return", "throw")):
+            guards.append(_text(cond).strip()[:160])
+
+    # Deduplicate while preserving order.
+    seen = set()
+    out = []
+    for g in guards:
+        if g not in seen:
+            seen.add(g)
+            out.append(g)
+    return out
+
+
+def _detect_call_guards(body_node):
+    """Detect call-based access-control guards that revert on failure.
+
+    Some contracts gate a function by calling a reverting view/helper instead of
+    using a modifier or a require, e.g.
+
+        roleRegistry().onlyPauser(msg.sender);
+        roleRegistry().onlyUpgrader(msg.sender);
+        delegation.checkAccess(this.slash.selector);
+
+    Returns the guard call expressions (deduplicated).
+    """
+    guards: list[str] = []
+    if body_node is None:
+        return guards
+    for call in _collect_calls(body_node):
+        name = _get_call_name(call)
+        if not name:
+            continue
+        if _CALL_GUARD_RE.match(name):
+            guards.append(_text(call).strip()[:160])
+    seen = set()
+    out = []
+    for g in guards:
+        if g not in seen:
+            seen.add(g)
+            out.append(g)
+    return out
+
+
+_CALL_GUARD_RE = re.compile(
+    r"^(only[A-Z]\w*|checkAccess|checkRole|_checkRole|requireAuth|_checkOwner|_checkOwnerOrRole|"
+    r"_currentOwner|_checkOwnerOrAdmin)$"
+)
+
+
+_SIGNATURE_CALL_NAMES = frozenset({
+    "checkSignatures",
+    "checkSignature",
+    "_checkSignatures",
+    "_checkSignature",
+    "verifySignature",
+    "verifySignatures",
+    "_verifySignature",
+    "_verifySignatures",
+    "_verifyRecoverySignatures",
+    "isValidSignature",
+    "isValidSignatureNow",
+    "recoverSigner",
+    "_validateSignature",
+    "validateSignature",
+    "ecrecover",
+})
+
+
+def _detect_signature_guards(body_node):
+    """Detect signature-based authorization (owner-quorum / EIP-1271 / ECDSA).
+
+    Functions gated by owner signatures are not "unguarded" — they are protected
+    by cryptographic authorization rather than a role modifier. Examples:
+
+        if (!checkSignatures(digest, signers, signatures)) revert InvalidSignatures();
+        SignatureChecker.isValidSignatureNow(owner, digest, signature);
+        ECDSA.recover(digest, signature);
+
+    Returns the signature-check call expressions (deduplicated).
+    """
+    guards: list[str] = []
+    if body_node is None:
+        return guards
+    for call in _collect_calls(body_node):
+        name = _get_call_name(call)
+        if not name:
+            continue
+        full = _extract_call_target_full(call)
+        if (
+            name in _SIGNATURE_CALL_NAMES
+            or "ECDSA" in full
+            or "SignatureChecker" in full
+        ):
+            guards.append(full.strip()[:160])
+    seen = set()
+    out = []
+    for g in guards:
+        if g not in seen:
+            seen.add(g)
+            out.append(g)
+    return out
+
+
 def _infer_privileged_operations(func_label, body_text, modifier_names):
     ops = set()
     label_lower = func_label.lower()
@@ -479,6 +665,27 @@ class SolidityExtractor(BaseExtractor):
 
     def __init__(self):
         self.parser = _get_parser()
+        # Struct registry (enables ERC-7201 / namespaced storage field indexing).
+        self._struct_fields_by_name: dict[str, set[str]] = {}
+        self._struct_fields_by_label: dict[str, set[str]] = {}
+        self._struct_node_label: dict[str, str] = {}
+        self._struct_node_file: dict[str, str] = {}
+
+    def reset_struct_registry(self) -> None:
+        """Clear the cross-file struct registry (called once per build)."""
+        self._struct_fields_by_name = {}
+        self._struct_fields_by_label = {}
+        self._struct_node_label = {}
+        self._struct_node_file = {}
+
+    def prescan_file(self, source_code: bytes, file_path: str) -> None:
+        """Register struct declarations in a file without emitting nodes.
+
+        Used by the indexer as a repo-wide pre-pass so struct fields declared
+        in one file (e.g. an interface) resolve when referenced from another.
+        """
+        tree = self.parser.parse(source_code)
+        self._prescan_structs(tree.root_node, file_path)
 
     def extract_from_source(self, source_code: bytes, file_path: str) -> ExtractResult:
         """Parse source and extract."""
@@ -488,6 +695,10 @@ class SolidityExtractor(BaseExtractor):
     def extract(self, tree, source_code: bytes, file_path: str) -> ExtractResult:
         result = ExtractResult()
         root = tree.root_node
+
+        # Register structs declared in this file (accumulates across the build;
+        # reset_struct_registry() is called once by the indexer pre-pass).
+        self._prescan_structs(root, file_path)
 
         # Track state vars and enums at file level for cross-contract reference
         all_state_vars: set[str] = set()
@@ -567,6 +778,135 @@ class SolidityExtractor(BaseExtractor):
             "signature": f"struct {struct_name}",
             "metadata": json.dumps(meta),
         })
+
+        # Emit each struct field as a state_var node. This is what makes
+        # ERC-7201 namespaced storage (structs accessed via a storage pointer)
+        # traceable: reads/writes through `$.field` / `_getXStorage().field`
+        # resolve to these nodes (see _resolve_storage_field).
+        for f in fields:
+            fname = f.get("name")
+            if not fname:
+                continue
+            field_id = self._make_node_id(file_path, f"{qualified}.{fname}")
+            field_meta = {
+                "contract": contract_name,
+                "struct": struct_name,
+                "field": fname,
+                "is_struct_field": True,
+                "type_text": f.get("type", ""),
+            }
+            result.nodes.append({
+                "id": field_id, "label": f"{struct_name}.{fname}", "type": "state_var",
+                "visibility": "internal", "file": file_path,
+                "line_start": node.start_point[0] + 1,
+                "line_end": node.end_point[0] + 1,
+                "signature": f.get("type", ""),
+                "metadata": json.dumps(field_meta),
+            })
+
+    @staticmethod
+    def _struct_field_names(node) -> list[str]:
+        """Return the field names declared inside a struct_declaration node."""
+        names: list[str] = []
+        body = _child_by_type(node, "struct_body")
+        container = body if body is not None else node
+        for child in container.children:
+            if child.type == "struct_member":
+                name_n = _child_by_type(child, "identifier")
+                if name_n:
+                    names.append(_text(name_n))
+        return names
+
+    def _prescan_structs(self, root, file_path: str) -> None:
+        """Collect all struct field names before extracting functions.
+
+        Structs are often declared after the functions that use them, so a
+        full-file pre-scan is required for accurate storage-field resolution.
+        """
+        stack = [root]
+        while stack:
+            n = stack.pop()
+            if n.type == "struct_declaration":
+                name_node = _child_by_type(n, "identifier")
+                if name_node:
+                    sname = _text(name_node)
+                    fields = set(self._struct_field_names(n))
+                    cname = None
+                    parent = n.parent
+                    while parent is not None:
+                        if parent.type in ("contract_declaration", "library_declaration",
+                                           "interface_declaration"):
+                            cn = _child_by_type(parent, "identifier")
+                            cname = _text(cn) if cn else None
+                            break
+                        parent = parent.parent
+                    label = f"{cname}.{sname}" if cname else sname
+                    self._struct_fields_by_name.setdefault(sname, set()).update(fields)
+                    self._struct_fields_by_label.setdefault(label, set()).update(fields)
+                    self._struct_node_label[sname] = label
+                    self._struct_node_label.setdefault(label, label)
+                    self._struct_node_file[sname] = file_path
+                    self._struct_node_file.setdefault(label, file_path)
+            for c in n.children:
+                stack.append(c)
+
+    @staticmethod
+    def _storage_local_types(body_node) -> dict[str, str]:
+        """Map local storage-pointer variable name -> struct type name.
+
+        Matches `Foo storage $ = ...;` declarations (the ERC-7201 accessor
+        idiom) so later `$.field` accesses can be resolved.
+        """
+        out: dict[str, str] = {}
+        for vd in _collect_nodes_by_types(body_node, {"variable_declaration"}):
+            if not any(c.type == "storage" for c in vd.children):
+                continue
+            tn = _child_by_type(vd, "type_name")
+            idn = _child_by_type(vd, "identifier")
+            if tn is None or idn is None:
+                continue
+            t = _text(tn).strip().split(".")[-1]
+            if t:
+                out[_text(idn)] = t
+        return out
+
+    def _struct_for_accessor(self, call_name: str):
+        """Best-effort match of a `_getXStorage()` call name to a struct name."""
+        if not call_name:
+            return None
+        low = call_name.lower()
+        best = None
+        for sname in self._struct_fields_by_name:
+            if sname.lower() in low and (best is None or len(sname) > len(best)):
+                best = sname
+        return best
+
+    def _resolve_storage_field(self, me, storage_locals: dict[str, str], file_path: str):
+        """Resolve a member_expression rooted at a storage pointer to a field node id."""
+        if not me.children:
+            return None
+        obj = me.children[0]
+        if obj.type == "expression" and obj.children:
+            obj = obj.children[0]
+        fids = _children_by_type(me, "identifier")
+        if not fids:
+            return None
+        field = _text(fids[-1])
+        struct_name = None
+        if obj.type == "identifier":
+            struct_name = storage_locals.get(_text(obj))
+        elif obj.type == "call_expression":
+            struct_name = self._struct_for_accessor(_get_call_name(obj) or "")
+        if not struct_name:
+            return None
+        fields = self._struct_fields_by_name.get(struct_name)
+        if fields is None:
+            fields = self._struct_fields_by_label.get(struct_name)
+        if not fields or field not in fields:
+            return None
+        label = self._struct_node_label.get(struct_name, struct_name)
+        decl_file = self._struct_node_file.get(struct_name, file_path)
+        return self._make_node_id(decl_file, f"{label}.{field}")
 
     def _extract_library(self, node, file_path, result, all_state_vars, all_enums):
         """Extract library declarations."""
@@ -996,6 +1336,9 @@ class SolidityExtractor(BaseExtractor):
         # Find unchecked blocks for H1
         unchecked_blocks = _find_unchecked_blocks(body_node)
 
+        # ERC-7201 / namespaced storage: map local storage pointers to structs
+        storage_locals = self._storage_local_types(body_node)
+
         # Collect all identifiers read in expressions (for reads_state)
         all_ids = _collect_identifiers(body_node)
         for var_name in all_ids & state_var_names:
@@ -1040,6 +1383,58 @@ class SolidityExtractor(BaseExtractor):
             self._detect_state_transition(
                 assign, func_id, file_path, written_vars, enum_map, body_node, result
             )
+
+        # ERC-7201 / namespaced storage field access: resolve `$.field` and
+        # `_getXStorage().field` member expressions to state_var field nodes.
+        for me in _collect_member_expressions(body_node):
+            field_id = self._resolve_storage_field(me, storage_locals, file_path)
+            if not field_id:
+                continue
+            result.edges.append({
+                "source": func_id, "target": field_id,
+                "relation": "reads_state", "attributes": "{}",
+            })
+
+        # Storage-field writes: member expressions on the LHS of assignments.
+        for assign in _collect_assignments(body_node):
+            expr_children = _children_by_type(assign, "expression")
+            if not expr_children:
+                continue
+            order = _find_stmt_order(assign, ordered_stmts)
+            in_unchecked = any(_node_is_inside(assign, ub) for ub in unchecked_blocks)
+            for me in _collect_member_expressions(expr_children[0]):
+                field_id = self._resolve_storage_field(me, storage_locals, file_path)
+                if not field_id:
+                    continue
+                attrs = {}
+                if order >= 0:
+                    attrs["order"] = order
+                if in_unchecked:
+                    attrs["unchecked"] = True
+                result.edges.append({
+                    "source": func_id, "target": field_id,
+                    "relation": "writes_state",
+                    "attributes": json.dumps(attrs) if attrs else "{}",
+                })
+
+        # Storage-field writes via increment/decrement (e.g. `$.nonce++`).
+        for upd in _collect_nodes_by_types(body_node, {"update_expression"}):
+            order = _find_stmt_order(upd, ordered_stmts)
+            in_unchecked = any(_node_is_inside(upd, ub) for ub in unchecked_blocks)
+            for me in _collect_member_expressions(upd):
+                field_id = self._resolve_storage_field(me, storage_locals, file_path)
+                if not field_id:
+                    continue
+                attrs = {}
+                if order >= 0:
+                    attrs["order"] = order
+                if in_unchecked:
+                    attrs["unchecked"] = True
+                result.edges.append({
+                    "source": func_id, "target": field_id,
+                    "relation": "writes_state",
+                    "attributes": json.dumps(attrs) if attrs else "{}",
+                })
 
         # Call expressions -> calls edges + sink detection
         for call in _collect_calls(body_node):
@@ -1259,6 +1654,18 @@ class SolidityExtractor(BaseExtractor):
                 func_node["metadata"] = json.dumps(func_meta)
 
             role_guards = _infer_role_guards(func_mods, body_text)
+            sender_guards = _detect_sender_guards(body_node)
+            if sender_guards:
+                func_meta["sender_guards"] = sender_guards
+                role_guards = sorted(set(role_guards) | {"sender_check"})
+            call_guards = _detect_call_guards(body_node)
+            if call_guards:
+                func_meta["call_guards"] = call_guards
+                role_guards = sorted(set(role_guards) | {"guard_call"})
+            signature_guards = _detect_signature_guards(body_node)
+            if signature_guards:
+                func_meta["signature_guards"] = signature_guards
+                role_guards = sorted(set(role_guards) | {"signature_guard"})
             if role_guards:
                 func_meta["role_guards"] = role_guards
                 func_node["metadata"] = json.dumps(func_meta)

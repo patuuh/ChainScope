@@ -1,0 +1,449 @@
+{
+ "unsafe_blocks": [
+  {
+   "function": "register_len",
+   "file": "state-manipulation/src/lib.rs",
+   "unsafe_blocks": 1,
+   "unsafe_operations": [],
+   "raw_pointers": false,
+   "source_context": "production"
+  },
+  {
+   "function": "storage_write",
+   "file": "state-manipulation/src/lib.rs",
+   "unsafe_blocks": 1,
+   "unsafe_operations": [
+    "as_ptr"
+   ],
+   "raw_pointers": false,
+   "source_context": "production"
+  },
+  {
+   "function": "storage_remove",
+   "file": "state-manipulation/src/lib.rs",
+   "unsafe_blocks": 1,
+   "unsafe_operations": [
+    "as_ptr"
+   ],
+   "raw_pointers": false,
+   "source_context": "production"
+  },
+  {
+   "function": "input",
+   "file": "state-manipulation/src/lib.rs",
+   "unsafe_blocks": 2,
+   "unsafe_operations": [
+    "as_ptr"
+   ],
+   "raw_pointers": false,
+   "source_context": "production"
+  }
+ ],
+ "panic_sinks": [
+  {
+   "function": "default",
+   "file": "lockup-factory/src/lib.rs",
+   "panic_calls": [
+    "panic"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "create",
+   "file": "lockup-factory/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "hash",
+   "file": "lockup-factory/src/types.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "termination_prepare_to_withdraw",
+   "file": "lockup/src/foundation.rs",
+   "panic_calls": [
+    "panic",
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "on_get_account_staked_balance_to_unstake",
+   "file": "lockup/src/foundation_callbacks.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "on_staking_pool_unstake_for_termination",
+   "file": "lockup/src/foundation_callbacks.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "on_get_account_unstaked_balance_to_withdraw",
+   "file": "lockup/src/foundation_callbacks.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "on_staking_pool_withdraw_for_termination",
+   "file": "lockup/src/foundation_callbacks.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "set_staking_pool_status",
+   "file": "lockup/src/internal.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "assert_vesting",
+   "file": "lockup/src/internal.rs",
+   "panic_calls": [
+    "panic"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "assert_no_termination",
+   "file": "lockup/src/internal.rs",
+   "panic_calls": [
+    "panic"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "assert_no_staking_or_idle",
+   "file": "lockup/src/internal.rs",
+   "panic_calls": [
+    "panic"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "assert_staking_pool_is_idle",
+   "file": "lockup/src/internal.rs",
+   "panic_calls": [
+    "unwrap",
+    "panic"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "assert_called_by_foundation",
+   "file": "lockup/src/internal.rs",
+   "panic_calls": [
+    "panic"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "default",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "panic"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_add_full_access_key",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_add_full_access_key_when_vesting_is_not_finished",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_add_full_access_key_when_lockup_is_not_finished",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_transfers_not_enabled",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_enable_transfers",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_check_transfers_vote_false",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_lockup_only_transfer_call_by_owner",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_staking_pool_is_not_selected",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_staking_pool_success",
+   "file": "lockup/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "ffi_risks": [
+  {
+   "operation": "as_ptr",
+   "file": "state-manipulation/src/lib.rs",
+   "source_context": "production"
+  },
+  {
+   "operation": "as_ptr",
+   "file": "state-manipulation/src/lib.rs",
+   "source_context": "production"
+  },
+  {
+   "operation": "as_ptr",
+   "file": "state-manipulation/src/lib.rs",
+   "source_context": "production"
+  }
+ ],
+ "missing_validation": [
+  {
+   "function": "get_locked_vested_amount",
+   "file": "lockup/src/getters.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_unvested_amount",
+   "file": "lockup/src/getters.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "set_staking_pool_status",
+   "file": "lockup/src/internal.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "set_termination_status",
+   "file": "lockup/src/internal.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "create",
+   "file": "multisig-factory/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "add_request_and_confirm",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_request",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_num_requests_pk",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_confirmations",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "current_account_id",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "block_timestamp",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "signer_account_id",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "signer_account_pk",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "predecessor_account_id",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "block_index",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "epoch_height",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "attached_deposit",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "account_balance",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "account_locked_balance",
+   "file": "multisig/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "add_request_and_confirm",
+   "file": "multisig2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_request",
+   "file": "multisig2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_num_requests_per_member",
+   "file": "multisig2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_confirmations",
+   "file": "multisig2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "multiply",
+   "file": "staking-pool/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "staking-pool/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 142,
+  "shown_findings": 57,
+  "categories": [
+   "unsafe_blocks",
+   "panic_sinks",
+   "ffi_risks",
+   "missing_validation"
+  ],
+  "category_totals": {
+   "unsafe_blocks": 4,
+   "panic_sinks": 99,
+   "ffi_risks": 3,
+   "missing_validation": 36
+  },
+  "truncated_categories": {
+   "panic_sinks": {
+    "shown": 25,
+    "total": 99,
+    "hidden": 74
+   },
+   "missing_validation": {
+    "shown": 25,
+    "total": 36,
+    "hidden": 11
+   }
+  },
+  "truncated": true,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

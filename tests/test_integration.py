@@ -7,11 +7,13 @@ from pathlib import Path
 from core.indexer import Indexer
 
 CS_DIR = Path(__file__).parent.parent
+# The cs_*.py entrypoints live in cli/ since b7e911c ("Restructure ChainScope").
+CLI_DIR = CS_DIR / "cli"
 
 
 def run_tool(script: str, args: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, str(CS_DIR / script)] + args,
+        [sys.executable, str(CLI_DIR / script)] + args,
         capture_output=True, text=True, cwd=str(CS_DIR)
     )
 

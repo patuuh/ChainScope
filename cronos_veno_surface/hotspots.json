@@ -1,0 +1,177 @@
+{
+ "hotspots": [
+  {
+   "function": "setTreasury",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 67,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pause",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 71,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "ext_calls(1)",
+    "privileged(2)",
+    "frontrun(4)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unpause",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 80,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "ext_calls(1)",
+    "privileged(2)",
+    "frontrun(4)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mintAndBridge",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 97,
+   "visibility": "external",
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "oracle(3)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdrawBaseToken",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 98,
+   "visibility": "external",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approveBaseToken",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 113,
+   "visibility": "external",
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "frontrun(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_bridgeErc20",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 250,
+   "visibility": "internal",
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "frontrun(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mintAndBridge",
+   "file": "0xded4dd6e/YbEthBridge.sol",
+   "line": 49,
+   "visibility": "external",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "frontrun(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mintAndBridge",
+   "file": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "line": 88,
+   "visibility": "external",
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "frontrun(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "convertToBaseTokenAmount",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 135,
+   "visibility": "public",
+   "score": 3,
+   "reasons": [
+    "ext_calls(3)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "convertToEthAmount",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 144,
+   "visibility": "public",
+   "score": 3,
+   "reasons": [
+    "ext_calls(3)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bridge",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 188,
+   "visibility": "external",
+   "score": 3,
+   "reasons": [
+    "ext_calls(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_bridgeEth",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 218,
+   "visibility": "internal",
+   "score": 3,
+   "reasons": [
+    "ext_calls(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setChainParameters",
+   "file": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "line": 65,
+   "visibility": "external",
+   "score": 3,
+   "reasons": [
+    "entry+writes(1)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_scored": 14,
+  "critical_8plus": 1,
+  "high_5to7": 8,
+  "medium_3to4": 5,
+  "top_shown": 14,
+  "query_scope": "all_sources"
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "tool": "cs_sinks",
+ "query_scope": "all_sources",
+ "sink_type": "all",
+ "external_only": false,
+ "total": 1,
+ "shown": 1,
+ "truncated": false,
+ "max_results": 50,
+ "max_callers_per_sink": 8,
+ "include_metadata": false,
+ "include_caller_details": false,
+ "max_metadata_bytes": 4096,
+ "by_type": {
+  "fund_transfer": 1
+ },
+ "sinks": [
+  {
+   "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO._sink_transfer_43",
+   "label": "transfer",
+   "node_type": "function",
+   "visibility": "",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line_start": 44,
+   "line_end": 44,
+   "signature": "msg.sender.transfer",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO.withdraw(uint)",
+     "label": "withdraw",
+     "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+     "line_start": 41,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  }
+ ]
+}

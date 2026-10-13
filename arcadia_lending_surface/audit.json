@@ -1,0 +1,1053 @@
+{
+ "query_scope": "all_sources",
+ "stats": {
+  "nodes": 271,
+  "edges": 857,
+  "functions": 136,
+  "state_vars": 86,
+  "files": 18,
+  "transitions": 0,
+  "entry_points": 106,
+  "guarded_entry_points": 40,
+  "unguarded_entry_points": 66,
+  "sinks": 0,
+  "node_types": {
+   "function": 136,
+   "state_var": 86,
+   "event": 16,
+   "modifier": 10,
+   "interface": 8,
+   "library": 6,
+   "contract": 5,
+   "abstract": 2,
+   "struct": 2
+  },
+  "edge_relations": {
+   "reads_state": 314,
+   "calls": 281,
+   "writes_state": 145,
+   "guards": 64,
+   "emits_event": 37,
+   "inherits": 16
+  }
+ },
+ "build_info": {
+  "repo_path": "/tmp/opencode/arcadia-lending",
+  "detected_chain": "solidity",
+  "all_chains": [
+   "solidity"
+  ],
+  "lang_override": "",
+  "include_research": false,
+  "built_at": "2026-09-23T19:41:06.259013+00:00",
+  "files_considered": 18,
+  "files_indexed": 18,
+  "extractor_runs": 18,
+  "extractor_failures": 0,
+  "failed_files": 0,
+  "failure_examples": [],
+  "timed_out": false,
+  "max_files": null,
+  "nodes": 271,
+  "edges": 931,
+  "transitions": 0,
+  "confidence": {
+   "score": 100.0,
+   "tier": "high",
+   "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse"
+  }
+ },
+ "detections": {
+  "unchecked_arithmetic": 27,
+  "cross_reentrancy": 16,
+  "unsafe_downcast": 13,
+  "no_input_validation": 12,
+  "reentrancy_risk": 8,
+  "dead_params": 6,
+  "dos_risk": 6,
+  "timestamp_dependence": 5,
+  "oracle_risk": 4,
+  "privileged_operations": 3,
+  "precision_risk": 2,
+  "unguarded_privileged_operation": 1
+ },
+ "source_context_summary": {
+  "production": 136
+ },
+ "source_context_summary_info": {
+  "total": 1,
+  "shown": 1,
+  "truncated": false
+ },
+ "attack_surface": [
+  {
+   "id": "src/liquidators/LiquidatorL1.sol::LiquidatorL1.liquidateAccount(address)",
+   "label": "liquidateAccount",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "signature": "function liquidateAccount(address account) external",
+   "reachable_count": 16,
+   "state_writes": 20
+  },
+  {
+   "id": "src/liquidators/LiquidatorL2.sol::LiquidatorL2.liquidateAccount(address)",
+   "label": "liquidateAccount",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "signature": "function liquidateAccount(address account) external",
+   "reachable_count": 16,
+   "state_writes": 20
+  },
+  {
+   "id": "src/liquidators/LiquidatorL1.sol::LiquidatorL1.bid(address,uint256[],bool,bytes)",
+   "label": "bid",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "signature": "function bid(address account, uint256[] bidAmounts, bool endAuction_, bytes data) external",
+   "reachable_count": 60,
+   "state_writes": 15
+  },
+  {
+   "id": "src/liquidators/LiquidatorL2.sol::LiquidatorL2.bid(address,uint256[],bool,bytes)",
+   "label": "bid",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "signature": "function bid(address account, uint256[] bidAmounts, bool endAuction_, bytes data) external",
+   "reachable_count": 59,
+   "state_writes": 15
+  },
+  {
+   "id": "src/liquidators/LiquidatorL2.sol::LiquidatorL2.endAuction(address)",
+   "label": "endAuction",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "signature": "function endAuction(address account) external",
+   "reachable_count": 44,
+   "state_writes": 15
+  },
+  {
+   "id": "src/liquidators/LiquidatorL1.sol::LiquidatorL1.endAuction(address)",
+   "label": "endAuction",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "signature": "function endAuction(address account) external",
+   "reachable_count": 30,
+   "state_writes": 14
+  },
+  {
+   "id": "src/LendingPool.sol::LendingPool.settleLiquidationUnhappyFlow(address,uint256,uint256,address)",
+   "label": "settleLiquidationUnhappyFlow",
+   "file": "src/LendingPool.sol",
+   "signature": "function settleLiquidationUnhappyFlow(address account, uint256 startDebt, uint256 minimumMargin_, address terminator) external",
+   "reachable_count": 15,
+   "state_writes": 12
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.deposit(uint256,address)",
+   "label": "deposit",
+   "file": "src/Tranche.sol",
+   "signature": "function deposit(uint256 assets, address receiver) public",
+   "reachable_count": 19,
+   "state_writes": 7
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.mint(uint256,address)",
+   "label": "mint",
+   "file": "src/Tranche.sol",
+   "signature": "function mint(uint256 shares, address receiver) public",
+   "reachable_count": 18,
+   "state_writes": 7
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.withdraw(uint256,address,address)",
+   "label": "withdraw",
+   "file": "src/Tranche.sol",
+   "signature": "function withdraw(uint256 assets, address receiver, address owner_) public",
+   "reachable_count": 18,
+   "state_writes": 7
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.redeem(uint256,address,address)",
+   "label": "redeem",
+   "file": "src/Tranche.sol",
+   "signature": "function redeem(uint256 shares, address receiver, address owner_) public",
+   "reachable_count": 19,
+   "state_writes": 7
+  },
+  {
+   "id": "src/LendingPool.sol::LendingPool.auctionRepay(uint256,uint256,uint256,address,address)",
+   "label": "auctionRepay",
+   "file": "src/LendingPool.sol",
+   "signature": "function auctionRepay(uint256 startDebt, uint256 minimumMargin_, uint256 amount, address account, address bidder) external",
+   "reachable_count": 15,
+   "state_writes": 6
+  },
+  {
+   "id": "src/LendingPool.sol::LendingPool.settleLiquidationHappyFlow(address,uint256,uint256,address)",
+   "label": "settleLiquidationHappyFlow",
+   "file": "src/LendingPool.sol",
+   "signature": "function settleLiquidationHappyFlow(address account, uint256 startDebt, uint256 minimumMargin_, address terminator) external",
+   "reachable_count": 12,
+   "state_writes": 6
+  },
+  {
+   "id": "src/liquidators/LiquidatorL2.sol::LiquidatorL2.constructor",
+   "label": "constructor",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "signature": "constructor(address owner_, address accountFactory, address sequencerUptimeOracle_)",
+   "reachable_count": 4,
+   "state_writes": 6
+  },
+  {
+   "id": "src/LendingPool.sol::LendingPool.setTreasuryWeights(uint16,uint16)",
+   "label": "setTreasuryWeights",
+   "file": "src/LendingPool.sol",
+   "signature": "function setTreasuryWeights(uint16 interestWeight_, uint16 liquidationWeight) external",
+   "reachable_count": 1,
+   "state_writes": 5
+  },
+  {
+   "id": "src/LendingPool.sol::LendingPool.liquidityOfAndSync(address)",
+   "label": "liquidityOfAndSync",
+   "file": "src/LendingPool.sol",
+   "signature": "function liquidityOfAndSync(address owner_) external",
+   "reachable_count": 11,
+   "state_writes": 5
+  },
+  {
+   "id": "src/LendingPool.sol::LendingPool.setLiquidationParameters(uint16,uint16,uint16,uint16,uint80)",
+   "label": "setLiquidationParameters",
+   "file": "src/LendingPool.sol",
+   "signature": "function setLiquidationParameters(uint16 initiationWeight_, uint16 penaltyWeight_, uint16 terminationWeight_, uint16 minRewardWeight_, uint80 maxReward_) external",
+   "reachable_count": 1,
+   "state_writes": 5
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.totalAssetsAndSync",
+   "label": "totalAssetsAndSync",
+   "file": "src/Tranche.sol",
+   "signature": "function totalAssetsAndSync() public",
+   "reachable_count": 12,
+   "state_writes": 5
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.convertToSharesAndSync(uint256)",
+   "label": "convertToSharesAndSync",
+   "file": "src/Tranche.sol",
+   "signature": "function convertToSharesAndSync(uint256 assets) public",
+   "reachable_count": 14,
+   "state_writes": 5
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.convertToAssetsAndSync(uint256)",
+   "label": "convertToAssetsAndSync",
+   "file": "src/Tranche.sol",
+   "signature": "function convertToAssetsAndSync(uint256 shares) public",
+   "reachable_count": 14,
+   "state_writes": 5
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.previewDepositAndSync(uint256)",
+   "label": "previewDepositAndSync",
+   "file": "src/Tranche.sol",
+   "signature": "function previewDepositAndSync(uint256 assets) public",
+   "reachable_count": 15,
+   "state_writes": 5
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.previewMintAndSync(uint256)",
+   "label": "previewMintAndSync",
+   "file": "src/Tranche.sol",
+   "signature": "function previewMintAndSync(uint256 shares) public",
+   "reachable_count": 14,
+   "state_writes": 5
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.previewWithdrawAndSync(uint256)",
+   "label": "previewWithdrawAndSync",
+   "file": "src/Tranche.sol",
+   "signature": "function previewWithdrawAndSync(uint256 assets) public",
+   "reachable_count": 14,
+   "state_writes": 5
+  },
+  {
+   "id": "src/Tranche.sol::Tranche.previewRedeemAndSync(uint256)",
+   "label": "previewRedeemAndSync",
+   "file": "src/Tranche.sol",
+   "signature": "function previewRedeemAndSync(uint256 shares) public",
+   "reachable_count": 15,
+   "state_writes": 5
+  },
+  {
+   "id": "src/guardians/LendingPoolGuardian.sol::LendingPoolGuardian.pause",
+   "label": "pause",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "signature": "function pause() external",
+   "reachable_count": 1,
+   "state_writes": 5
+  }
+ ],
+ "critical_hotspots": [
+  {
+   "function": "borrow",
+   "file": "src/LendingPool.sol",
+   "line": 430,
+   "score": 17,
+   "reasons": [
+    "entry+writes(4)",
+    "ext_calls(4)",
+    "reentrancy",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approveBeneficiary",
+   "file": "src/LendingPool.sol",
+   "line": 413,
+   "score": 15,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(1)",
+    "reentrancy",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/LendingPool.sol",
+   "line": 711,
+   "score": 14,
+   "reasons": [
+    "entry+writes(3)",
+    "ext_calls(2)",
+    "cross_reentrancy",
+    "oracle(1)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "depositInLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 342,
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "donateToTranche",
+   "file": "src/LendingPool.sol",
+   "line": 368,
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdrawFromLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 391,
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_syncInterestsToLiquidityProviders",
+   "file": "src/LendingPool.sol",
+   "line": 794,
+   "score": 12,
+   "reasons": [
+    "ext_calls(2)",
+    "reentrancy",
+    "unchecked_arith",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "startLiquidation",
+   "file": "src/LendingPool.sol",
+   "line": 912,
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "settleLiquidationUnhappyFlow",
+   "file": "src/LendingPool.sol",
+   "line": 1036,
+   "score": 12,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "liquidityOf",
+   "file": "src/LendingPool.sol",
+   "line": 685,
+   "score": 11,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "unchecked_arith",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_flashActionCallback",
+   "file": "src/LendingPool.sol",
+   "line": 599,
+   "score": 10,
+   "reasons": [
+    "ext_calls(2)",
+    "reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_settleLiquidationHappyFlow",
+   "file": "src/LendingPool.sol",
+   "line": 991,
+   "score": 10,
+   "reasons": [
+    "ext_calls(2)",
+    "reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_syncLiquidationFee",
+   "file": "src/LendingPool.sol",
+   "line": 1163,
+   "score": 10,
+   "reasons": [
+    "ext_calls(1)",
+    "reentrancy",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAuctionCurveParameters",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 164,
+   "score": 10,
+   "reasons": [
+    "entry+writes(4)",
+    "reentrancy",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAuctionCurveParameters",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 216,
+   "score": 10,
+   "reasons": [
+    "entry+writes(4)",
+    "reentrancy",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "score": 9,
+   "reasons": [
+    "entry+writes(3)",
+    "cross_reentrancy",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unpause",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "line": 160,
+   "score": 9,
+   "reasons": [
+    "entry+writes(3)",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 259,
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "unchecked_arith",
+    "ext_call_in_loop(1)",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 312,
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "unchecked_arith",
+    "ext_call_in_loop(1)",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "totalLiquidity",
+   "file": "src/LendingPool.sol",
+   "line": 650,
+   "score": 8,
+   "reasons": [
+    "cross_reentrancy",
+    "unchecked_arith",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bid",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 381,
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setTreasuryWeights",
+   "file": "src/LendingPool.sol",
+   "line": 298,
+   "score": 7,
+   "reasons": [
+    "entry+writes(5)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setTreasury",
+   "file": "src/LendingPool.sol",
+   "line": 311,
+   "score": 7,
+   "reasons": [
+    "entry+writes(2)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "flashAction",
+   "file": "src/LendingPool.sol",
+   "line": 553,
+   "score": 7,
+   "reasons": [
+    "ext_calls(2)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pause",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "line": 113,
+   "score": 7,
+   "reasons": [
+    "entry+writes(5)",
+    "privileged(2)",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "hotspot_summary": {
+  "total_scored": 39,
+  "critical_8plus": 21,
+  "high_5to7": 18
+ },
+ "reentrancy": [
+  {
+   "function": "constructor",
+   "file": "src/LendingPool.sol",
+   "line": 197,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "borrow",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "constructor",
+   "file": "src/LendingPool.sol",
+   "line": 197,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_flashActionCallback",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "constructor",
+   "file": "src/LendingPool.sol",
+   "line": 197,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "skim",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "constructor",
+   "file": "src/LendingPool.sol",
+   "line": 197,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncInterestsToLiquidityProviders",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "constructor",
+   "file": "src/LendingPool.sol",
+   "line": 197,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncLiquidationFee",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "borrow",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_flashActionCallback",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "skim",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncInterestsToLiquidityProviders",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncLiquidationFee",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasuryWeights",
+   "file": "src/LendingPool.sol",
+   "line": 298,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "borrow",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasuryWeights",
+   "file": "src/LendingPool.sol",
+   "line": 298,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_flashActionCallback",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasuryWeights",
+   "file": "src/LendingPool.sol",
+   "line": 298,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "skim",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasuryWeights",
+   "file": "src/LendingPool.sol",
+   "line": 298,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncInterestsToLiquidityProviders",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasuryWeights",
+   "file": "src/LendingPool.sol",
+   "line": 298,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncLiquidationFee",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasury",
+   "file": "src/LendingPool.sol",
+   "line": 311,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "borrow",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasury",
+   "file": "src/LendingPool.sol",
+   "line": 311,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_flashActionCallback",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasury",
+   "file": "src/LendingPool.sol",
+   "line": 311,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "skim",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasury",
+   "file": "src/LendingPool.sol",
+   "line": 311,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncInterestsToLiquidityProviders",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "setTreasury",
+   "file": "src/LendingPool.sol",
+   "line": 311,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncLiquidationFee",
+   "stale_vars": [
+    "treasury"
+   ]
+  },
+  {
+   "function": "depositInLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 342,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "borrow",
+   "stale_vars": [
+    "realisedLiquidityOf",
+    "totalRealisedLiquidity"
+   ]
+  },
+  {
+   "function": "depositInLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 342,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_flashActionCallback",
+   "stale_vars": [
+    "realisedLiquidityOf",
+    "totalRealisedLiquidity"
+   ]
+  },
+  {
+   "function": "depositInLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 342,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "skim",
+   "stale_vars": [
+    "realisedLiquidityOf",
+    "totalRealisedLiquidity"
+   ]
+  },
+  {
+   "function": "depositInLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 342,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_syncInterestsToLiquidityProviders",
+   "stale_vars": [
+    "realisedLiquidityOf",
+    "totalRealisedLiquidity"
+   ]
+  },
+  {
+   "function": "depositInLendingPool",
+   "file": "src/LendingPool.sol",
+   "line": 342,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_settleLiquidationHappyFlow",
+   "stale_vars": [
+    "realisedLiquidityOf"
+   ]
+  }
+ ],
+ "silent_state_changes": [
+  {
+   "function": "liquidateAccount",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "source_context": "production",
+   "state_writes": 17
+  },
+  {
+   "function": "liquidateAccount",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "source_context": "production",
+   "state_writes": 17
+  },
+  {
+   "function": "setLiquidationParameters",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 5
+  },
+  {
+   "function": "setInterestParameters",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 4
+  },
+  {
+   "function": "skim",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 3
+  },
+  {
+   "function": "depositInLendingPool",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "donateToTranche",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "setTreasury",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "withdrawFromLendingPool",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "setMinimumMargin",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setOriginationFee",
+   "file": "src/LendingPool.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setAccountRecipient",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "bid",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "endAuction",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setAccountRecipient",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setSequencerUptimeOracle",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "source_context": "production",
+   "state_writes": 1
+  }
+ ],
+ "silent_total": 16,
+ "dead_code": {
+  "dead_internal_total": 3,
+  "direct_entry_points_total": 25
+ },
+ "defi_summary": {
+  "timestamp_dependence": 5,
+  "oracle_risk": 4,
+  "precision_risk": 2,
+  "dos_risk": 6,
+  "unsafe_downcast": 13,
+  "unguarded_privileged_operation": 1
+ },
+ "_summary": {
+  "top": 25,
+  "query_scope": "all_sources",
+  "include_metadata": false,
+  "include_dead_code_details": false,
+  "max_metadata_bytes": 4096,
+  "max_source_contexts": 20,
+  "sections": {
+   "attack_surface": {
+    "total": 106,
+    "shown": 25,
+    "truncated": true
+   },
+   "critical_hotspots": {
+    "total": 39,
+    "shown": 25,
+    "truncated": true
+   },
+   "reentrancy": {
+    "total": 88,
+    "shown": 25,
+    "truncated": true
+   },
+   "taint_paths": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "access_control_gaps": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "silent_state_changes": {
+    "total": 16,
+    "shown": 16,
+    "truncated": false
+   },
+   "dead_code.dead_internal": {
+    "total": 3,
+    "shown": 0,
+    "truncated": true
+   },
+   "dead_code.direct_entry_points": {
+    "total": 25,
+    "shown": 0,
+    "truncated": true
+   }
+  },
+  "truncated_sections": [
+   "attack_surface",
+   "critical_hotspots",
+   "reentrancy",
+   "dead_code.dead_internal",
+   "dead_code.direct_entry_points"
+  ],
+  "truncated": true,
+  "_hint": "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+ }
+}

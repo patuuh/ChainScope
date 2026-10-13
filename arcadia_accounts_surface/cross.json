@@ -1,0 +1,475 @@
+{
+ "total": 183,
+ "shown": 25,
+ "truncated": true,
+ "by_attribute": {
+  "unresolved": 179,
+  "sink": 4
+ },
+ "by_source_context": {
+  "production": 183
+ },
+ "top_source_files": [
+  {
+   "name": "src/asset-modules/UniswapV4/DefaultUniswapV4AM.sol",
+   "calls": 33
+  },
+  {
+   "name": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "calls": 16
+  },
+  {
+   "name": "src/accounts/AccountV3.sol",
+   "calls": 14
+  },
+  {
+   "name": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "calls": 14
+  },
+  {
+   "name": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "calls": 14
+  },
+  {
+   "name": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "calls": 13
+  },
+  {
+   "name": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "calls": 12
+  },
+  {
+   "name": "src/accounts/AccountV4.sol",
+   "calls": 11
+  },
+  {
+   "name": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "calls": 8
+  },
+  {
+   "name": "src/accounts/AccountV1.sol",
+   "calls": 7
+  }
+ ],
+ "top_targets": [
+  {
+   "name": "src/asset-modules/Slipstream/SlipstreamAM.sol::SlipstreamAM.positions",
+   "calls": 5
+  },
+  {
+   "name": "src/asset-modules/UniswapV3/UniswapV3AM.sol::UniswapV3AM.positions",
+   "calls": 5
+  },
+  {
+   "name": "src/asset-modules/UniswapV4/DefaultUniswapV4AM.sol::DefaultUniswapV4AM.tickLower",
+   "calls": 5
+  },
+  {
+   "name": "src/asset-modules/UniswapV4/DefaultUniswapV4AM.sol::DefaultUniswapV4AM.tickUpper",
+   "calls": 5
+  },
+  {
+   "name": "call",
+   "calls": 4
+  },
+  {
+   "name": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol::AerodromePoolAM.mulDivDown",
+   "calls": 4
+  },
+  {
+   "name": "src/asset-modules/UniswapV4/DefaultUniswapV4AM.sol::DefaultUniswapV4AM.getPoolAndPositionInfo",
+   "calls": 4
+  },
+  {
+   "name": "src/asset-modules/UniswapV4/DefaultUniswapV4AM.sol::DefaultUniswapV4AM.mulDivDown",
+   "calls": 4
+  },
+  {
+   "name": "src/asset-modules/UniswapV4/DefaultUniswapV4AM.sol::DefaultUniswapV4AM.unwrap",
+   "calls": 4
+  },
+  {
+   "name": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol::StakedAerodromeAM.getReward",
+   "calls": 3
+  }
+ ],
+ "counter_summary": {
+  "max_counter_items": 10,
+  "source_contexts": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_source_files": {
+   "total": 24,
+   "shown": 10,
+   "truncated": true
+  },
+  "top_targets": {
+   "total": 120,
+   "shown": 10,
+   "truncated": true
+  },
+  "truncated": true
+ },
+ "max_attribute_bytes": 2048,
+ "attribute_truncated": false,
+ "attribute_truncated_calls": 0,
+ "calls": [
+  {
+   "source_label": "upgradeAccountVersion",
+   "source_file": "src/Factory.sol",
+   "source_context": "production",
+   "target_label": "src/Factory.sol::Factory.ACCOUNT_VERSION",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "ACCOUNT_VERSION",
+    "interface": "IAccount(account)"
+   }
+  },
+  {
+   "source_label": "upgradeAccountVersion",
+   "source_file": "src/Factory.sol",
+   "source_context": "production",
+   "target_label": "src/Factory.sol::Factory.verify",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "verify",
+    "interface": "MerkleProofLib"
+   }
+  },
+  {
+   "source_label": "setNewAccountInfo",
+   "source_file": "src/Factory.sol",
+   "source_context": "production",
+   "target_label": "src/Factory.sol::Factory.ACCOUNT_VERSION",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 6,
+    "unresolved": true,
+    "call_name": "ACCOUNT_VERSION",
+    "interface": "IAccount(implementation)"
+   }
+  },
+  {
+   "source_label": "setNewAccountInfo",
+   "source_file": "src/Factory.sol",
+   "source_context": "production",
+   "target_label": "src/Factory.sol::Factory.FACTORY",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 8,
+    "unresolved": true,
+    "call_name": "FACTORY",
+    "interface": "IRegistry(registry)"
+   }
+  },
+  {
+   "source_label": "auctionBid",
+   "source_file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV1.sol::AccountV1.ownerOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "ownerOf",
+    "interface": "address(this) == IERC721(assetAddresses[i])"
+   }
+  },
+  {
+   "source_label": "flashAction",
+   "source_file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV1.sol::AccountV1.executeAction",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "executeAction",
+    "interface": "IActionBase(actionTarget)"
+   }
+  },
+  {
+   "source_label": "flashActionByCreditor",
+   "source_file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV1.sol::AccountV1.executeAction",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 8,
+    "unresolved": true,
+    "call_name": "executeAction",
+    "interface": "IActionBase(actionTarget)"
+   }
+  },
+  {
+   "source_label": "_transferFromOwnerWithPermit",
+   "source_file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV1.sol::AccountV1.SignatureTransferDetails",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "SignatureTransferDetails",
+    "interface": "new IPermit2"
+   }
+  },
+  {
+   "source_label": "_transferFromOwnerWithPermit",
+   "source_file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV1.sol::AccountV1.permitTransferFrom",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "permitTransferFrom",
+    "interface": "PERMIT2"
+   }
+  },
+  {
+   "source_label": "skim",
+   "source_file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "target_label": "call",
+   "target_file": "src/accounts/AccountV1.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "skim",
+   "source_file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV1.sol::AccountV1.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "IERC1155(token)"
+   }
+  },
+  {
+   "source_label": "flashAction",
+   "source_file": "src/accounts/AccountV2.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV2.sol::AccountSpot.executeAction",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "executeAction",
+    "interface": "IActionBase(actionTarget)"
+   }
+  },
+  {
+   "source_label": "_withdraw",
+   "source_file": "src/accounts/AccountV2.sol",
+   "source_context": "production",
+   "target_label": "call",
+   "target_file": "src/accounts/AccountV2.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "_transferFromOwnerWithPermit",
+   "source_file": "src/accounts/AccountV2.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV2.sol::AccountSpot.SignatureTransferDetails",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "SignatureTransferDetails",
+    "interface": "new IPermit2"
+   }
+  },
+  {
+   "source_label": "_transferFromOwnerWithPermit",
+   "source_file": "src/accounts/AccountV2.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV2.sol::AccountSpot.permitTransferFrom",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "permitTransferFrom",
+    "interface": "PERMIT2"
+   }
+  },
+  {
+   "source_label": "auctionBid",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.ownerOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "ownerOf",
+    "interface": "address(this) == IERC721(assetAddresses[i])"
+   }
+  },
+  {
+   "source_label": "setAssetManagers",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.onSetAssetManager",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "onSetAssetManager",
+    "interface": "IAssetManager(assetManager)"
+   }
+  },
+  {
+   "source_label": "flashAction",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.executeAction",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "executeAction",
+    "interface": "IActionBase(actionTarget)"
+   }
+  },
+  {
+   "source_label": "removeMerklOperator",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.operators",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "operators",
+    "interface": "MERKL_DISTRIBUTOR"
+   }
+  },
+  {
+   "source_label": "removeMerklOperator",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.toggleOperator",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "toggleOperator",
+    "interface": "MERKL_DISTRIBUTOR"
+   }
+  },
+  {
+   "source_label": "setMerklOperators",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.operators",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "operators",
+    "interface": "MERKL_DISTRIBUTOR"
+   }
+  },
+  {
+   "source_label": "setMerklOperators",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.toggleOperator",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "toggleOperator",
+    "interface": "MERKL_DISTRIBUTOR"
+   }
+  },
+  {
+   "source_label": "setMerklOperators",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.onSetMerklOperator",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "onSetMerklOperator",
+    "interface": "IMerklOperator(operator)"
+   }
+  },
+  {
+   "source_label": "setMerklOperators",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.setClaimRecipient",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "setClaimRecipient",
+    "interface": "MERKL_DISTRIBUTOR"
+   }
+  },
+  {
+   "source_label": "flashActionByCreditor",
+   "source_file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "target_label": "src/accounts/AccountV3.sol::AccountV3.executeAction",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 10,
+    "unresolved": true,
+    "call_name": "executeAction",
+    "interface": "IActionBase(actionTarget)"
+   }
+  }
+ ],
+ "tool": "cs_cross_summary",
+ "query_scope": "all_sources",
+ "from_func": null,
+ "_next_steps": [
+  "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+  "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+  "Use direct source review on the top source files before treating this as a finding."
+ ],
+ "_warnings": [
+  "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
+ ]
+}

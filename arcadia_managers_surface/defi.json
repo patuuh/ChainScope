@@ -1,0 +1,783 @@
+{
+ "oracle_manipulation": [
+  {
+   "function": "execute",
+   "file": "src/cl-managers/RouterTrampoline.sol",
+   "line": 34,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(tokenIn).balanceOf",
+     "line": 48
+    },
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(tokenOut).balanceOf",
+     "line": 49
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_claim",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 204,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(position.tokens[1]).balanceOf",
+     "line": 234
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_unstake",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 272,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(WRAPPED_NATIVE).balanceOf",
+     "line": 275
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_burn",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 294,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(position.tokens[1]).balanceOf",
+     "line": 314
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_decreaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 329,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(position.tokens[1]).balanceOf",
+     "line": 353
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_mint",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 472,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(position.tokens[1]).balanceOf",
+     "line": 537
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_increaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 552,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(position.tokens[1]).balanceOf",
+     "line": 600
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 579,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 587
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 663,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 671
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 325,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 333
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "executeAction",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 356,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "IERC20(tokenIn_).balanceOf",
+     "line": 362
+    },
+    {
+     "type": "spot_price_read",
+     "call": "IERC20(tokenIn_).balanceOf",
+     "line": 372
+    },
+    {
+     "type": "spot_price_read",
+     "call": "IERC20(tokenOut_).balanceOf",
+     "line": 379
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "beforeSwap",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 415,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "IERC20(tokenIn).balanceOf",
+     "line": 423
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claim",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line": 187,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 208
+    },
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 225
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line": 257,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 264
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/merkl-operator/MerklOperatorBase.sol",
+   "line": 170,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "ERC20(token).balanceOf",
+     "line": 177
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "dos_risks": [
+  {
+   "function": "_approveAndTransfer",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 539,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "ERC20(token).safeApproveWithRetry",
+     "line": 557
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_approveAndTransfer",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 613,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "ERC20(token).safeApproveWithRetry",
+     "line": 644
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_approveAndTransfer",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 270,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "ERC20(token).safeApproveWithRetry",
+     "line": 294
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claim",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line": 187,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "MERKL_DISTRIBUTOR.claimRecipient",
+     "line": 205
+    },
+    {
+     "type": "external_call_in_loop",
+     "call": "ERC20(token).balanceOf",
+     "line": 225
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "frontrunning": [
+  {
+   "function": "_stake",
+   "file": "src/cl-managers/base/Slipstream.sol",
+   "line": 248,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "POSITION_MANAGER.approve",
+     "line": 255
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "unsafe_downcasts": [
+  {
+   "function": "_claim",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 204,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 222
+    },
+    {
+     "type": "uint8",
+     "line": 224
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_burn",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 294,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 302
+    },
+    {
+     "type": "uint8",
+     "line": 304
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_decreaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 329,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 341
+    },
+    {
+     "type": "uint8",
+     "line": 343
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processSwapDelta",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 427,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 433
+    },
+    {
+     "type": "uint128",
+     "line": 437
+    },
+    {
+     "type": "uint128",
+     "line": 445
+    },
+    {
+     "type": "uint128",
+     "line": 452
+    },
+    {
+     "type": "uint128",
+     "line": 456
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_mint",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 472,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 492
+    },
+    {
+     "type": "uint8",
+     "line": 511
+    },
+    {
+     "type": "uint8",
+     "line": 513
+    },
+    {
+     "type": "uint8",
+     "line": 515
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_increaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 552,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 569
+    },
+    {
+     "type": "uint8",
+     "line": 583
+    },
+    {
+     "type": "uint8",
+     "line": 585
+    },
+    {
+     "type": "uint8",
+     "line": 587
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 223,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 242
+    },
+    {
+     "type": "uint64",
+     "line": 243
+    },
+    {
+     "type": "uint64",
+     "line": 244
+    },
+    {
+     "type": "uint64",
+     "line": 245
+    },
+    {
+     "type": "uint64",
+     "line": 246
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swap",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 454,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 474
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "toUint128",
+   "file": "src/cl-managers/libraries/LiquidityAmounts.sol",
+   "line": 21,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 23
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getRebalanceParams",
+   "file": "src/cl-managers/libraries/RebalanceLogic.sol",
+   "line": 42,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 68
+    },
+    {
+     "type": "uint160",
+     "line": 69
+    },
+    {
+     "type": "uint160",
+     "line": 70
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_approximateSqrtPriceNew",
+   "file": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "line": 113,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 148
+    },
+    {
+     "type": "uint160",
+     "line": 149
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 260,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 281
+    },
+    {
+     "type": "uint64",
+     "line": 282
+    },
+    {
+     "type": "uint64",
+     "line": 283
+    },
+    {
+     "type": "uint64",
+     "line": 284
+    },
+    {
+     "type": "uint64",
+     "line": 285
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swap",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 526,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 548
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 155,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 169
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 248,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 262
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line": 158,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 172
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "slippage_missing": [
+  {
+   "function": "_swapViaPool",
+   "file": "src/cl-managers/base/Slipstream.sol",
+   "line": 352,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "uniswapV3SwapCallback",
+   "file": "src/cl-managers/base/Slipstream.sol",
+   "line": 380,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swapViaPool",
+   "file": "src/cl-managers/base/UniswapV3.sol",
+   "line": 272,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "uniswapV3SwapCallback",
+   "file": "src/cl-managers/base/UniswapV3.sol",
+   "line": 300,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swapViaPool",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 368,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processSwapDelta",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 427,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swap",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 454,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swapViaRouter",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 500,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swapViaRouter",
+   "file": "src/cl-managers/compounders/CompounderUniswapV4.sol",
+   "line": 75,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSwapParams",
+   "file": "src/cl-managers/libraries/CLMath.sol",
+   "line": 80,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSwapParamsExact",
+   "file": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "line": 210,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_approximateOptimalSwapAmounts",
+   "file": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "line": 247,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swap",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 526,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swapViaRouter",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 574,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_swapViaRouter",
+   "file": "src/cl-managers/rebalancers/RebalancerUniswapV4.sol",
+   "line": 76,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "beforeSwap",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 415,
+   "risks": [
+    "no_slippage_param",
+    "no_deadline_param"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "erc_callback_reentrancy": [
+  {
+   "function": "onERC721Received",
+   "file": "src/cl-managers/base/AbstractBase.sol",
+   "line": 215,
+   "risks": [
+    "no_reentrancy_guard"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 53,
+  "shown_findings": 53,
+  "categories": [
+   "oracle_manipulation",
+   "dos_risks",
+   "frontrunning",
+   "unsafe_downcasts",
+   "slippage_missing",
+   "erc_callback_reentrancy"
+  ],
+  "category_totals": {
+   "oracle_manipulation": 15,
+   "dos_risks": 4,
+   "frontrunning": 1,
+   "unsafe_downcasts": 16,
+   "slippage_missing": 16,
+   "erc_callback_reentrancy": 1
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

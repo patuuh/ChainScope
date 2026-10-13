@@ -1,0 +1,819 @@
+{
+ "missing_validation": [
+  {
+   "function": "constructor",
+   "file": "src/Factory.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/Proxy.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/abstracts/Creditor.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/accounts/AccountPlaceholder.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/accounts/AccountV1.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountV1.sol",
+   "visibility": "external",
+   "source_context": "production"
+  },
+  {
+   "function": "setApprovedCreditor",
+   "file": "src/accounts/AccountV1.sol",
+   "visibility": "external",
+   "source_context": "production"
+  },
+  {
+   "function": "setAssetManager",
+   "file": "src/accounts/AccountV1.sol",
+   "visibility": "external",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/accounts/AccountV2.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "setAssetManager",
+   "file": "src/accounts/AccountV2.sol",
+   "visibility": "external",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/accounts/AccountV3.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountV3.sol",
+   "visibility": "external",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/accounts/AccountV4.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/accounts/helpers/AccountsGuard.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "burn",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "visibility": "external",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/ERC20-Primaries/ERC20PrimaryAM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Stargate-Finance/StakedStargateAM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "visibility": "public",
+   "source_context": "production"
+  }
+ ],
+ "unsafe_downcasts": [
+  {
+   "function": "createAccount",
+   "file": "src/Factory.sol",
+   "line": 92,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 106
+    },
+    {
+     "type": "uint160",
+     "line": 106
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getAccountAddress",
+   "file": "src/Factory.sol",
+   "line": 353,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 361
+    },
+    {
+     "type": "uint160",
+     "line": 361
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_openMarginAccount",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 352,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 357
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_openMarginAccount",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 389,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 395
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 78,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 88
+    },
+    {
+     "type": "uint64",
+     "line": 89
+    },
+    {
+     "type": "uint96",
+     "line": 103
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 341,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 362
+    },
+    {
+     "type": "uint16",
+     "line": 368
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "initialize",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 111,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 115
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 210,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 229
+    },
+    {
+     "type": "uint16",
+     "line": 229
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "decreaseLiquidity",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 384,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 429
+    },
+    {
+     "type": "uint128",
+     "line": 429
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claimFees",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 443,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 474
+    },
+    {
+     "type": "uint128",
+     "line": 474
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/ERC20-Primaries/ERC20PrimaryAM.sol",
+   "line": 47,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 52
+    },
+    {
+     "type": "uint64",
+     "line": 62
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setProtocol",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 82,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 87
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getPosition",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 243,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 252
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSqrtPriceX96",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 300,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 314
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 409,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 432
+    },
+    {
+     "type": "uint16",
+     "line": 438
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "initialize",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 132,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 138
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSqrtPriceX96",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 278,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 292
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 307,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 326
+    },
+    {
+     "type": "uint16",
+     "line": 326
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "burn",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 450,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 467
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claimReward",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 480,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 493
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "line": 63,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 78
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getRiskFactors",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "line": 173,
+   "casts": [
+    {
+     "type": "uint16",
+     "line": 193
+    },
+    {
+     "type": "uint16",
+     "line": 195
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setProtocol",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 82,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 87
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getPosition",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 243,
+   "casts": [
+    {
+     "type": "uint128",
+     "line": 252
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSqrtPriceX96",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 300,
+   "casts": [
+    {
+     "type": "uint160",
+     "line": 314
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "dead_params": [
+  {
+   "function": "constructor",
+   "file": "src/Factory.sol",
+   "line": 74,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 247,
+   "visibility": "external",
+   "unused_params": [
+    "oldImplementation",
+    "oldRegistry",
+    "oldVersion",
+    "data"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 273,
+   "visibility": "external",
+   "unused_params": [
+    "oldImplementation",
+    "oldRegistry",
+    "oldVersion",
+    "data"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/accounts/helpers/AccountsGuard.sol",
+   "line": 86,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 64,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "line": 55,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 98,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/ERC20-Primaries/ERC20PrimaryAM.sol",
+   "line": 34,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 69,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 111,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Stargate-Finance/StakedStargateAM.sol",
+   "line": 52,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "line": 51,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 69,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/UniswapV4/DefaultUniswapV4AM.sol",
+   "line": 76,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/UniswapV4/UniswapV4HooksRegistry.sol",
+   "line": 88,
+   "visibility": "public",
+   "unused_params": [
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/abstracts/AbstractAM.sol",
+   "line": 70,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 74,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_",
+    "assetType_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/abstracts/AbstractPrimaryAM.sol",
+   "line": 80,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_",
+    "assetType_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/abstracts/AbstractStakingAM.sol",
+   "line": 107,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry",
+    "name_",
+    "symbol_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/asset-modules/native-token/NativeTokenAM.sol",
+   "line": 41,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/guardians/BaseGuardian.sol",
+   "line": 66,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/guardians/FactoryGuardian.sol",
+   "line": 56,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/guardians/RegistryGuardian.sol",
+   "line": 60,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "line": 53,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/oracle-modules/RedStonePushOM.sol",
+   "line": 23,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "registry_"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 111,
+  "shown_findings": 75,
+  "categories": [
+   "missing_validation",
+   "unsafe_downcasts",
+   "dead_params"
+  ],
+  "category_totals": {
+   "missing_validation": 39,
+   "unsafe_downcasts": 44,
+   "dead_params": 28
+  },
+  "truncated_categories": {
+   "missing_validation": {
+    "shown": 25,
+    "total": 39,
+    "hidden": 14
+   },
+   "unsafe_downcasts": {
+    "shown": 25,
+    "total": 44,
+    "hidden": 19
+   },
+   "dead_params": {
+    "shown": 25,
+    "total": 28,
+    "hidden": 3
+   }
+  },
+  "truncated": true,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

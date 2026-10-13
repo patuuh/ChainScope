@@ -1,0 +1,16 @@
+{
+ "tool": "cs_sinks",
+ "query_scope": "all_sources",
+ "sink_type": "all",
+ "external_only": false,
+ "total": 0,
+ "shown": 0,
+ "truncated": false,
+ "max_results": 50,
+ "max_callers_per_sink": 8,
+ "include_metadata": false,
+ "include_caller_details": false,
+ "max_metadata_bytes": 4096,
+ "by_type": {},
+ "sinks": []
+}

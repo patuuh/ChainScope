@@ -1,0 +1,1232 @@
+{
+ "query_scope": "all_sources",
+ "stats": {
+  "nodes": 898,
+  "edges": 1906,
+  "functions": 473,
+  "state_vars": 219,
+  "files": 87,
+  "transitions": 0,
+  "entry_points": 324,
+  "guarded_entry_points": 138,
+  "unguarded_entry_points": 186,
+  "sinks": 4,
+  "node_types": {
+   "function": 473,
+   "state_var": 219,
+   "modifier": 49,
+   "event": 42,
+   "interface": 39,
+   "contract": 25,
+   "struct": 25,
+   "library": 16,
+   "abstract": 10
+  },
+  "edge_relations": {
+   "calls": 1037,
+   "reads_state": 373,
+   "guards": 237,
+   "writes_state": 146,
+   "emits_event": 65,
+   "inherits": 48
+  }
+ },
+ "build_info": {
+  "repo_path": "/tmp/opencode/arcadia-accounts",
+  "detected_chain": "solidity",
+  "all_chains": [
+   "solidity"
+  ],
+  "lang_override": "",
+  "include_research": false,
+  "built_at": "2026-09-23T19:41:12.375573+00:00",
+  "files_considered": 87,
+  "files_indexed": 87,
+  "extractor_runs": 87,
+  "extractor_failures": 0,
+  "failed_files": 0,
+  "failure_examples": [],
+  "timed_out": false,
+  "max_files": null,
+  "nodes": 898,
+  "edges": 2324,
+  "transitions": 0,
+  "confidence": {
+   "score": 100.0,
+   "tier": "high",
+   "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse"
+  }
+ },
+ "detections": {
+  "unsafe_downcast": 44,
+  "privileged_operations": 44,
+  "no_input_validation": 39,
+  "unchecked_arithmetic": 39,
+  "dead_params": 28,
+  "dos_risk": 27,
+  "has_assembly": 23,
+  "reentrancy_risk": 16,
+  "upgrade_surface": 14,
+  "unguarded_privileged_operation": 11,
+  "erc_callback_risk": 11,
+  "oracle_risk": 10,
+  "proxy_risk": 9,
+  "timestamp_dependence": 7,
+  "cross_reentrancy": 6,
+  "frontrun_risk": 3,
+  "uses_tx_origin": 1,
+  "unchecked_erc20": 1
+ },
+ "source_context_summary": {
+  "production": 473
+ },
+ "source_context_summary_info": {
+  "total": 1,
+  "shown": 1,
+  "truncated": false
+ },
+ "attack_surface": [
+  {
+   "id": "src/asset-modules/abstracts/AbstractDerivedAM.sol::DerivedAM.processDirectDeposit(address,address,uint256,uint256)",
+   "label": "processDirectDeposit",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "signature": "function processDirectDeposit(address creditor, address asset, uint256 assetId, uint256 amount) public",
+   "reachable_count": 17,
+   "state_writes": 6
+  },
+  {
+   "id": "src/asset-modules/abstracts/AbstractDerivedAM.sol::DerivedAM.processIndirectDeposit(address,address,uint256,uint256,int256)",
+   "label": "processIndirectDeposit",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "signature": "function processIndirectDeposit(address creditor, address asset, uint256 assetId, uint256 exposureUpperAssetToAsset, int256 deltaExposureUpperAssetToAsset) public",
+   "reachable_count": 18,
+   "state_writes": 6
+  },
+  {
+   "id": "src/accounts/helpers/SpotToMarginMigrator.sol::SpotToMarginMigrator.upgradeAccount(address,address,uint256,bytes32[],address[],uint256[],uint256[],uint256[])",
+   "label": "upgradeAccount",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "signature": "function upgradeAccount(address account, address creditor, uint256 newVersion, bytes32[] proofs, address[] assets, uint256[] assetIds, uint256[] assetAmounts, uint256[] assetTypes) external",
+   "reachable_count": 59,
+   "state_writes": 5
+  },
+  {
+   "id": "src/asset-modules/Slipstream/SlipstreamAM.sol::SlipstreamAM.setProtocol",
+   "label": "setProtocol",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "signature": "function setProtocol() external",
+   "reachable_count": 21,
+   "state_writes": 5
+  },
+  {
+   "id": "src/asset-modules/Stargate-Finance/StargateAM.sol::StargateAM.addAsset(uint256)",
+   "label": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "signature": "function addAsset(uint256 poolId) external",
+   "reachable_count": 25,
+   "state_writes": 5
+  },
+  {
+   "id": "src/asset-modules/UniswapV3/UniswapV3AM.sol::UniswapV3AM.setProtocol",
+   "label": "setProtocol",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "signature": "function setProtocol() external",
+   "reachable_count": 21,
+   "state_writes": 5
+  },
+  {
+   "id": "src/asset-modules/UniswapV4/UniswapV4HooksRegistry.sol::UniswapV4HooksRegistry.setProtocol",
+   "label": "setProtocol",
+   "file": "src/asset-modules/UniswapV4/UniswapV4HooksRegistry.sol",
+   "signature": "function setProtocol() external",
+   "reachable_count": 21,
+   "state_writes": 5
+  },
+  {
+   "id": "src/oracle-modules/ChainlinkOM.sol::ChainlinkOM.addOracle(address,bytes16,bytes16,uint32)",
+   "label": "addOracle",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "signature": "function addOracle(address oracle, bytes16 baseAsset, bytes16 quoteAsset, uint32 cutOffTime) external",
+   "reachable_count": 7,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/abstracts/AbstractDerivedAM.sol::DerivedAM.processDirectWithdrawal(address,address,uint256,uint256)",
+   "label": "processDirectWithdrawal",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "signature": "function processDirectWithdrawal(address creditor, address asset, uint256 assetId, uint256 amount) public",
+   "reachable_count": 14,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/abstracts/AbstractDerivedAM.sol::DerivedAM.processIndirectWithdrawal(address,address,uint256,uint256,int256)",
+   "label": "processIndirectWithdrawal",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "signature": "function processIndirectWithdrawal(address creditor, address asset, uint256 assetId, uint256 exposureUpperAssetToAsset, int256 deltaExposureUpperAssetToAsset) public",
+   "reachable_count": 15,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/abstracts/AbstractStakingAM.sol::StakingAM.initialize",
+   "label": "initialize",
+   "file": "src/asset-modules/abstracts/AbstractStakingAM.sol",
+   "signature": "function initialize() external",
+   "reachable_count": 21,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol::AerodromePoolAM.addAsset(address)",
+   "label": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "signature": "function addAsset(address pool) external",
+   "reachable_count": 19,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol::WrappedAerodromeAM.initialize",
+   "label": "initialize",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "signature": "function initialize() external",
+   "reachable_count": 21,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/ERC20-Primaries/ERC20PrimaryAM.sol::ERC20PrimaryAM.addAsset(address,bytes32)",
+   "label": "addAsset",
+   "file": "src/asset-modules/ERC20-Primaries/ERC20PrimaryAM.sol",
+   "signature": "function addAsset(address asset, bytes32 oracleSequence) external",
+   "reachable_count": 33,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/native-token/NativeTokenAM.sol::NativeTokenAM.addAsset(address,bytes32)",
+   "label": "addAsset",
+   "file": "src/asset-modules/native-token/NativeTokenAM.sol",
+   "signature": "function addAsset(address asset, bytes32 oracleSequence) external",
+   "reachable_count": 31,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol::StakedSlipstreamAM.constructor",
+   "label": "constructor",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "signature": "constructor(address owner_, address registry, address nonFungiblePositionManager, address aerodromeVoter, address rewardToken)",
+   "reachable_count": 5,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol::StakedSlipstreamAM.initialize",
+   "label": "initialize",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "signature": "function initialize() external",
+   "reachable_count": 21,
+   "state_writes": 4
+  },
+  {
+   "id": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol::StakedSlipstreamAM.mint(uint256)",
+   "label": "mint",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "signature": "function mint(uint256 assetId) external",
+   "reachable_count": 36,
+   "state_writes": 4
+  },
+  {
+   "id": "src/accounts/AccountPlaceholder.sol::AccountPlaceholder.constructor",
+   "label": "constructor",
+   "file": "src/accounts/AccountPlaceholder.sol",
+   "signature": "constructor(address factory, address accountsGuard, uint256 version)",
+   "reachable_count": 2,
+   "state_writes": 3
+  },
+  {
+   "id": "src/accounts/AccountV1.sol::AccountV1.flashActionByCreditor(bytes,address,bytes)",
+   "label": "flashActionByCreditor",
+   "file": "src/accounts/AccountV1.sol",
+   "signature": "function flashActionByCreditor(bytes callbackData, address actionTarget, bytes actionData) external",
+   "reachable_count": 51,
+   "state_writes": 3
+  },
+  {
+   "id": "src/accounts/AccountV3.sol::AccountV3.constructor",
+   "label": "constructor",
+   "file": "src/accounts/AccountV3.sol",
+   "signature": "constructor(address factory, address accountsGuard, address merklDistributor)",
+   "reachable_count": 3,
+   "state_writes": 3
+  },
+  {
+   "id": "src/accounts/AccountV3.sol::AccountV3.flashActionByCreditor(bytes,address,bytes)",
+   "label": "flashActionByCreditor",
+   "file": "src/accounts/AccountV3.sol",
+   "signature": "function flashActionByCreditor(bytes callbackData, address actionTarget, bytes actionData) external",
+   "reachable_count": 49,
+   "state_writes": 3
+  },
+  {
+   "id": "src/accounts/AccountV4.sol::AccountV4.constructor",
+   "label": "constructor",
+   "file": "src/accounts/AccountV4.sol",
+   "signature": "constructor(address factory, address accountsGuard, address merklDistributor)",
+   "reachable_count": 3,
+   "state_writes": 3
+  },
+  {
+   "id": "src/asset-modules/UniswapV4/UniswapV4HooksRegistry.sol::UniswapV4HooksRegistry.constructor",
+   "label": "constructor",
+   "file": "src/asset-modules/UniswapV4/UniswapV4HooksRegistry.sol",
+   "signature": "constructor(address owner_, address registry_, address positionManager)",
+   "reachable_count": 3,
+   "state_writes": 3
+  },
+  {
+   "id": "src/Factory.sol::Factory.upgradeAccountVersion(address,uint256,bytes32[])",
+   "label": "upgradeAccountVersion",
+   "file": "src/Factory.sol",
+   "signature": "function upgradeAccountVersion(address account, uint256 version, bytes32[] proofs) external",
+   "reachable_count": 9,
+   "state_writes": 2
+  }
+ ],
+ "critical_hotspots": [
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "line": 63,
+   "score": 15,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "reentrancy",
+    "unsafe_downcast(1)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "endUpgrade",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "line": 111,
+   "score": 14,
+   "reasons": [
+    "entry+writes(1)",
+    "upgrade_surface",
+    "privileged(1)",
+    "unguarded_privileged",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addOracle",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "line": 66,
+   "score": 13,
+   "reasons": [
+    "entry+writes(3)",
+    "ext_calls(1)",
+    "reentrancy",
+    "unsafe_downcast(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "line": 78,
+   "score": 13,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 78,
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(4)",
+    "reentrancy",
+    "unsafe_downcast(3)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "line": 70,
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(3)",
+    "reentrancy",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 126,
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "reentrancy",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StakedStargateAM.sol",
+   "line": 67,
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(1)",
+    "reentrancy",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 247,
+   "score": 12,
+   "reasons": [
+    "no_validation",
+    "upgrade_surface",
+    "privileged(1)",
+    "unguarded_privileged",
+    "dead_params(oldImplementation,oldRegistry,oldVersion,data)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 273,
+   "score": 12,
+   "reasons": [
+    "no_validation",
+    "upgrade_surface",
+    "privileged(1)",
+    "unguarded_privileged",
+    "dead_params(oldImplementation,oldRegistry,oldVersion,data)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processWithdrawal",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 459,
+   "score": 12,
+   "reasons": [
+    "ext_calls(1)",
+    "reentrancy",
+    "unchecked_arith",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "addGauge",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 150,
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(5)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "createAccount",
+   "file": "src/Factory.sol",
+   "line": 92,
+   "score": 10,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy",
+    "unsafe_downcast(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mint",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 395,
+   "score": 10,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(3)",
+    "oracle(2)",
+    "frontrun(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferFrom",
+   "file": "src/Factory.sol",
+   "line": 233,
+   "score": 9,
+   "reasons": [
+    "unchecked_erc20(1)",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeHook",
+   "file": "src/accounts/AccountPlaceholder.sol",
+   "line": 175,
+   "score": 9,
+   "reasons": [
+    "upgrade_surface",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unpause",
+   "file": "src/guardians/RegistryGuardian.sol",
+   "line": 97,
+   "score": 9,
+   "reasons": [
+    "entry+writes(1)",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processDeposit",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 364,
+   "score": 9,
+   "reasons": [
+    "reentrancy",
+    "unchecked_arith",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccountVersion",
+   "file": "src/Factory.sol",
+   "line": 149,
+   "score": 8,
+   "reasons": [
+    "ext_calls(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setNewAccountInfo",
+   "file": "src/Factory.sol",
+   "line": 291,
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "ext_calls(2)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_delegate",
+   "file": "src/Proxy.sol",
+   "line": 87,
+   "score": 8,
+   "reasons": [
+    "proxy(['contains_delegatecall'])",
+    "upgrade_surface",
+    "privileged(1)",
+    "assembly"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountPlaceholder.sol",
+   "line": 134,
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV1.sol",
+   "line": 193,
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV2.sol",
+   "line": 145,
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV3.sol",
+   "line": 217,
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "upgrade_surface",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "hotspot_summary": {
+  "total_scored": 112,
+  "critical_8plus": 32,
+  "high_5to7": 80
+ },
+ "reentrancy": [
+  {
+   "function": "createAccount",
+   "file": "src/Factory.sol",
+   "line": 92,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'createProxy' at order 4 before state write 'Factory.accountIndex' at order 6",
+   "modifiers": []
+  },
+  {
+   "function": "addOracle",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "line": 66,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'addOracle' at order 4 before state write 'ChainlinkOM.oracleToOracleId' at order 5",
+   "modifiers": []
+  },
+  {
+   "function": "isActive",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "line": 96,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "addOracle",
+   "stale_vars": [
+    "oracleInformation"
+   ]
+  },
+  {
+   "function": "getRate",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "line": 146,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "addOracle",
+   "stale_vars": [
+    "oracleInformation"
+   ]
+  },
+  {
+   "function": "lock",
+   "file": "src/accounts/helpers/AccountsGuard.sol",
+   "line": 105,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'isAccount' at order 2 before state write 'AccountsGuard.account' at order 3",
+   "modifiers": []
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "line": 78,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'withdraw' at order 3 before state write 'SpotToMarginMigrator.accountToOwner' at order 8",
+   "modifiers": []
+  },
+  {
+   "function": "_processDeposit",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 364,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'getUsdValueExposureToUnderlyingAssetAfterDeposit' at order 1 before state write 'DerivedAM.riskParams' at order 2",
+   "modifiers": []
+  },
+  {
+   "function": "_processWithdrawal",
+   "file": "src/asset-modules/abstracts/AbstractDerivedAM.sol",
+   "line": 459,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'getUsdValueExposureToUnderlyingAssetAfterWithdrawal' at order 5 before state write 'DerivedAM.lastExposuresAsset' at order 7",
+   "modifiers": []
+  },
+  {
+   "function": "setOracles",
+   "file": "src/asset-modules/abstracts/AbstractPrimaryAM.sol",
+   "line": 93,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'checkOracleSequence' at order 2 before state write 'PrimaryAM.assetToInformation' at order 4",
+   "modifiers": []
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "line": 78,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'isPool' at order 0 before state write 'AerodromePoolAM.assetToInformation' at order 4",
+   "modifiers": []
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "line": 70,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'isGauge' at order 0 before state write 'StakedAerodromeAM.initialized' at order 5",
+   "modifiers": []
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "line": 126,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'isAllowed' at order 0 before state write 'WrappedAerodromeAM.token0' at order 2",
+   "modifiers": []
+  },
+  {
+   "function": "_addAsset",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 96,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'positions' at order 1 before state write 'SlipstreamAM.assetToLiquidity' at order 3",
+   "modifiers": []
+  },
+  {
+   "function": "processDirectWithdrawal",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 551,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_addAsset",
+   "stale_vars": [
+    "assetToLiquidity"
+   ]
+  },
+  {
+   "function": "processIndirectWithdrawal",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "line": 576,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_addAsset",
+   "stale_vars": [
+    "assetToLiquidity"
+   ]
+  },
+  {
+   "function": "addGauge",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "line": 150,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'isGauge' at order 0 before state write 'StakedSlipstreamAM.poolToGauge' at order 5",
+   "modifiers": []
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StakedStargateAM.sol",
+   "line": 67,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'poolInfo' at order 0 before state write 'StakedStargateAM.initialized' at order 3",
+   "modifiers": []
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "line": 63,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'getPool' at order 0 before state write 'StargateAM.assetToUnderlyingAssets' at order 7",
+   "modifiers": []
+  },
+  {
+   "function": "_addAsset",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 96,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'positions' at order 1 before state write 'UniswapV3AM.assetToLiquidity' at order 3",
+   "modifiers": []
+  },
+  {
+   "function": "processDirectWithdrawal",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 551,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_addAsset",
+   "stale_vars": [
+    "assetToLiquidity"
+   ]
+  },
+  {
+   "function": "processIndirectWithdrawal",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "line": 576,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "_addAsset",
+   "stale_vars": [
+    "assetToLiquidity"
+   ]
+  },
+  {
+   "function": "_addAsset",
+   "file": "src/asset-modules/UniswapV4/DefaultUniswapV4AM.sol",
+   "line": 93,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'getPoolAndPositionInfo' at order 1 before state write 'DefaultUniswapV4AM.assetToUnderlyingAssets' at order 8",
+   "modifiers": []
+  }
+ ],
+ "taint_paths": [
+  {
+   "entry": "skim",
+   "file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "flashAction",
+   "file": "src/accounts/AccountV2.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "withdraw",
+   "file": "src/accounts/AccountV2.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "skim",
+   "file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "flashAction",
+   "file": "src/accounts/AccountV4.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "withdraw",
+   "file": "src/accounts/AccountV4.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  }
+ ],
+ "taint_summary": {
+  "total": 6,
+  "high_risk": 0
+ },
+ "sink_summary": {
+  "by_type": {
+   "fund_transfer": 4
+  },
+  "reachable_functions": {
+   "fund_transfer": 12
+  }
+ },
+ "access_control_gaps": [
+  {
+   "function": "endUpgrade",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "state_writes": [
+    "accountToOwner"
+   ]
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "state_writes": [
+    "initialized",
+    "assetToGauge"
+   ]
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "state_writes": [
+    "token0",
+    "token1"
+   ]
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StakedStargateAM.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "state_writes": [
+    "initialized",
+    "assetToPid"
+   ]
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "state_writes": [
+    "assetToUnderlyingAssets"
+   ]
+  }
+ ],
+ "access_gaps_total": 5,
+ "silent_state_changes": [
+  {
+   "function": "addOracle",
+   "file": "src/oracle-modules/ChainlinkOM.sol",
+   "source_context": "production",
+   "state_writes": 3
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountPlaceholder.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV1.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV2.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV3.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/AccountV4.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/AerodromePoolAM.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/StakedAerodromeAM.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "mint",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StakedStargateAM.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "setBaseURI",
+   "file": "src/Factory.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "flashActionCallback",
+   "file": "src/abstracts/Creditor.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "lock",
+   "file": "src/accounts/helpers/AccountsGuard.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "unLock",
+   "file": "src/accounts/helpers/AccountsGuard.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "endUpgrade",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "upgradeAccount",
+   "file": "src/accounts/helpers/SpotToMarginMigrator.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setBaseURI",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "skim",
+   "file": "src/asset-modules/Aerodrome-Finance/WrappedAerodromeAM.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setProtocol",
+   "file": "src/asset-modules/Slipstream/SlipstreamAM.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "addGauge",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setBaseURI",
+   "file": "src/asset-modules/Slipstream/StakedSlipstreamAM.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "addAsset",
+   "file": "src/asset-modules/Stargate-Finance/StargateAM.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setProtocol",
+   "file": "src/asset-modules/UniswapV3/UniswapV3AM.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setProtocol",
+   "file": "src/asset-modules/UniswapV4/UniswapV4HooksRegistry.sol",
+   "source_context": "production",
+   "state_writes": 1
+  }
+ ],
+ "silent_total": 36,
+ "dead_code": {
+  "dead_internal_total": 24,
+  "direct_entry_points_total": 56
+ },
+ "defi_summary": {
+  "timestamp_dependence": 7,
+  "unchecked_erc20": 1,
+  "oracle_risk": 10,
+  "dos_risk": 27,
+  "frontrun_risk": 3,
+  "unsafe_downcast": 44,
+  "erc_callback_risk": 11,
+  "upgrade_surface": 14,
+  "unguarded_privileged_operation": 11
+ },
+ "_summary": {
+  "top": 25,
+  "query_scope": "all_sources",
+  "include_metadata": false,
+  "include_dead_code_details": false,
+  "max_metadata_bytes": 4096,
+  "max_source_contexts": 20,
+  "sections": {
+   "attack_surface": {
+    "total": 324,
+    "shown": 25,
+    "truncated": true
+   },
+   "critical_hotspots": {
+    "total": 112,
+    "shown": 25,
+    "truncated": true
+   },
+   "reentrancy": {
+    "total": 22,
+    "shown": 22,
+    "truncated": false
+   },
+   "taint_paths": {
+    "total": 6,
+    "shown": 6,
+    "truncated": false
+   },
+   "access_control_gaps": {
+    "total": 5,
+    "shown": 5,
+    "truncated": false
+   },
+   "silent_state_changes": {
+    "total": 36,
+    "shown": 25,
+    "truncated": true
+   },
+   "dead_code.dead_internal": {
+    "total": 24,
+    "shown": 0,
+    "truncated": true
+   },
+   "dead_code.direct_entry_points": {
+    "total": 56,
+    "shown": 0,
+    "truncated": true
+   }
+  },
+  "truncated_sections": [
+   "attack_surface",
+   "critical_hotspots",
+   "silent_state_changes",
+   "dead_code.dead_internal",
+   "dead_code.direct_entry_points"
+  ],
+  "truncated": true,
+  "_hint": "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+ }
+}

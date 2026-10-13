@@ -1,0 +1,462 @@
+{
+ "query_scope": "all_sources",
+ "stats": {
+  "nodes": 95,
+  "edges": 193,
+  "functions": 29,
+  "state_vars": 40,
+  "files": 15,
+  "transitions": 0,
+  "entry_points": 22,
+  "guarded_entry_points": 14,
+  "unguarded_entry_points": 8,
+  "sinks": 1,
+  "node_types": {
+   "state_var": 40,
+   "function": 29,
+   "interface": 10,
+   "event": 7,
+   "contract": 4,
+   "struct": 3,
+   "library": 2
+  },
+  "edge_relations": {
+   "calls": 81,
+   "reads_state": 59,
+   "guards": 19,
+   "writes_state": 16,
+   "inherits": 11,
+   "emits_event": 7
+  }
+ },
+ "build_info": {
+  "repo_path": "/tmp/opencode/veno-bridges",
+  "detected_chain": "solidity",
+  "all_chains": [
+   "solidity"
+  ],
+  "lang_override": "",
+  "include_research": false,
+  "built_at": "2026-09-23T21:27:20.929979+00:00",
+  "files_considered": 15,
+  "files_indexed": 15,
+  "extractor_runs": 15,
+  "extractor_failures": 0,
+  "failed_files": 0,
+  "failure_examples": [],
+  "timed_out": false,
+  "max_files": null,
+  "nodes": 95,
+  "edges": 237,
+  "transitions": 0,
+  "confidence": {
+   "score": 100.0,
+   "tier": "high",
+   "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse"
+  }
+ },
+ "detections": {
+  "frontrun_risk": 7,
+  "privileged_operations": 5,
+  "oracle_risk": 2,
+  "no_input_validation": 2,
+  "reentrancy_risk": 1
+ },
+ "source_context_summary": {
+  "production": 29
+ },
+ "source_context_summary_info": {
+  "total": 1,
+  "shown": 1,
+  "truncated": false
+ },
+ "attack_surface": [
+  {
+   "id": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.constructor",
+   "label": "constructor",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "signature": "constructor(address _dai, address _usdc, address _usdt, address _ybUSD, address _bridgeMiddleware)",
+   "reachable_count": 6,
+   "state_writes": 5
+  },
+  {
+   "id": "0xe69a5357/ZkCroMintAndBridge.sol::ZkCroMintAndBridge.constructor",
+   "label": "constructor",
+   "file": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "signature": "constructor(IZkCro _zkCro, IERC20 _cro, IBridgehub _bridgehub, uint256 _chainId)",
+   "reachable_count": 2,
+   "state_writes": 4
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.constructor",
+   "label": "constructor",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "constructor(uint256 _chainId, address _bridgeHub, address _admin, address _withdrawer, address _treasury)",
+   "reachable_count": 4,
+   "state_writes": 3
+  },
+  {
+   "id": "0xded4dd6e/YbEthBridge.sol::YbEthBridge.constructor",
+   "label": "constructor",
+   "file": "0xded4dd6e/YbEthBridge.sol",
+   "signature": "constructor(address _ybEth, address _bridgeMiddleware)",
+   "reachable_count": 4,
+   "state_writes": 2
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.setTreasury(address)",
+   "label": "setTreasury",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function setTreasury(address _treasury) external",
+   "reachable_count": 2,
+   "state_writes": 1
+  },
+  {
+   "id": "0xe69a5357/ZkCroMintAndBridge.sol::ZkCroMintAndBridge.setChainParameters(uint256)",
+   "label": "setChainParameters",
+   "file": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "signature": "function setChainParameters(uint256 _l2GasPerPubdataByteLimit) external",
+   "reachable_count": 1,
+   "state_writes": 1
+  },
+  {
+   "id": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.pause",
+   "label": "pause",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "signature": "function pause() external",
+   "reachable_count": 4,
+   "state_writes": 0
+  },
+  {
+   "id": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.unpause",
+   "label": "unpause",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "signature": "function unpause() external",
+   "reachable_count": 4,
+   "state_writes": 0
+  },
+  {
+   "id": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.mintAndBridge(address,uint256,uint128,uint256,uint256,uint256,address)",
+   "label": "mintAndBridge",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "signature": "function mintAndBridge(address _l2Receiver, uint256 _amount, uint128 _stableCoinType, uint256 _minAmountAccepted, uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit, address _refundRecipient) external",
+   "reachable_count": 24,
+   "state_writes": 0
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.withdrawEth(uint256)",
+   "label": "withdrawEth",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function withdrawEth(uint256 _amount) external",
+   "reachable_count": 3,
+   "state_writes": 0
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.withdrawBaseToken(uint256)",
+   "label": "withdrawBaseToken",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function withdrawBaseToken(uint256 _amount) external",
+   "reachable_count": 6,
+   "state_writes": 0
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.approveBaseToken(uint256)",
+   "label": "approveBaseToken",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function approveBaseToken(uint256 _amount) external",
+   "reachable_count": 6,
+   "state_writes": 0
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.convertToBaseTokenAmount(uint256)",
+   "label": "convertToBaseTokenAmount",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function convertToBaseTokenAmount(uint256 _ethAmount) public",
+   "reachable_count": 5,
+   "state_writes": 0
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.convertToEthAmount(uint256)",
+   "label": "convertToEthAmount",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function convertToEthAmount(uint256 _baseTokenAmount) public",
+   "reachable_count": 5,
+   "state_writes": 0
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.l2TransactionBaseCost(uint256,uint256,uint256)",
+   "label": "l2TransactionBaseCost",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function l2TransactionBaseCost(uint256 _l1GasPrice, uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit) public",
+   "reachable_count": 1,
+   "state_writes": 0
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.l2TransactionEthCost(uint256,uint256,uint256)",
+   "label": "l2TransactionEthCost",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function l2TransactionEthCost(uint256 _l1GasPrice, uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit) external",
+   "reachable_count": 7,
+   "state_writes": 0
+  },
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.bridge(address,address,uint256,uint256,uint256,address)",
+   "label": "bridge",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "signature": "function bridge(address _l2Receiver, address _token, uint256 _amount, uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit, address _refundRecipient) external",
+   "reachable_count": 19,
+   "state_writes": 0
+  },
+  {
+   "id": "0xded4dd6e/YbEthBridge.sol::YbEthBridge.pause",
+   "label": "pause",
+   "file": "0xded4dd6e/YbEthBridge.sol",
+   "signature": "function pause() external",
+   "reachable_count": 2,
+   "state_writes": 0
+  },
+  {
+   "id": "0xded4dd6e/YbEthBridge.sol::YbEthBridge.unpause",
+   "label": "unpause",
+   "file": "0xded4dd6e/YbEthBridge.sol",
+   "signature": "function unpause() external",
+   "reachable_count": 2,
+   "state_writes": 0
+  },
+  {
+   "id": "0xded4dd6e/YbEthBridge.sol::YbEthBridge.mintAndBridge(address,uint256,uint256,uint256,address)",
+   "label": "mintAndBridge",
+   "file": "0xded4dd6e/YbEthBridge.sol",
+   "signature": "function mintAndBridge(address _l2Receiver, uint256 _amount, uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit, address _refundRecipient) external",
+   "reachable_count": 22,
+   "state_writes": 0
+  },
+  {
+   "id": "0xe69a5357/ZkCroMintAndBridge.sol::ZkCroMintAndBridge.togglePause",
+   "label": "togglePause",
+   "file": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "signature": "function togglePause() external",
+   "reachable_count": 4,
+   "state_writes": 0
+  },
+  {
+   "id": "0xe69a5357/ZkCroMintAndBridge.sol::ZkCroMintAndBridge.mintAndBridge(address,uint256,uint256,uint256)",
+   "label": "mintAndBridge",
+   "file": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "signature": "function mintAndBridge(address _l2Receiver, uint256 _zkCroBridgeAmount, uint256 _l2GasLimit, uint256 _totalCro) external",
+   "reachable_count": 7,
+   "state_writes": 0
+  }
+ ],
+ "critical_hotspots": [
+  {
+   "function": "setTreasury",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 67,
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pause",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 71,
+   "score": 7,
+   "reasons": [
+    "ext_calls(1)",
+    "privileged(2)",
+    "frontrun(4)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unpause",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 80,
+   "score": 7,
+   "reasons": [
+    "ext_calls(1)",
+    "privileged(2)",
+    "frontrun(4)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mintAndBridge",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 97,
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "oracle(3)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdrawBaseToken",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 98,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approveBaseToken",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 113,
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "frontrun(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_bridgeErc20",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 250,
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "frontrun(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mintAndBridge",
+   "file": "0xded4dd6e/YbEthBridge.sol",
+   "line": 49,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "frontrun(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mintAndBridge",
+   "file": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "line": 88,
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "frontrun(2)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "hotspot_summary": {
+  "total_scored": 9,
+  "critical_8plus": 1,
+  "high_5to7": 8
+ },
+ "reentrancy": [
+  {
+   "function": "setTreasury",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 67,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'notZeroAddress' at order 0 before state write 'BridgeMiddleware.treasury' at order 2",
+   "modifiers": []
+  }
+ ],
+ "taint_paths": [
+  {
+   "entry": "withdrawEth",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 1,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  }
+ ],
+ "taint_summary": {
+  "total": 1,
+  "high_risk": 0
+ },
+ "sink_summary": {
+  "by_type": {
+   "fund_transfer": 1
+  },
+  "reachable_functions": {
+   "fund_transfer": 2
+  }
+ },
+ "dead_code": {
+  "dead_internal_total": 0,
+  "direct_entry_points_total": 2
+ },
+ "defi_summary": {
+  "oracle_risk": 2,
+  "frontrun_risk": 7
+ },
+ "_summary": {
+  "top": 25,
+  "query_scope": "all_sources",
+  "include_metadata": false,
+  "include_dead_code_details": false,
+  "max_metadata_bytes": 4096,
+  "max_source_contexts": 20,
+  "sections": {
+   "attack_surface": {
+    "total": 22,
+    "shown": 22,
+    "truncated": false
+   },
+   "critical_hotspots": {
+    "total": 9,
+    "shown": 9,
+    "truncated": false
+   },
+   "reentrancy": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   },
+   "taint_paths": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   },
+   "access_control_gaps": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "silent_state_changes": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "dead_code.dead_internal": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "dead_code.direct_entry_points": {
+    "total": 2,
+    "shown": 0,
+    "truncated": true
+   }
+  },
+  "truncated_sections": [
+   "dead_code.direct_entry_points"
+  ],
+  "truncated": true,
+  "_hint": "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+ }
+}

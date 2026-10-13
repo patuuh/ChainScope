@@ -1,0 +1,454 @@
+{
+ "total": 31,
+ "shown": 25,
+ "truncated": true,
+ "by_attribute": {
+  "unresolved": 30,
+  "sink": 1
+ },
+ "by_source_context": {
+  "production": 31
+ },
+ "top_source_files": [
+  {
+   "name": "0x3766eb5f/BridgeMiddleware.sol",
+   "calls": 19
+  },
+  {
+   "name": "0x17dacad8/YBUSDBridge.sol",
+   "calls": 6
+  },
+  {
+   "name": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "calls": 4
+  },
+  {
+   "name": "0xded4dd6e/YbEthBridge.sol",
+   "calls": 2
+  }
+ ],
+ "top_targets": [
+  {
+   "name": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.approve",
+   "calls": 3
+  },
+  {
+   "name": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseToken",
+   "calls": 3
+  },
+  {
+   "name": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.sharedBridge",
+   "calls": 3
+  },
+  {
+   "name": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.approve",
+   "calls": 2
+  },
+  {
+   "name": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseTokenGasPriceMultiplierDenominator",
+   "calls": 2
+  },
+  {
+   "name": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseTokenGasPriceMultiplierNominator",
+   "calls": 2
+  },
+  {
+   "name": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.getHyperchain",
+   "calls": 2
+  },
+  {
+   "name": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.requestL2TransactionTwoBridges",
+   "calls": 2
+  },
+  {
+   "name": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.balanceOf",
+   "calls": 1
+  },
+  {
+   "name": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.deposit",
+   "calls": 1
+  }
+ ],
+ "counter_summary": {
+  "max_counter_items": 10,
+  "source_contexts": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_source_files": {
+   "total": 4,
+   "shown": 4,
+   "truncated": false
+  },
+  "top_targets": {
+   "total": 20,
+   "shown": 10,
+   "truncated": true
+  },
+  "truncated": true
+ },
+ "max_attribute_bytes": 2048,
+ "attribute_truncated": false,
+ "attribute_truncated_calls": 0,
+ "calls": [
+  {
+   "source_label": "constructor",
+   "source_file": "0x17dacad8/YBUSDBridge.sol",
+   "source_context": "production",
+   "target_label": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.approve",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 9,
+    "unresolved": true,
+    "call_name": "approve",
+    "interface": "ybUSD"
+   }
+  },
+  {
+   "source_label": "pause",
+   "source_file": "0x17dacad8/YBUSDBridge.sol",
+   "source_context": "production",
+   "target_label": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.approve",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "approve",
+    "interface": "ybUSD"
+   }
+  },
+  {
+   "source_label": "unpause",
+   "source_file": "0x17dacad8/YBUSDBridge.sol",
+   "source_context": "production",
+   "target_label": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.approve",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "approve",
+    "interface": "ybUSD"
+   }
+  },
+  {
+   "source_label": "mintAndBridge",
+   "source_file": "0x17dacad8/YBUSDBridge.sol",
+   "source_context": "production",
+   "target_label": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.deposit",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "deposit",
+    "interface": "ybUSD"
+   }
+  },
+  {
+   "source_label": "mintAndBridge",
+   "source_file": "0x17dacad8/YBUSDBridge.sol",
+   "source_context": "production",
+   "target_label": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "usdt"
+   }
+  },
+  {
+   "source_label": "mintAndBridge",
+   "source_file": "0x17dacad8/YBUSDBridge.sol",
+   "source_context": "production",
+   "target_label": "0x17dacad8/YBUSDBridge.sol::YBUSDBridge.swapAndDeposit",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "swapAndDeposit",
+    "interface": "ybUSD"
+   }
+  },
+  {
+   "source_label": "withdrawEth",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "call",
+   "target_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "withdrawBaseToken",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseToken",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "baseToken",
+    "interface": "bridgehub"
+   }
+  },
+  {
+   "source_label": "withdrawBaseToken",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "_amount > baseToken"
+   }
+  },
+  {
+   "source_label": "approveBaseToken",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseToken",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "baseToken",
+    "interface": "bridgehub"
+   }
+  },
+  {
+   "source_label": "approveBaseToken",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.sharedBridge",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "sharedBridge",
+    "interface": "bridgehub"
+   }
+  },
+  {
+   "source_label": "approveBaseToken",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.allowance",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "allowance",
+    "interface": "_amount != 0 && baseToken"
+   }
+  },
+  {
+   "source_label": "approveBaseToken",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.approve",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "approve",
+    "interface": "baseToken"
+   }
+  },
+  {
+   "source_label": "convertToBaseTokenAmount",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.getHyperchain",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "getHyperchain",
+    "interface": "bridgehub"
+   }
+  },
+  {
+   "source_label": "convertToBaseTokenAmount",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseTokenGasPriceMultiplierNominator",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "baseTokenGasPriceMultiplierNominator",
+    "interface": "hyperChain"
+   }
+  },
+  {
+   "source_label": "convertToBaseTokenAmount",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseTokenGasPriceMultiplierDenominator",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "baseTokenGasPriceMultiplierDenominator",
+    "interface": "hyperChain"
+   }
+  },
+  {
+   "source_label": "convertToEthAmount",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.getHyperchain",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "getHyperchain",
+    "interface": "bridgehub"
+   }
+  },
+  {
+   "source_label": "convertToEthAmount",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseTokenGasPriceMultiplierNominator",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "baseTokenGasPriceMultiplierNominator",
+    "interface": "hyperChain"
+   }
+  },
+  {
+   "source_label": "convertToEthAmount",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseTokenGasPriceMultiplierDenominator",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "baseTokenGasPriceMultiplierDenominator",
+    "interface": "hyperChain"
+   }
+  },
+  {
+   "source_label": "bridge",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.baseToken",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 6,
+    "unresolved": true,
+    "call_name": "baseToken",
+    "interface": "_token == bridgehub"
+   }
+  },
+  {
+   "source_label": "_bridgeEth",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.requestL2TransactionTwoBridges",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "requestL2TransactionTwoBridges",
+    "interface": "bridgehub"
+   }
+  },
+  {
+   "source_label": "_bridgeEth",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.sharedBridge",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "sharedBridge",
+    "interface": "bridgehub"
+   }
+  },
+  {
+   "source_label": "_bridgeErc20",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.sharedBridge",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "sharedBridge",
+    "interface": "bridgehub"
+   }
+  },
+  {
+   "source_label": "_bridgeErc20",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.approve",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "approve",
+    "interface": "IERC20(_token)"
+   }
+  },
+  {
+   "source_label": "_bridgeErc20",
+   "source_file": "0x3766eb5f/BridgeMiddleware.sol",
+   "source_context": "production",
+   "target_label": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.requestL2TransactionTwoBridges",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 6,
+    "unresolved": true,
+    "call_name": "requestL2TransactionTwoBridges",
+    "interface": "bridgehub"
+   }
+  }
+ ],
+ "tool": "cs_cross_summary",
+ "query_scope": "all_sources",
+ "from_func": null,
+ "_next_steps": [
+  "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+  "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+  "Use direct source review on the top source files before treating this as a finding."
+ ],
+ "_warnings": [
+  "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
+ ]
+}

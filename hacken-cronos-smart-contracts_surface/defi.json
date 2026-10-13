@@ -1,0 +1,33 @@
+{
+ "unchecked_erc20": [
+  {
+   "function": "withdraw",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 41,
+   "unchecked_calls": [
+    {
+     "target": "msg.sender.transfer",
+     "line": 44
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 1,
+  "shown_findings": 1,
+  "categories": [
+   "unchecked_erc20"
+  ],
+  "category_totals": {
+   "unchecked_erc20": 1
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

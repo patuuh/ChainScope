@@ -1,0 +1,48 @@
+version: '3.8'
+services:
+  # LLM container – runs the quantised GGUF model via llama.cpp
+  llm:
+    image: ghcr.io/ggerganov/llama.cpp:latest
+    container_name: llm_service
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the directory that contains the GGUF model file
+      - ./gguf_models:/models
+    environment:
+      # llama.cpp expects the model path via the MODEL env var
+      - MODEL=/models/Foundation-Sec-8B-Instruct.gguf
+    command: "-m $MODEL -c 4096 -ngl 0 -ngl 32 -ctx-size 8192 -batch-size 256 -port 8000"
+    restart: unless-stopped
+
+  # RAG API service – FastAPI wrapper that loads the FAISS index
+  rag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.rag_api
+    container_name: rag_api_service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./gguf_models:/gguf_models   # optional, not used directly but kept for parity
+      - ./rag_index:/rag_index       # directory with rag_index.faiss & chunks.pkl
+    environment:
+      - RAG_INDEX_DIR=/rag_index
+      - LLM_PORT=8000
+    depends_on:
+      - llm
+    restart: unless-stopped
+
+  # Helper service to (re)build the RAG index from a large document
+  rag-builder:
+    image: python:3.11-slim
+    container_name: rag_builder
+    volumes:
+      - ./rag_index:/rag_index
+      - ./gguf_models:/gguf_models
+      - .:/workspace
+    working_dir: /workspace
+    entrypoint: ["python3", "build_rag_index.py"]
+    # Example usage (run manually):
+    # docker-compose run rag-builder /path/to/your_big_report.txt
+    restart: "no"

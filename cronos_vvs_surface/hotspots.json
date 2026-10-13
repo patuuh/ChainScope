@@ -1,0 +1,335 @@
+{
+ "hotspots": [
+  {
+   "function": "migrate",
+   "file": "contracts/Craftsman.sol",
+   "line": 161,
+   "visibility": "public",
+   "score": 18,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy",
+    "oracle(2)",
+    "privileged(1)",
+    "unguarded_privileged",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "line": 201,
+   "visibility": "public",
+   "score": 17,
+   "reasons": [
+    "entry+writes(2)",
+    "reentrancy",
+    "cross_reentrancy",
+    "oracle(1)",
+    "timestamp",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "emergencyWithdraw",
+   "file": "contracts/Craftsman.sol",
+   "line": 304,
+   "visibility": "public",
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "no_validation",
+    "privileged(1)",
+    "unguarded_privileged",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "distributeSupply",
+   "file": "contracts/Craftsman.sol",
+   "line": 324,
+   "visibility": "public",
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(1)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "contracts/VVSVault.sol",
+   "line": 305,
+   "visibility": "public",
+   "score": 9,
+   "reasons": [
+    "entry+writes(4)",
+    "reentrancy",
+    "timestamp"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "add",
+   "file": "contracts/Craftsman.sol",
+   "line": 114,
+   "visibility": "public",
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "cross_reentrancy",
+    "timestamp"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "enableTransferOwnership",
+   "file": "contracts/CraftsmanAdmin.sol",
+   "line": 63,
+   "visibility": "public",
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "timestamp",
+    "privileged(2)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "executeTransaction",
+   "file": "contracts/Timelock.sol",
+   "line": 101,
+   "visibility": "public",
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(1)",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "harvest",
+   "file": "contracts/VVSVault.sol",
+   "line": 154,
+   "visibility": "external",
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "aggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "line": 20,
+   "visibility": "public",
+   "score": 8,
+   "reasons": [
+    "privileged(1)",
+    "unguarded_privileged",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "tryAggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "line": 56,
+   "visibility": "public",
+   "score": 8,
+   "reasons": [
+    "privileged(1)",
+    "unguarded_privileged",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 23,
+   "visibility": "public",
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "unchecked_erc20(1)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "set",
+   "file": "contracts/Craftsman.sol",
+   "line": 130,
+   "visibility": "public",
+   "score": 7,
+   "reasons": [
+    "entry+writes(2)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pendingVVS",
+   "file": "contracts/Craftsman.sol",
+   "line": 178,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "cross_reentrancy",
+    "oracle(1)",
+    "timestamp"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "deposit",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 19,
+   "visibility": "public",
+   "score": 7,
+   "reasons": [
+    "entry+writes(1)",
+    "unchecked_arith",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "distributeSupply",
+   "file": "contracts/VVSInitMintable.sol",
+   "line": 27,
+   "visibility": "public",
+   "score": 6,
+   "reasons": [
+    "entry+writes(4)",
+    "timestamp",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "deposit",
+   "file": "contracts/Craftsman.sol",
+   "line": 220,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "enterStaking",
+   "file": "contracts/Craftsman.sol",
+   "line": 263,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "acceptAdmin",
+   "file": "contracts/Timelock.sol",
+   "line": 60,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setPendingAdmin",
+   "file": "contracts/Timelock.sol",
+   "line": 68,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAdmin",
+   "file": "contracts/VVSVault.sol",
+   "line": 175,
+   "visibility": "external",
+   "score": 5,
+   "reasons": [
+    "entry+writes(1)",
+    "privileged(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "balanceOf",
+   "file": "contracts/VVSVault.sol",
+   "line": 356,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approve",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 34,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "entry+writes(1)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferFrom",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 44,
+   "visibility": "public",
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "depositPool",
+   "file": "contracts/IGO.sol",
+   "line": 121,
+   "visibility": "external",
+   "score": 4,
+   "reasons": [
+    "entry+writes(2)",
+    "timestamp"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_scored": 45,
+  "critical_8plus": 12,
+  "high_5to7": 12,
+  "medium_3to4": 21,
+  "top_shown": 25,
+  "query_scope": "all_sources"
+ }
+}

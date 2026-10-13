@@ -1,0 +1,239 @@
+{
+ "tool": "cs_sinks",
+ "query_scope": "all_sources",
+ "sink_type": "all",
+ "external_only": false,
+ "total": 4,
+ "shown": 4,
+ "truncated": false,
+ "max_results": 50,
+ "max_callers_per_sink": 8,
+ "include_metadata": false,
+ "include_caller_details": false,
+ "max_metadata_bytes": 4096,
+ "by_type": {
+  "fund_transfer": 4
+ },
+ "sinks": [
+  {
+   "id": "src/accounts/AccountV1.sol::AccountV1._sink_call_1201",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/accounts/AccountV1.sol",
+   "line_start": 1202,
+   "line_end": 1202,
+   "signature": "payable(msg.sender).call{ value: address(this).balance }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/accounts/AccountV1.sol::AccountV1.skim(address,uint256,uint256)",
+     "label": "skim",
+     "file": "src/accounts/AccountV1.sol",
+     "line_start": 1200,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV2.sol::AccountSpot._withdraw(address[],uint256[],uint256[],uint256[],address)",
+     "label": "_withdraw",
+     "file": "src/accounts/AccountV2.sol",
+     "line_start": 395,
+     "visibility": "internal",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV3.sol::AccountV3.skim(address,uint256,uint256)",
+     "label": "skim",
+     "file": "src/accounts/AccountV3.sol",
+     "line_start": 1374,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV4.sol::AccountV4._withdraw(address[],uint256[],uint256[],uint256[],address)",
+     "label": "_withdraw",
+     "file": "src/accounts/AccountV4.sol",
+     "line_start": 508,
+     "visibility": "internal",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV2.sol::AccountSpot.flashAction(address,bytes)",
+     "label": "flashAction",
+     "file": "src/accounts/AccountV2.sol",
+     "line_start": 279,
+     "visibility": "external",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV2.sol::AccountSpot.withdraw(address[],uint256[],uint256[],uint256[])",
+     "label": "withdraw",
+     "file": "src/accounts/AccountV2.sol",
+     "line_start": 378,
+     "visibility": "public",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV4.sol::AccountV4.flashAction(address,bytes)",
+     "label": "flashAction",
+     "file": "src/accounts/AccountV4.sol",
+     "line_start": 332,
+     "visibility": "external",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV4.sol::AccountV4.withdraw(address[],uint256[],uint256[],uint256[])",
+     "label": "withdraw",
+     "file": "src/accounts/AccountV4.sol",
+     "line_start": 491,
+     "visibility": "public",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 8,
+    "shown": 8,
+    "truncated": false
+   }
+  },
+  {
+   "id": "src/accounts/AccountV2.sol::AccountSpot._sink_call_406",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/accounts/AccountV2.sol",
+   "line_start": 407,
+   "line_end": 407,
+   "signature": "payable(to).call{ value: assetAmounts[i] }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/accounts/AccountV1.sol::AccountV1.skim(address,uint256,uint256)",
+     "label": "skim",
+     "file": "src/accounts/AccountV1.sol",
+     "line_start": 1200,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV2.sol::AccountSpot._withdraw(address[],uint256[],uint256[],uint256[],address)",
+     "label": "_withdraw",
+     "file": "src/accounts/AccountV2.sol",
+     "line_start": 395,
+     "visibility": "internal",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV2.sol::AccountSpot.flashAction(address,bytes)",
+     "label": "flashAction",
+     "file": "src/accounts/AccountV2.sol",
+     "line_start": 279,
+     "visibility": "external",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV2.sol::AccountSpot.withdraw(address[],uint256[],uint256[],uint256[])",
+     "label": "withdraw",
+     "file": "src/accounts/AccountV2.sol",
+     "line_start": 378,
+     "visibility": "public",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "src/accounts/AccountV3.sol::AccountV3._sink_call_1382",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/accounts/AccountV3.sol",
+   "line_start": 1383,
+   "line_end": 1383,
+   "signature": "payable(msg.sender).call{ value: amount }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/accounts/AccountV3.sol::AccountV3.skim(address,uint256,uint256)",
+     "label": "skim",
+     "file": "src/accounts/AccountV3.sol",
+     "line_start": 1374,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "src/accounts/AccountV4.sol::AccountV4._sink_call_523",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/accounts/AccountV4.sol",
+   "line_start": 524,
+   "line_end": 524,
+   "signature": "payable(to).call{ value: assetAmounts[i] }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/accounts/AccountV4.sol::AccountV4._withdraw(address[],uint256[],uint256[],uint256[],address)",
+     "label": "_withdraw",
+     "file": "src/accounts/AccountV4.sol",
+     "line_start": 508,
+     "visibility": "internal",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV4.sol::AccountV4.flashAction(address,bytes)",
+     "label": "flashAction",
+     "file": "src/accounts/AccountV4.sol",
+     "line_start": 332,
+     "visibility": "external",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/accounts/AccountV4.sol::AccountV4.withdraw(address[],uint256[],uint256[],uint256[])",
+     "label": "withdraw",
+     "file": "src/accounts/AccountV4.sol",
+     "line_start": 491,
+     "visibility": "public",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  }
+ ]
+}

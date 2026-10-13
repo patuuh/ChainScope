@@ -1,0 +1,526 @@
+{
+  "Amply Finance": [
+    {
+      "address": "0xDA59Cc2Ee08ce5F830B1190bfed34415772Ddc57",
+      "name": "PoolAddressesProvider",
+      "full_desc": "Amply Finance - PoolAddressesProvider",
+      "url": "https://explorer.zkevm.cronos.org/address/0xDA59Cc2Ee08ce5F830B1190bfed34415772Ddc57"
+    },
+    {
+      "address": "0x47656eb2A31094b348EBF458Eccb942d471324eD",
+      "name": "PoolDataProvider",
+      "full_desc": "Amply Finance - PoolDataProvider",
+      "url": "https://explorer.zkevm.cronos.org/address/0x47656eb2A31094b348EBF458Eccb942d471324eD"
+    },
+    {
+      "address": "0x31D864780Cc862C5F6b7DEfc8627c2593339C59e",
+      "name": "PoolConfigurator-Implementation",
+      "full_desc": "Amply Finance - PoolConfigurator-Implementation",
+      "url": "https://explorer.zkevm.cronos.org/address/0x31D864780Cc862C5F6b7DEfc8627c2593339C59e"
+    },
+    {
+      "address": "0x0aCE43a9DA33cA4c3D69D582E70D2Bd84a5a3f19",
+      "name": "ReservesSetupHelper",
+      "full_desc": "Amply Finance - ReservesSetupHelper",
+      "url": "https://explorer.zkevm.cronos.org/address/0x0aCE43a9DA33cA4c3D69D582E70D2Bd84a5a3f19"
+    },
+    {
+      "address": "0xE694B71bABaF620f5202afa32e7719E460f2b013",
+      "name": "L2Pool-Implementation",
+      "full_desc": "Amply Finance - L2Pool-Implementation",
+      "url": "https://explorer.zkevm.cronos.org/address/0xE694B71bABaF620f5202afa32e7719E460f2b013"
+    },
+    {
+      "address": "0x6C4A080556E003Ed0628024dB814A83164E17891",
+      "name": "ACLManager",
+      "full_desc": "Amply Finance - ACLManager",
+      "url": "https://explorer.zkevm.cronos.org/address/0x6C4A080556E003Ed0628024dB814A83164E17891"
+    },
+    {
+      "address": "0xF43E78E5F1204c5cAB40Dd2825f1bee9451e267e",
+      "name": "AmplyOracle",
+      "full_desc": "Amply Finance - AmplyOracle",
+      "url": "https://explorer.zkevm.cronos.org/address/0xF43E78E5F1204c5cAB40Dd2825f1bee9451e267e"
+    },
+    {
+      "address": "0x5F3e99759962018e4c371128D3cA32E8E5FfE66A",
+      "name": "L2Encoder",
+      "full_desc": "Amply Finance - L2Encoder",
+      "url": "https://explorer.zkevm.cronos.org/address/0x5F3e99759962018e4c371128D3cA32E8E5FfE66A"
+    },
+    {
+      "address": "0x6806b39B7A63c4FbED56B4680f86142455Cc552B",
+      "name": "EmissionManager",
+      "full_desc": "Amply Finance - EmissionManager",
+      "url": "https://explorer.zkevm.cronos.org/address/0x6806b39B7A63c4FbED56B4680f86142455Cc552B"
+    },
+    {
+      "address": "0xEF8f641f054392C636090d0E556131fc8D86130E",
+      "name": "RewardsController-Implementation",
+      "full_desc": "Amply Finance - RewardsController-Implementation",
+      "url": "https://explorer.zkevm.cronos.org/address/0xEF8f641f054392C636090d0E556131fc8D86130E"
+    },
+    {
+      "address": "0xfEd7ADfbD45907d183bD28523C9EdF1681cA9F24",
+      "name": "PullRewardsTransferStrategy",
+      "full_desc": "Amply Finance - PullRewardsTransferStrategy",
+      "url": "https://explorer.zkevm.cronos.org/address/0xfEd7ADfbD45907d183bD28523C9EdF1681cA9F24"
+    },
+    {
+      "address": "0xaBF532439377d71e84feA9e59d19F6142751ce03",
+      "name": "PreAmplyTokenTransferStrategy",
+      "full_desc": "Amply Finance - PreAmplyTokenTransferStrategy",
+      "url": "https://explorer.zkevm.cronos.org/address/0xaBF532439377d71e84feA9e59d19F6142751ce03"
+    },
+    {
+      "address": "0x669E271F4BF58AB4936A7AAC90EB363579Ef612F",
+      "name": "AToken-Implementation",
+      "full_desc": "Amply Finance - AToken-Implementation",
+      "url": "https://explorer.zkevm.cronos.org/address/0x669E271F4BF58AB4936A7AAC90EB363579Ef612F"
+    },
+    {
+      "address": "0xCF60ea08124066bab2AFbfe6643bEF766232Ab0c",
+      "name": "VariableDebtToken",
+      "full_desc": "Amply Finance - VariableDebtToken",
+      "url": "https://explorer.zkevm.cronos.org/address/0xCF60ea08124066bab2AFbfe6643bEF766232Ab0c"
+    },
+    {
+      "address": "0xBdF6d6ccCb90077f34138b75f973fbAc6dc15C2c",
+      "name": "ReserveStrategy-rateStrategyVolatileOne",
+      "full_desc": "Amply Finance - ReserveStrategy-rateStrategyVolatileOne",
+      "url": "https://explorer.zkevm.cronos.org/address/0xBdF6d6ccCb90077f34138b75f973fbAc6dc15C2c"
+    },
+    {
+      "address": "0xC273d6Df2C9b7e337Eb1dDc0067cE778bb8D3955",
+      "name": "WrappedTokenGatewayV3",
+      "full_desc": "Amply Finance - WrappedTokenGatewayV3",
+      "url": "https://explorer.zkevm.cronos.org/address/0xC273d6Df2C9b7e337Eb1dDc0067cE778bb8D3955"
+    },
+    {
+      "address": "0x2Ce4531CB531B655006D79cc4D3FBc447d2F5913",
+      "name": "WalletBalanceProvider",
+      "full_desc": "Amply Finance - WalletBalanceProvider",
+      "url": "https://explorer.zkevm.cronos.org/address/0x2Ce4531CB531B655006D79cc4D3FBc447d2F5913"
+    },
+    {
+      "address": "0x4BEC5cf1408fffcC2C65fe1061fd7abd22d1BEC8",
+      "name": "UiIncentiveDataProviderV3",
+      "full_desc": "Amply Finance - UiIncentiveDataProviderV3",
+      "url": "https://explorer.zkevm.cronos.org/address/0x4BEC5cf1408fffcC2C65fe1061fd7abd22d1BEC8"
+    },
+    {
+      "address": "0xCbD2125264e9F69437845Ea52FB9d23DD31B5fB5",
+      "name": "UiPoolDataProviderV3",
+      "full_desc": "Amply Finance - UiPoolDataProviderV3",
+      "url": "https://explorer.zkevm.cronos.org/address/0xCbD2125264e9F69437845Ea52FB9d23DD31B5fB5"
+    }
+  ],
+  "H2 Finance": [
+    {
+      "address": "0x1d3B19A1D05dB785A07b64EbcE6782AC180715C2",
+      "name": "H2Earn",
+      "full_desc": "H2 Finance - H2Earn",
+      "url": "https://explorer.zkevm.cronos.org/address/0x1d3B19A1D05dB785A07b64EbcE6782AC180715C2"
+    },
+    {
+      "address": "0x1e6c88f9f4b6d4caa010bca6ea6d505b82df83cd",
+      "name": "H2EarnFactory",
+      "full_desc": "H2 Finance - H2EarnFactory",
+      "url": "https://explorer.zkevm.cronos.org/address/0x1e6c88f9f4b6d4caa010bca6ea6d505b82df83cd"
+    },
+    {
+      "address": "0xcaf2fd3f47e7F46E99f74be579b2cc2233f33ef8",
+      "name": "V2Farm - H2Token",
+      "full_desc": "H2 Finance - V2Farm - H2Token",
+      "url": "https://explorer.zkevm.cronos.org/address/0xcaf2fd3f47e7F46E99f74be579b2cc2233f33ef8"
+    },
+    {
+      "address": "0x9C38F038Fe887f5e37a3a943d85bB67bd4E394C1",
+      "name": "V2Farm - MasterChef",
+      "full_desc": "H2 Finance - V2Farm - MasterChef",
+      "url": "https://explorer.zkevm.cronos.org/address/0x9C38F038Fe887f5e37a3a943d85bB67bd4E394C1"
+    },
+    {
+      "address": "0xD1821D41F8a55E1043458A834A86c7B749d1d065",
+      "name": "V2Farm - MasterChefAdmin",
+      "full_desc": "H2 Finance - V2Farm - MasterChefAdmin",
+      "url": "https://explorer.zkevm.cronos.org/address/0xD1821D41F8a55E1043458A834A86c7B749d1d065"
+    },
+    {
+      "address": "0xdfE68fB100C074c838D6e2C5A2D248308dCf090d",
+      "name": "V2Farm - MasterChefV2",
+      "full_desc": "H2 Finance - V2Farm - MasterChefV2",
+      "url": "https://explorer.zkevm.cronos.org/address/0xdfE68fB100C074c838D6e2C5A2D248308dCf090d"
+    },
+    {
+      "address": "0xe8B64e6b141769D716fA151e72C94cAd21E36A3a",
+      "name": "V3Farm - MasterChefV3",
+      "full_desc": "H2 Finance - V3Farm - MasterChefV3",
+      "url": "https://explorer.zkevm.cronos.org/address/0xe8B64e6b141769D716fA151e72C94cAd21E36A3a"
+    },
+    {
+      "address": "0x33D84485168E89C476074741Ba6830Bbe093eC1a",
+      "name": "V3Farm - H2V3LmPoolDeployer",
+      "full_desc": "H2 Finance - V3Farm - H2V3LmPoolDeployer",
+      "url": "https://explorer.zkevm.cronos.org/address/0x33D84485168E89C476074741Ba6830Bbe093eC1a"
+    },
+    {
+      "address": "0x45e149b212b1c4c2618527de767a5844079f9fde",
+      "name": "V2Core - H2Pair",
+      "full_desc": "H2 Finance - V2Core - H2Pair",
+      "url": "https://explorer.zkevm.cronos.org/address/0x45e149b212b1c4c2618527de767a5844079f9fde"
+    },
+    {
+      "address": "0x50704Ac00064be03CEEd817f41E0Aa61F52ef4DC",
+      "name": "V2Core - H2Factory",
+      "full_desc": "H2 Finance - V2Core - H2Factory",
+      "url": "https://explorer.zkevm.cronos.org/address/0x50704Ac00064be03CEEd817f41E0Aa61F52ef4DC"
+    },
+    {
+      "address": "0x39aD8C3067281e60045DF041846EE01c1Dd3a853",
+      "name": "H2Router - H2Router",
+      "full_desc": "H2 Finance - H2Router - H2Router",
+      "url": "https://explorer.zkevm.cronos.org/address/0x39aD8C3067281e60045DF041846EE01c1Dd3a853"
+    },
+    {
+      "address": "0x301cbe34dd38cf69295bf2698dc9be3b9eecedfa",
+      "name": "V3Core - H2V3Factory",
+      "full_desc": "H2 Finance - V3Core - H2V3Factory",
+      "url": "https://explorer.zkevm.cronos.org/address/0x301cbe34dd38cf69295bf2698dc9be3b9eecedfa"
+    },
+    {
+      "address": "0xcdf9026aee0425d94a8bdc3af91b66ef5c7bd850",
+      "name": "V3Core - H2V3Pool",
+      "full_desc": "H2 Finance - V3Core - H2V3Pool",
+      "url": "https://explorer.zkevm.cronos.org/address/0xcdf9026aee0425d94a8bdc3af91b66ef5c7bd850"
+    },
+    {
+      "address": "0x4C29cf0CFEa5c9E717aE5e862212ee7174Ea70Cc",
+      "name": "V3Core - H2V3PoolDeployer",
+      "full_desc": "H2 Finance - V3Core - H2V3PoolDeployer",
+      "url": "https://explorer.zkevm.cronos.org/address/0x4C29cf0CFEa5c9E717aE5e862212ee7174Ea70Cc"
+    },
+    {
+      "address": "0xfC376EaDbA66385054d6b3A631a30136ba09Ac24",
+      "name": "V3Periphery - NonfungiblePositionManager",
+      "full_desc": "H2 Finance - V3Periphery - NonfungiblePositionManager",
+      "url": "https://explorer.zkevm.cronos.org/address/0xfC376EaDbA66385054d6b3A631a30136ba09Ac24"
+    },
+    {
+      "address": "0x99aFec9351691b804cbBFD61975A05bD4B3F46b1",
+      "name": "V3Periphery - NonfungibleTokenPositionDescriptor",
+      "full_desc": "H2 Finance - V3Periphery - NonfungibleTokenPositionDescriptor",
+      "url": "https://explorer.zkevm.cronos.org/address/0x99aFec9351691b804cbBFD61975A05bD4B3F46b1"
+    },
+    {
+      "address": "0x33d2394f6Ca43aba6716982d6CB0824Db4A912b2",
+      "name": "V3Periphery - SwapRouter",
+      "full_desc": "H2 Finance - V3Periphery - SwapRouter",
+      "url": "https://explorer.zkevm.cronos.org/address/0x33d2394f6Ca43aba6716982d6CB0824Db4A912b2"
+    },
+    {
+      "address": "0xC145515aA0a9e80e2e4367D48c56A0f14B09dDe4",
+      "name": "V3Periphery - V3Migrator",
+      "full_desc": "H2 Finance - V3Periphery - V3Migrator",
+      "url": "https://explorer.zkevm.cronos.org/address/0xC145515aA0a9e80e2e4367D48c56A0f14B09dDe4"
+    },
+    {
+      "address": "0x864E2F278b257c27F6F0974B96F720D8ac51E8cb",
+      "name": "V3SmartRouter- MixedRouteQuoterV1",
+      "full_desc": "H2 Finance - V3SmartRouter- MixedRouteQuoterV1",
+      "url": "https://explorer.zkevm.cronos.org/address/0x864E2F278b257c27F6F0974B96F720D8ac51E8cb"
+    },
+    {
+      "address": "0x36FFB624d1B135bec784288e66d4d6a6B96ead25",
+      "name": "V3SmartRouter- TokenValidator",
+      "full_desc": "H2 Finance - V3SmartRouter- TokenValidator",
+      "url": "https://explorer.zkevm.cronos.org/address/0x36FFB624d1B135bec784288e66d4d6a6B96ead25"
+    },
+    {
+      "address": "0x4E792B8c9bcB9E200C3713810C4D6eA8C4230E7c",
+      "name": "V3SmartRouter- SmartRouter.sol",
+      "full_desc": "H2 Finance - V3SmartRouter- SmartRouter.sol",
+      "url": "https://explorer.zkevm.cronos.org/address/0x4E792B8c9bcB9E200C3713810C4D6eA8C4230E7c"
+    }
+  ],
+  "Fulcrom": [
+    {
+      "address": "0xdDDf221d5293619572616574Ff46a2760f162075",
+      "name": "Vault",
+      "full_desc": "Fulcrom - Vault",
+      "url": "https://explorer.zkevm.cronos.org/address/0xdDDf221d5293619572616574Ff46a2760f162075"
+    },
+    {
+      "address": "0x925C9a84Cc47A0fC43eFfFBE1d8Bb381D61f0333",
+      "name": "Router",
+      "full_desc": "Fulcrom - Router",
+      "url": "https://explorer.zkevm.cronos.org/address/0x925C9a84Cc47A0fC43eFfFBE1d8Bb381D61f0333"
+    },
+    {
+      "address": "0x31eb925496C9F46f21a333963F564Fae3A884327",
+      "name": "USDG",
+      "full_desc": "Fulcrom - USDG",
+      "url": "https://explorer.zkevm.cronos.org/address/0x31eb925496C9F46f21a333963F564Fae3A884327"
+    },
+    {
+      "address": "0xf33bCB80dd694b85f22F89C99894e622D916F676",
+      "name": "VaultPriceFeed",
+      "full_desc": "Fulcrom - VaultPriceFeed",
+      "url": "https://explorer.zkevm.cronos.org/address/0xf33bCB80dd694b85f22F89C99894e622D916F676"
+    },
+    {
+      "address": "0xfeeeb762667054085929C1aEC392aF11cE0c3133",
+      "name": "VaultErrorController",
+      "full_desc": "Fulcrom - VaultErrorController",
+      "url": "https://explorer.zkevm.cronos.org/address/0xfeeeb762667054085929C1aEC392aF11cE0c3133"
+    },
+    {
+      "address": "0xFA7F38321974d304A583d6e21964869ec37786a1",
+      "name": "FLP",
+      "full_desc": "Fulcrom - FLP",
+      "url": "https://explorer.zkevm.cronos.org/address/0xFA7F38321974d304A583d6e21964869ec37786a1"
+    },
+    {
+      "address": "0x5649EBBb8f2784D08f4932a89F9e127b8338a3e5",
+      "name": "FlpManager",
+      "full_desc": "Fulcrom - FlpManager",
+      "url": "https://explorer.zkevm.cronos.org/address/0x5649EBBb8f2784D08f4932a89F9e127b8338a3e5"
+    },
+    {
+      "address": "0xcD1fd146F60A266c91439bD750E51eed2b9eBD90",
+      "name": "ShortsTracker",
+      "full_desc": "Fulcrom - ShortsTracker",
+      "url": "https://explorer.zkevm.cronos.org/address/0xcD1fd146F60A266c91439bD750E51eed2b9eBD90"
+    },
+    {
+      "address": "0x1F1650cc835F28dE73dC425Ffb372A0eFD2Ec572",
+      "name": "OrderBook",
+      "full_desc": "Fulcrom - OrderBook",
+      "url": "https://explorer.zkevm.cronos.org/address/0x1F1650cc835F28dE73dC425Ffb372A0eFD2Ec572"
+    },
+    {
+      "address": "0x770b88688d13C82E72B431744fA37ac92bd265ef",
+      "name": "PositionRouter",
+      "full_desc": "Fulcrom - PositionRouter",
+      "url": "https://explorer.zkevm.cronos.org/address/0x770b88688d13C82E72B431744fA37ac92bd265ef"
+    },
+    {
+      "address": "0x822421feeD7Bd922ea0d069fdfC8c9802a168Da5",
+      "name": "PositionManager",
+      "full_desc": "Fulcrom - PositionManager",
+      "url": "https://explorer.zkevm.cronos.org/address/0x822421feeD7Bd922ea0d069fdfC8c9802a168Da5"
+    },
+    {
+      "address": "0xB8C34b5c180e13D2F5460F91E47F9dd217Ce77b1",
+      "name": "Reader",
+      "full_desc": "Fulcrom - Reader",
+      "url": "https://explorer.zkevm.cronos.org/address/0xB8C34b5c180e13D2F5460F91E47F9dd217Ce77b1"
+    },
+    {
+      "address": "0xC32358B90131CA682BAEDfF4E86cF26893dd21b6",
+      "name": "OrderBookReader",
+      "full_desc": "Fulcrom - OrderBookReader",
+      "url": "https://explorer.zkevm.cronos.org/address/0xC32358B90131CA682BAEDfF4E86cF26893dd21b6"
+    },
+    {
+      "address": "0x89B58b648592C7b5Db134C361F71f10648D0B1aC",
+      "name": "VaultReader",
+      "full_desc": "Fulcrom - VaultReader",
+      "url": "https://explorer.zkevm.cronos.org/address/0x89B58b648592C7b5Db134C361F71f10648D0B1aC"
+    },
+    {
+      "address": "0x4dEC9CfE3E8f4f4c34135fF281d7274e970635b8",
+      "name": "FastPriceEvents",
+      "full_desc": "Fulcrom - FastPriceEvents",
+      "url": "https://explorer.zkevm.cronos.org/address/0x4dEC9CfE3E8f4f4c34135fF281d7274e970635b8"
+    },
+    {
+      "address": "0x11e3bf3cacC607D4aB3B810d20A43D95092d26ef",
+      "name": "FastPriceFeed",
+      "full_desc": "Fulcrom - FastPriceFeed",
+      "url": "https://explorer.zkevm.cronos.org/address/0x11e3bf3cacC607D4aB3B810d20A43D95092d26ef"
+    },
+    {
+      "address": "0x63ce4d8698A1628e44737E869622F084B24C7c1a",
+      "name": "CronosOracle",
+      "full_desc": "Fulcrom - CronosOracle",
+      "url": "https://explorer.zkevm.cronos.org/address/0x63ce4d8698A1628e44737E869622F084B24C7c1a"
+    },
+    {
+      "address": "0x02aB5dB5888cCbA5c9C9c32b55B3393a15ca4B8A",
+      "name": "Timelock",
+      "full_desc": "Fulcrom - Timelock",
+      "url": "https://explorer.zkevm.cronos.org/address/0x02aB5dB5888cCbA5c9C9c32b55B3393a15ca4B8A"
+    },
+    {
+      "address": "0x7Baa329293ACa87f31E44d610c0e95065eA024Bc",
+      "name": "VaultUtils",
+      "full_desc": "Fulcrom - VaultUtils",
+      "url": "https://explorer.zkevm.cronos.org/address/0x7Baa329293ACa87f31E44d610c0e95065eA024Bc"
+    },
+    {
+      "address": "0xFB3338E2cA713B344D6A45B36525c3db156e492F",
+      "name": "FUL",
+      "full_desc": "Fulcrom - FUL",
+      "url": "https://explorer.zkevm.cronos.org/address/0xFB3338E2cA713B344D6A45B36525c3db156e492F"
+    },
+    {
+      "address": "0xBF8E3ddf0E64b1a2FD35572F0e36bF17b0316F51",
+      "name": "ES_FUL",
+      "full_desc": "Fulcrom - ES_FUL",
+      "url": "https://explorer.zkevm.cronos.org/address/0xBF8E3ddf0E64b1a2FD35572F0e36bF17b0316F51"
+    },
+    {
+      "address": "0xE7222f933952bF1B06fc6eD360eE7eD92855Fa91",
+      "name": "BN_FUL",
+      "full_desc": "Fulcrom - BN_FUL",
+      "url": "https://explorer.zkevm.cronos.org/address/0xE7222f933952bF1B06fc6eD360eE7eD92855Fa91"
+    },
+    {
+      "address": "0x5BCF4A45516176c63448c6Be3cAB9603f1C46dC2",
+      "name": "RewardReader",
+      "full_desc": "Fulcrom - RewardReader",
+      "url": "https://explorer.zkevm.cronos.org/address/0x5BCF4A45516176c63448c6Be3cAB9603f1C46dC2"
+    },
+    {
+      "address": "0x0366Cf13eFaa80ee7127B63061cD167375541513",
+      "name": "StakedFulTracker",
+      "full_desc": "Fulcrom - StakedFulTracker",
+      "url": "https://explorer.zkevm.cronos.org/address/0x0366Cf13eFaa80ee7127B63061cD167375541513"
+    },
+    {
+      "address": "0x0790F016918aA5d1Ac62938331fEE34D5B043Cd8",
+      "name": "StakedFulDistributor",
+      "full_desc": "Fulcrom - StakedFulDistributor",
+      "url": "https://explorer.zkevm.cronos.org/address/0x0790F016918aA5d1Ac62938331fEE34D5B043Cd8"
+    },
+    {
+      "address": "0x8D7FF55CA4B85853C0BBBED4D2e2BC4Ef643E433",
+      "name": "BonusFulTracker",
+      "full_desc": "Fulcrom - BonusFulTracker",
+      "url": "https://explorer.zkevm.cronos.org/address/0x8D7FF55CA4B85853C0BBBED4D2e2BC4Ef643E433"
+    },
+    {
+      "address": "0xF04c42578daa0Be9A5756F667958385DcC159CED",
+      "name": "BonusFulDistributor",
+      "full_desc": "Fulcrom - BonusFulDistributor",
+      "url": "https://explorer.zkevm.cronos.org/address/0xF04c42578daa0Be9A5756F667958385DcC159CED"
+    },
+    {
+      "address": "0x2Cf7F3Ae56aF353b2aa1c92439f372c2c75Aa080",
+      "name": "FeeFulTracker",
+      "full_desc": "Fulcrom - FeeFulTracker",
+      "url": "https://explorer.zkevm.cronos.org/address/0x2Cf7F3Ae56aF353b2aa1c92439f372c2c75Aa080"
+    },
+    {
+      "address": "0xca4880458d287dE7fc079cE0f4dfD5c10d56a1a5",
+      "name": "FeeFulDistributor",
+      "full_desc": "Fulcrom - FeeFulDistributor",
+      "url": "https://explorer.zkevm.cronos.org/address/0xca4880458d287dE7fc079cE0f4dfD5c10d56a1a5"
+    },
+    {
+      "address": "0xEeb08cDa02EDef325A86Ee3A3FA2c46da8987a68",
+      "name": "FeeFlpTracker",
+      "full_desc": "Fulcrom - FeeFlpTracker",
+      "url": "https://explorer.zkevm.cronos.org/address/0xEeb08cDa02EDef325A86Ee3A3FA2c46da8987a68"
+    },
+    {
+      "address": "0xdEcddfF446B4bbc01a02B46E1c2712752A31cABb",
+      "name": "FeeFlpDistributor",
+      "full_desc": "Fulcrom - FeeFlpDistributor",
+      "url": "https://explorer.zkevm.cronos.org/address/0xdEcddfF446B4bbc01a02B46E1c2712752A31cABb"
+    },
+    {
+      "address": "0xbc77810a9258Fbf1AD48aA3C2D695F35d47B0353",
+      "name": "StakedFlpTracker",
+      "full_desc": "Fulcrom - StakedFlpTracker",
+      "url": "https://explorer.zkevm.cronos.org/address/0xbc77810a9258Fbf1AD48aA3C2D695F35d47B0353"
+    },
+    {
+      "address": "0xA74a066C15873efA7330DBE5E05fe1282bFCC25d",
+      "name": "StakedFlpDistributor",
+      "full_desc": "Fulcrom - StakedFlpDistributor",
+      "url": "https://explorer.zkevm.cronos.org/address/0xA74a066C15873efA7330DBE5E05fe1282bFCC25d"
+    },
+    {
+      "address": "0xf53B6BEd5A6FdFd5f12F984DEf19BF284fE41389",
+      "name": "FulVester",
+      "full_desc": "Fulcrom - FulVester",
+      "url": "https://explorer.zkevm.cronos.org/address/0xf53B6BEd5A6FdFd5f12F984DEf19BF284fE41389"
+    },
+    {
+      "address": "0x26a70f97494776942F32eF52D82e686B35203b6D",
+      "name": "FlpVester",
+      "full_desc": "Fulcrom - FlpVester",
+      "url": "https://explorer.zkevm.cronos.org/address/0x26a70f97494776942F32eF52D82e686B35203b6D"
+    },
+    {
+      "address": "0x3D0c3D1373010557A5D97b9D3D61C56CE4C74a51",
+      "name": "RewardRouter",
+      "full_desc": "Fulcrom - RewardRouter",
+      "url": "https://explorer.zkevm.cronos.org/address/0x3D0c3D1373010557A5D97b9D3D61C56CE4C74a51"
+    },
+    {
+      "address": "0xC383bB82cDEC5C3f5296aa4e7D3F19c56A0C4D0B",
+      "name": "FeeDistributor",
+      "full_desc": "Fulcrom - FeeDistributor",
+      "url": "https://explorer.zkevm.cronos.org/address/0xC383bB82cDEC5C3f5296aa4e7D3F19c56A0C4D0B"
+    },
+    {
+      "address": "0x3a93C3c70321E3020a036FFAf4214E15d6AF117E",
+      "name": "CircuitBreaker",
+      "full_desc": "Fulcrom - CircuitBreaker",
+      "url": "https://explorer.zkevm.cronos.org/address/0x3a93C3c70321E3020a036FFAf4214E15d6AF117E"
+    },
+    {
+      "address": "0xa84dd5C68758B7c665006Ae692D210312Fa1515B",
+      "name": "AccessControlMultiCall2",
+      "full_desc": "Fulcrom - AccessControlMultiCall2",
+      "url": "https://explorer.zkevm.cronos.org/address/0xa84dd5C68758B7c665006Ae692D210312Fa1515B"
+    },
+    {
+      "address": "0xCfd984f26b4B59591F7fa9EeFCe8d1f298BAebfB",
+      "name": "ReferralManager",
+      "full_desc": "Fulcrom - ReferralManager",
+      "url": "https://explorer.zkevm.cronos.org/address/0xCfd984f26b4B59591F7fa9EeFCe8d1f298BAebfB"
+    }
+  ],
+  "Veno": [
+    {
+      "address": "0x5b91e29Ae5A71d9052620Acb813d5aC25eC7a4A2",
+      "name": "vUSD (Cronos zkEVM)",
+      "full_desc": "Veno - vUSD (Cronos zkEVM)",
+      "url": "https://explorer.zkevm.cronos.org/address/0x5b91e29Ae5A71d9052620Acb813d5aC25eC7a4A2"
+    },
+    {
+      "address": "0x271602A97027ee1dd03b1E6e5dB153eB659A80b1",
+      "name": "vETH (Cronos zkEVM)",
+      "full_desc": "Veno - vETH (Cronos zkEVM)",
+      "url": "https://explorer.zkevm.cronos.org/address/0x271602A97027ee1dd03b1E6e5dB153eB659A80b1"
+    },
+    {
+      "address": "0x5F254945A318f7ca93496320767E6b640aB9f730",
+      "name": "vETHRewarder (Cronos zkEVM)",
+      "full_desc": "Veno - vETHRewarder (Cronos zkEVM)",
+      "url": "https://explorer.zkevm.cronos.org/address/0x5F254945A318f7ca93496320767E6b640aB9f730"
+    },
+    {
+      "address": "0xFcD9cA1968Af3274a5e327dBfa7C80a99a0c0f52",
+      "name": "vUSDRewarder (Cronos zkEVM)",
+      "full_desc": "Veno - vUSDRewarder (Cronos zkEVM)",
+      "url": "https://explorer.zkevm.cronos.org/address/0xFcD9cA1968Af3274a5e327dBfa7C80a99a0c0f52"
+    },
+    {
+      "address": "0x898f2aB6E74d91AeA94BEF4316691ac0F43e7463",
+      "name": "TransactionManager (Cronos zkEVM)",
+      "full_desc": "Veno - TransactionManager (Cronos zkEVM)",
+      "url": "https://explorer.zkevm.cronos.org/address/0x898f2aB6E74d91AeA94BEF4316691ac0F43e7463"
+    },
+    {
+      "address": "0x4bb74A27bFe30AFd8974aC84cFeA62F3e4515a7C",
+      "name": "PerpVaultDeposit (Cronos zkEVM)",
+      "full_desc": "Veno - PerpVaultDeposit (Cronos zkEVM)",
+      "url": "https://explorer.zkevm.cronos.org/address/0x4bb74A27bFe30AFd8974aC84cFeA62F3e4515a7C"
+    }
+  ]
+}

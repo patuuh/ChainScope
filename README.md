@@ -57,16 +57,42 @@ That means more context goes to exploitability and impact, and less to rebuildin
 | Output quality | Good for hypothesis generation |
 | Limitation | Manual exploitability still required |
 
-## At a glance
+## What ChainScope actually does
 
-| Area | What ChainScope gives you |
-| --- | --- |
-| Triage | Workspace profiling and exploit-surface-first target selection |
-| Graphing | Functions, state vars, calls, reads/writes, transitions, sinks |
-| Discovery | Hotspots, DeFi patterns, unsafe backend patterns |
-| Tracing | Paths, state access, cross-boundary calls, state machines |
-| Provenance | Research-mode indexing plus production-only query scope |
-| Interfaces | MCP server for agents and CLI wrappers for local workflows |
+Two halves that work together. Most tools do only the first.
+
+**1. A code graph for one repository you already have.**
+Parse it into SQLite — functions, state variables, call edges, reads/writes, trust
+boundaries, state machines, sinks. Then ask structural questions ("is there a path
+from `deposit` to `delegatecall`? who writes `balances`?") that are tedious to
+answer by reading.
+
+**2. A way to choose which repository to point at that.**
+Bounty catalogs across Immunefi, HackenProof, Sherlock, Intigriti and Google VRP;
+deployed-source verification; audit cross-checks; and a scanner for the 15
+Critical-severity bug classes. This half exists because a graph over the *wrong*
+repo is worthless — and picking the wrong repo is the most common expensive mistake
+in bug bounty work.
+
+### Capability map
+
+| Track | Commands | What you get |
+| --- | --- | --- |
+| **Index & query** | `build` `profile` `trace` `paths` `cross` `state` `sinks` `reach` `verify` `summary` | The code graph and structural answers about it |
+| **Rank within a repo** | `surface` `scan` `sweep` | Hotspots, unsafe patterns, ranked surfaces |
+| **Deployed vs source** | `deployed` `divergence` `fetch` `re` | Confirm what's *actually live* before you read it |
+| **Pick a target** | `screen` `immune` `hacken` `intigriti` `google` `pays` `discover` | Cross-platform catalogs, ranking, scope, audit gates |
+| **Bounty automation** | `watch` `target` `active` `audits` | Live contest monitoring and the "is it audited" gate |
+| **Web / app track** | `web` `prowl` | Application-side assessment |
+| **Adversarial classes** | `veck` | 19 Critical-class patterns with strong/weak separation |
+| **Session persistence** | `auth` | Stored credentials for gated targets |
+
+### The single most important habit
+
+**Verify deployed bytecode matches the source you read, and verify audit coverage
+before reading any code.** Both are separate commands (`deployed`, `divergence`,
+`audits`) because both have repeatedly changed the answer. See
+[Known limits](#known-limits-worth-reading-before-you-trust-a-ranking).
 
 ## Best fit
 
@@ -480,6 +506,199 @@ python cs_sinks.py --db graph.db --type self_destruct --exclude-research
 
 The MCP server exposes the same scope control through `exclude_research=true`.
 
+## Core query commands
+
+These are the daily drivers once a repo is indexed.
+
+### `cs_surface` — ranked exploit surfaces
+```bash
+python3 -m cli surface surface <db>
+python3 -m cli surface surface <db> --top 25
+```
+Scores every function by reachability to dangerous sinks, guarded-vs-unguarded
+writes, and concentration of state mutation. Start here after `cs_build`.
+
+### `cs_reach` — can a public entry point reach a dangerous sink?
+```bash
+python3 -m cli reach reach <db> --sink delegatecall
+python3 -m cli reach reach <db> --function withdraw
+```
+The workhorse exploitability question: shortest paths from a permissionless
+entry point to `delegatecall` / arbitrary-call / token transfer.
+
+### `cs_verify` — a finding's kill test
+```bash
+python3 -m cli verify verify <db> --status kill
+python3 -m cli verify verify <db> --poc
+python3 -m cli verify verify <db> --pass
+```
+Applies the falsification checklist to a candidate: does a guard already
+prevent it? Can the state read actually be moved? Records kill / poc / pass so a
+candidate is tested **once** rather than re-litigated.
+
+### `cs_sweep` — pattern sweep
+```bash
+python3 -m cli sweep sweep <dir>
+```
+Bulk pattern classification across a tree (DeFi-specific and backend-unsafe
+shapes), ranked by file rather than a single hotspot.
+
+### `cs_active` — live surface discovery
+```bash
+python3 -m cli active active <url>
+python3 -m cli active crawl <url> --depth 3
+python3 -m cli active apis <url>
+python3 -m cli active surfaces <url>
+python3 -m cli active graphql <url>
+```
+Crawls a running target and enumerates real endpoints, API surfaces and
+GraphQL schemas — the app-layer counterpart to the static graph.
+
+### `cs_prowl` — contract-diff and secret hunting
+```bash
+python3 -m cli prowl prowl <repo>
+python3 -m cli prowl factory <repo>
+python3 -m cli prowl chains <repo>
+```
+Cross-repo diffing for un-audited forks and redeploys, plus a secret scan.
+
+### `cs_auth` — stored credentials
+```bash
+python3 -m cli auth auth add <target>
+python3 -m cli auth auth status
+```
+Encrypted per-target credentials for gated/WAF-protected sources, so
+`cs_fetch` and `cs_re` can reach source-blocked contracts without pasting secrets
+into shell history.
+
+## Program catalogs — choosing where to hunt
+
+A graph is only as good as the repository you point it at. These commands rank
+*targets* across platforms before you spend a session reading code.
+
+### `cs_screen` — cross-platform shortlist (Immunefi + HackenProof)
+
+```bash
+python3 -m cli screen run --top 20
+python3 -m cli screen run --platform hackenproof --min-bounty 100000
+```
+
+Deliberately built to **not** assert audit coverage it cannot establish:
+
+- every row carries `audit_status: "unknown"`. Neither platform's audit flag is
+  trustworthy — see [Known limits](#known-limits-worth-reading-before-you-trust-a-ranking)
+- an **absent report count scores 0.5, not 1.0** — missing data is not "thin"
+- freshness prefers **launch date** over "last updated". Updating a program page is
+  not new code; launching one is.
+- the ranking signal is the **report count**, the one reliable thin-hunt proxy.
+  Only HackenProof publishes it; Immunefi rows score neutral on that term.
+
+### `cs_immune` — Immunefi programs
+
+```bash
+python3 -m cli immune list --min-bounty 100000
+python3 -m cli immune keizo --verify-audits --only-impact
+python3 -m cli immune scope aera          # in-scope addresses + repos
+python3 -m cli immune meta celer          # one program, incl. its audit links
+python3 -m cli immune triage aera         # scope -> fetch -> graph -> hotspots
+```
+
+Immunefi exposes **no public API**; the catalog and per-program metadata are
+recovered from the React Server Component payload embedded in each page. Two
+consequences the module handles explicitly:
+
+- `updatedDate` is **ISO-8601**, not epoch millis
+- reward ceilings may be **ranges** (`"USD $50,000 - USD $250,000"`), and the
+  payload carries stale `legacy` / `smartcontract_rewards` arrays. `maxBounty` is
+  treated as authoritative; an implausible tier claim is flagged, not used.
+
+Primacy is reported **per severity tier**, because Immunefi supports per-tier
+override — a program can default to `primacy_of_rules` while its Critical tier is
+`primacy_of_impact`. Collapsing those makes "does an unlisted Critical count?"
+unanswerable.
+
+### `cs_hacken` / `cs_intigriti` / `cs_google` — other platforms
+
+```bash
+python3 -m cli hacken keizo --top 15          # HackenProof: rep gate, free-to-submit, SC scope
+python3 -m cli intigriti keizo                # Intigriti
+python3 -m cli google keizo                   # Google VRP
+```
+
+The **program report count** on HackenProof is the most reliable thin-hunt signal
+in the tool. It surfaced e.g. *Starknet Web & SC* — $250k ceiling with 27 reports —
+which no ceiling-based ranking had shown.
+
+### `cs_veck` — the 19 Critical bug classes
+
+```bash
+python3 -m cli veck list                      # every class, what it is, where to look
+python3 -m cli veck scan <contracts-dir>      # rank hits, strong evidence first
+python3 -m cli veck scan <dir> -c 4 -c 9      # only share-math / token-handling classes
+python3 -m cli veck checklist                 # invariant -> state shift -> fork PoC
+```
+
+Modelled on Immunefi/Sherlock/Cantina severity practice: only drain/insolvency,
+permanent lock, or governance takeover pay as Critical. Weak patterns deliberately
+include the **mitigations** (TWAP use, `totalSupply() == 0` guards, `amountOutMinimum`),
+so a hit reads as "protection present" or "protection missing" rather than being
+ambiguous. A regex cannot prove exploitability — the output says so, and carries no
+severity.
+
+### `cs_deployed` — confirm what is actually live
+
+```bash
+python3 -m cli deployed check --address 0x… --chain 1
+```
+
+Resolves proxy/upgradeable deployments to the live implementation, then reports
+whether the deployed bytecode matches the source you are about to read. This is a
+separate step from indexing **on purpose**: the deployed implementation is what
+handles funds, and it is routinely not the same file as `main`.
+
+### `cs_report` — submission-ready write-up from a finding
+
+```bash
+python3 -m cli report --findings findings.json
+```
+
+Turns recorded findings into a structured markdown report with the evidence
+attached, for review before submission.
+
+### `cs_divergence` — deployed vs source
+
+The highest-yield command here, and the one most often skipped. In a real
+multi-round engagement, every genuine finding in *already-audited* code came from
+diffing what is deployed against the repo:
+
+- a repo 4.5 years behind its deployment
+- a live contract that differed from `main` by only lint comments
+- an upgradeable proxy pointing somewhere unexpected
+
+## Known limits worth reading before you trust a ranking
+
+Hard-won during a 9-program engagement that produced **zero submittable
+findings** — mostly because target selection kept surfacing mature, heavily
+audited programs.
+
+**Audit fields on both major platforms are not coverage evidence.** They record
+whether a program *chose to populate a field*:
+
+| Program | `audits` | Reality |
+| --- | --- | --- |
+| GMX | `0` | extensively audited |
+| Chainlink | `0` | extensively audited |
+| Arbitrum / Wormhole | `0` | extensively audited |
+| HackenProof (all 15 SC programs) | `audit: false` | flag does not discriminate at all |
+
+`--verify-audits` improves on this by scanning payloads for audit-firm names and
+report URLs, but it measured **4/7 correct** against hand-verified ground truth,
+with three false negatives (Celer, Chainlink, Gearbox are audited but publish
+nothing on their Immunefi page). **Treat it as a prompt to verify, not a verdict.**
+
+The other recurring lesson: *"absence of evidence is not evidence of absence."*
+`cs_screen` is built so it can never tell you a program is unaudited.
+
 ## Limitations
 
 ChainScope is high-signal, but it is not a verdict engine.
@@ -565,6 +784,11 @@ Start with [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Roadmap
 
+**Platform coverage is tracked in [PLATFORM_TODOS.md](./PLATFORM_TODOS.md)** —
+missing/partial modules for Sherlock, Intigriti, Bugcrowd, CertiK and YesWeHack,
+plus the shared obligations each one must meet (notably: never treat an
+`audits` field as coverage evidence).
+
 Near-term expansion areas:
 - richer protocol semantics for roles, upgrades, assets, and config surfaces
 - broader parser-grade support for additional blockchain ecosystems
@@ -583,3 +807,178 @@ pytest -q
 Result at the time of this README update:
 
 `565 passed`
+
+## Bug-bounty hunt loop (cs_fetch / cs_discover / cs_scan)
+
+Three local-first helpers add a target-selection + ingestion layer for bug bounty hunting:
+
+- **`cs_scan`** — rank Immunefi programs into a **thin-audit shortlist** (recent, on-chain,
+  mainnet/Base/Arb in-scope smart-contract assets), where unknown bugs actually live.
+  ```
+  python cs_scan.py --recent-since 2025-06-01 --top 20
+  ```
+- **`cs_discover <slug>`** — list a program's in-scope smart-contract assets with their added date
+  (robust against the double-escaped, client-rendered scope page).
+- **`cs_fetch <chain>:<address>`** — pull Sourcify-verified deployed source and build a graph from
+  it, so a contract can be indexed even when its repo is private / deployments-only.
+  ```
+  python cs_fetch.py 1:0x... --db graph.db
+  ```
+
+Typical flow: `cs_scan` -> `cs_discover <slug>` -> `cs_fetch <chain>:<addr>` -> `cs_summary/cs_trace/cs_cross --db graph.db`
+
+## cs_target — Keizo-style target scorer (the "where to point AI" engine)
+
+**Inspiration.** The methodology is inspired by the approach of **KeiZo_Zo** (see his
+AI-led Immunefi hunt: 8 valid reports incl. 2 Criticals and 2 Highs, one earning a
+$20k bounty). His edge is not magic — it is pattern-recognition from volume: find the
+**fresh, tiny, self-written (not an audited fork) protocol**, then point AI at the
+**permissionless money path**. `cs_target` encodes that pattern so it is systematic
+rather than a personal intuition.
+
+`cs_target` ranks a program's in-scope contracts by *attack surface* using four signals:
+
+1. **Permissionless money path** — a contract whose external/public function moves funds
+   (`deposit`/`withdraw`/`mint`/`burn`/`transfer`/`claim`/`.call{value}`/`.delegatecall`)
+   and is **not** gated by a role/auth/pause modifier. This is the cash an attacker can reach.
+2. **Freshness** — recently added to scope => recently deployed => fewer audit cycles.
+3. **Low audit** — few/no audits for the program.
+4. **Reachability** — on-chain, fork-able (mainnet/Base/Arb), not a private/deployments repo.
+
+```
+python cs_target.py <slug> --max-fetch 8        # scan the freshest N in-scope contracts
+python cs_target.py <slug> --recent-since 2025-01-01 --json
+```
+
+For each contract it fetches the Sourcify-verified source (`cs_fetch` path), scans the
+functions, and emits a `target_score` where `1 = fresh + low-audit + has a permissionless
+money path` (the **)**
+
+```
+$ python cs_target.py veda --max-fetch 5
+  **LiquidUSD - accountant  score=1 perm_money=True (1 fns) audits=1 added=2026-03-30
+  **LiquidUSD - boring_queue score=1 perm_money=True (2 fns) audits=1 added=2026-03-30
+  **LiquidUSD - teller      score=1 perm_money=True (3 fns) audits=1 added=2026-03-30
+```
+
+Then feed the flagged contract to `cs_fetch` + `cs_summary/cs_trace/cs_cross` and build a
+fork PoC. `cs_target` is a structural scorer, not a verdict: manual exploitability is
+still required.
+
+> Methodology credit: inspired by **KeiZo_Zo**'s AI-led, long-tail, thin-audit,
+> permissionless-money-path approach to bug bounty hunting.
+
+## cs_watch — live audit-competition watcher (out-of-the-box hunting)
+
+Fresh, thin-audit targets rarely appear as standing Immunefi bounties (those are audited
+majors). They usually show up as *time-boxed audit competitions* (Code4rena, Sherlock,
+Cantina, Immunefi audit-competitions) whose code is public and un-audited - exactly the
+Keizo profile. `cs_watch` polls those sources, remembers what it has already reported, and
+notifies the moment a NEW competition opens, so you can audit it inside its window before
+findings flood in.
+
+Sources polled:
+- **Time-boxed competitions:** Immunefi audit-competitions, Code4rena, Sherlock, Cantina.
+- **Standing bounties (catalog, baselined once):** Immunefi bounties, Sherlock bug-bounties,
+  and the full HackenProof catalog (via its public API) - the last filtered to
+  `min_reputation_points <= HACKENPROOF_MAX_REP` (default 80, which profile completion alone
+  reaches) and tagged `[DualDefense]` for crowdsourced audits. HackenProof's public page only
+  lists a subset; the API exposes the whole catalog, including the low-report audit programs.
+Catalog sources list many ongoing programs at once, so on first sight they are seeded
+silently (`__catalog_baseline__`) and only programs appearing afterwards are surfaced.
+
+```
+python cs_watch.py --once              # check now, notify on new opens, exit
+python cs_watch.py --interval 1800     # poll every 30 minutes
+python cs_watch.py --json              # machine-readable output
+```
+
+Notifications route through `core/notify`: a webhook (Discord/Slack/Telegram) or SMTP email,
+configured in the environment; if neither is set it appends to ~/.chainscope/notifications.log
+and prints. State (already-reported slugs) persists in ~/.chainscope/watch_state.json so a
+contest is only announced once. Sources are best-effort (JS-heavy pages may be noisy); the
+Immunefi audit-competition source is the reliable one.
+
+## Notifications (cs_watch) — Bird email via SMTP
+
+`cs_watch` notifies through `core/notify`. To use your **Bird** email channel, set (environment,
+never commit the key):
+
+    export SMTP_HOST=eu1.smtp.bird.com
+    export SMTP_PORT=465            # 465 = implicit SSL/TLS; 587/2525 = STARTTLS
+    export SMTP_USER=bird
+    export SMTP_PASS=bk_eu1_...     # your Bird API/password key
+    export SMTP_TO=you@example.com
+
+Alternatively use a webhook (Discord/Slack/Telegram) via `NOTIFY_WEBHOOK_URL`, or leave both
+unset to fall back to ~/.chainscope/notifications.log. The port 465 path uses `smtplib.SMTP_SSL`;
+587/2525 use STARTTLS.
+
+## cs_re — reverse-engineer source-blocked contracts
+
+```bash
+python3 -m cli re rev --address 0x… --chain 1
+```
+
+
+Many targets (custom proxies, bridges, or contracts whose Sourcify source is only commented-out
+stubs) hide logic in bytecode. `cs_re` fetches the bytecode for a `chain:addr`, resolves a proxy
+implementation, enumerates selectors, and classifies functions into MONEY / AUTH / view.
+
+    python cs_re.py 1:0x8236a87084f8b84306f72007f36f2618a5634494 --impl
+
+Notes: simple direct contracts classify well (PUSH4 dispatcher). Custom/non-EIP1967 proxies and
+some optimized dispatchers don't PUSH4-pack selectors use `cast implementation <addr>` +
+`cast selectors` / `cast 4byte <selector>` / `cast disassemble` for those — see the LBTC worked
+example in the campaign. Use `cs_re` first, fall back to `cast` for stubborn proxies.
+
+## Desktop popups (dunst) — no email/webhook needed
+
+`core/notify` also fires a **dunst/notify-send popup** on every notification (set `NOTIFY_DUNST=1` to
+enable, default on). Enable it in `run_watch.sh`:
+
+    export DISPLAY="${DISPLAY:-:1}"
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"   # or it auto-reads the dunst process env
+    export NOTIFY_DUNST=1
+
+Then `cs_watch` shows a visible desktop popup the moment a fresh competition opens — works without a
+verified Bird sender or any webhook URL. `run_watch.sh` already wires the session env best-effort and is
+kept out of git (it contains your Bird `bk_` key).
+
+## cs_audits — check prior audits before submitting (the "already audited" gate)
+
+Audited/known/intended issues are ineligible on most programs. A prior audit can either (a) already
+flag the finding (-> OOS as "unfixed audit issue") or (b) document the behavior as intended (-> "by
+design"). Run this BEFORE investing in a contract or submitting:
+
+    python cs_audits.py olympus                          # list the program's prior audit reports
+    python cs_audits.py olympus --grep setTreasuryBorrower   # grep the audit PDFs for a target fn
+
+It follows the program's "Previous Audits" links (including an external docs page), downloads +
+pdftotext's the reports (cached in /tmp/cs_audits/<slug>), and prints any mention of your target
+with context. Example that caught a trap: Monocooler's `setTreasuryBorrower` was already audited +
+access-tested (Nethermind `test_access_setTreasuryBorrower`) and documented-intentional, so it is
+NOT rewardable. Requires `pdftotext` (poppler-utils). Note: github.com `.../blob/*.pdf` links are
+HTML pages, not raw PDFs - they are listed but not searchable; raw storage.googleapis/`/assets/files`
+links download fine.
+
+## Web / application pentest track (cs_web + cs_pays)
+
+ChainScope started EVM-only, but many programs (Immunefi "Websites and Applications", HackenProof
+"Web & API", Cantina, HackerOne/Bugcrowd) also scope **web apps and APIs**. This track brings the
+**Wesley Thijs ("The XSS Rat")** method alongside the existing **KeiZo_Zo (Keixo)** long-tail /
+thin-audit method, so we are not blind to half a program. See `WEB_PENTEST_TRACK.md` and
+`WESLEY_THIJS_ADAPTED.md`.
+
+    python cs_web.py fingerprint <url>   # fingerprint before you fire (server, tech, security headers, CSP)
+    python cs_web.py plan                # the systematic test plan (walk -> every field -> every class)
+    python cs_web.py payloads            # the per-field payload set (XSS/SSTI/SQLi/SSRF/...)
+
+`cs_pays.py` is the "study what pays" tool (the BountySkiller idea, adapted): it aggregates the
+recent exploit feed (rekt.news) into the classes currently landing, so hunts bias toward them.
+
+    python cs_pays.py                    # recent incidents + class/chain/project frequency
+
+Both methods are in the loop: **Keixo** = where to point (thin-audit long-tail, delta, subtract the
+already-found: `cs_target`/`cs_scan`/`cs_watch`/`cs_audits`); **Wesley Thijs** = how to hunt
+(fingerprint, walk, every field, every class, study what pays: `cs_web`/`cs_pays`).

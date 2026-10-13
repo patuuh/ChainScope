@@ -1,0 +1,339 @@
+{
+ "hotspots": [
+  {
+   "function": "beforeSwap",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 415,
+   "visibility": "external",
+   "score": 20,
+   "reasons": [
+    "entry+writes(4)",
+    "ext_calls(1)",
+    "reentrancy",
+    "cross_reentrancy",
+    "oracle(1)",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "executeAction",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 356,
+   "visibility": "external",
+   "score": 12,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(3)",
+    "cross_reentrancy",
+    "oracle(3)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "execute",
+   "file": "src/cl-managers/RouterTrampoline.sol",
+   "line": 34,
+   "visibility": "external",
+   "score": 11,
+   "reasons": [
+    "ext_calls(1)",
+    "oracle(2)",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "flashLoanAndCallBack",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 285,
+   "visibility": "external",
+   "score": 11,
+   "reasons": [
+    "entry+writes(5)",
+    "ext_calls(2)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "compound",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 262,
+   "visibility": "external",
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "rebalance",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 307,
+   "visibility": "external",
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claim",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 184,
+   "visibility": "external",
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 223,
+   "visibility": "internal",
+   "score": 10,
+   "reasons": [
+    "ext_calls(1)",
+    "reentrancy",
+    "unsafe_downcast(5)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 260,
+   "visibility": "internal",
+   "score": 10,
+   "reasons": [
+    "ext_calls(1)",
+    "reentrancy",
+    "unsafe_downcast(5)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 579,
+   "visibility": "external",
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 663,
+   "visibility": "external",
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 325,
+   "visibility": "external",
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processSwapDelta",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 427,
+   "visibility": "internal",
+   "score": 8,
+   "reasons": [
+    "ext_calls(6)",
+    "unsafe_downcast(5)",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSwapParams",
+   "file": "src/cl-managers/libraries/CLMath.sol",
+   "line": 80,
+   "visibility": "internal",
+   "score": 8,
+   "reasons": [
+    "ext_calls(1)",
+    "unchecked_arith",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSwapParamsExact",
+   "file": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "line": 210,
+   "visibility": "internal",
+   "score": 8,
+   "reasons": [
+    "ext_calls(3)",
+    "unchecked_arith",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_approximateOptimalSwapAmounts",
+   "file": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "line": 247,
+   "visibility": "internal",
+   "score": 8,
+   "reasons": [
+    "ext_calls(3)",
+    "unchecked_arith",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onSetAssetManager",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 200,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAccountInfo",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 218,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "ext_calls(3)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "isValidSignature",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 500,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claim",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line": 187,
+   "visibility": "external",
+   "score": 7,
+   "reasons": [
+    "ext_calls(4)",
+    "oracle(2)",
+    "ext_call_in_loop(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_claim",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 204,
+   "visibility": "internal",
+   "score": 7,
+   "reasons": [
+    "ext_calls(5)",
+    "oracle(1)",
+    "unsafe_downcast(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_burn",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 294,
+   "visibility": "internal",
+   "score": 7,
+   "reasons": [
+    "ext_calls(4)",
+    "oracle(1)",
+    "unsafe_downcast(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_decreaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 329,
+   "visibility": "internal",
+   "score": 7,
+   "reasons": [
+    "ext_calls(4)",
+    "oracle(1)",
+    "unsafe_downcast(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_mint",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 472,
+   "visibility": "internal",
+   "score": 7,
+   "reasons": [
+    "ext_calls(6)",
+    "oracle(1)",
+    "unsafe_downcast(4)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_increaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 552,
+   "visibility": "internal",
+   "score": 7,
+   "reasons": [
+    "ext_calls(5)",
+    "oracle(1)",
+    "unsafe_downcast(4)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_scored": 97,
+  "critical_8plus": 16,
+  "high_5to7": 38,
+  "medium_3to4": 43,
+  "top_shown": 25,
+  "query_scope": "all_sources"
+ }
+}

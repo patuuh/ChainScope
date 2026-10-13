@@ -1,0 +1,2417 @@
+{
+ "tool": "cs_sinks",
+ "query_scope": "all_sources",
+ "sink_type": "all",
+ "external_only": false,
+ "total": 44,
+ "shown": 44,
+ "truncated": false,
+ "max_results": 50,
+ "max_callers_per_sink": 8,
+ "include_metadata": false,
+ "include_caller_details": false,
+ "max_metadata_bytes": 4096,
+ "by_type": {
+  "panic": 44
+ },
+ "sinks": [
+  {
+   "id": "sputnik-staking/src/user.rs::User._sink_expect_89",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnik-staking/src/user.rs",
+   "line_start": 89,
+   "line_end": 89,
+   "signature": "self\n            .delegated_amounts\n            .iter()\n            .enumerate()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnik-staking/src/user.rs::User::undelegate",
+     "label": "undelegate",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 83,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/lib.rs::Contract::undelegate",
+     "label": "undelegate",
+     "file": "sputnik-staking/src/lib.rs",
+     "line_start": 99,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnik-staking/src/lib.rs",
+     "line_start": 167,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/user.rs::Contract::internal_undelegate",
+     "label": "internal_undelegate",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 192,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnik-staking/src/user.rs::Contract._sink_expect_134",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnik-staking/src/user.rs",
+   "line_start": 134,
+   "line_end": 134,
+   "signature": "self.internal_get_user_opt(account_id).expect(\"NO_USER\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnik-staking/src/user.rs::Contract::internal_get_user",
+     "label": "internal_get_user",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 133,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager::store_contract",
+     "label": "store_contract",
+     "file": "sputnikdao-factory2/src/factory_manager.rs",
+     "line_start": 22,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager::get_code",
+     "label": "get_code",
+     "file": "sputnikdao-factory2/src/factory_manager.rs",
+     "line_start": 44,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager::update_contract",
+     "label": "update_contract",
+     "file": "sputnikdao-factory2/src/factory_manager.rs",
+     "line_start": 53,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::create",
+     "label": "create",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 72,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_owner",
+     "label": "get_owner",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 140,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_default_code_hash",
+     "label": "get_default_code_hash",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 150,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_default_version",
+     "label": "get_default_version",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 156,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 63,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager._sink_expect_23",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line_start": 23,
+   "line_end": 23,
+   "signature": "env::input().expect(\"ERR_NO_INPUT\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnik-staking/src/user.rs::User::undelegate",
+     "label": "undelegate",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 83,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/user.rs::Contract::internal_get_user",
+     "label": "internal_get_user",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 133,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager::store_contract",
+     "label": "store_contract",
+     "file": "sputnikdao-factory2/src/factory_manager.rs",
+     "line_start": 22,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/lib.rs::Contract::undelegate",
+     "label": "undelegate",
+     "file": "sputnik-staking/src/lib.rs",
+     "line_start": 99,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnik-staking/src/lib.rs",
+     "line_start": 167,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/user.rs::Contract::internal_deposit",
+     "label": "internal_deposit",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 161,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/user.rs::Contract::internal_withdraw",
+     "label": "internal_withdraw",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 169,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/user.rs::Contract::internal_delegate",
+     "label": "internal_delegate",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 179,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 10,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager._sink_unwrap_34",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line_start": 34,
+   "line_end": 34,
+   "signature": "serde_json::to_vec(&Base58CryptoHash::from(contract_code_sha256_hash)).unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnik-staking/src/storage_impl.rs::Contract::StorageManagement::storage_deposit",
+     "label": "storage_deposit",
+     "file": "sputnik-staking/src/storage_impl.rs",
+     "line_start": 12,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/storage_impl.rs::Contract::StorageManagement::storage_withdraw",
+     "label": "storage_withdraw",
+     "file": "sputnik-staking/src/storage_impl.rs",
+     "line_start": 50,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/storage_impl.rs::tests::test_deserialize_serialize",
+     "label": "test_deserialize_serialize",
+     "file": "sputnik-staking/src/storage_impl.rs",
+     "line_start": 102,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager::store_contract",
+     "label": "store_contract",
+     "file": "sputnikdao-factory2/src/factory_manager.rs",
+     "line_start": 22,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::create",
+     "label": "create",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 72,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_owner",
+     "label": "get_owner",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 140,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_create_error",
+     "label": "test_create_error",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 265,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 289,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 56,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager._sink_expect_46",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line_start": 46,
+   "line_end": 46,
+   "signature": "env::storage_read(&code_hash).expect(\"ERR_NO_HASH\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager::get_code",
+     "label": "get_code",
+     "file": "sputnikdao-factory2/src/factory_manager.rs",
+     "line_start": 44,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_code",
+     "label": "get_code",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 190,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager._sink_expect_60",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line_start": 60,
+   "line_end": 60,
+   "signature": "env::storage_read(&target_code_hash).expect(\"ERR_NO_HASH\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager::update_contract",
+     "label": "update_contract",
+     "file": "sputnikdao-factory2/src/factory_manager.rs",
+     "line_start": 53,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::update",
+     "label": "update",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 109,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_unwrap_73",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 73,
+   "line_end": 73,
+   "signature": "env::current_account_id().sub_account(name).unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::create",
+     "label": "create",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 72,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_create_error",
+     "label": "test_create_error",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 265,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 289,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_owner_can_be_a_dao_account",
+     "label": "test_owner_can_be_a_dao_account",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 376,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_expect_74",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 74,
+   "line_end": 74,
+   "signature": "serde_json::to_vec(&json!({\n            \"account_id\": account_id,\n            \"a",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::create",
+     "label": "create",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 72,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_create_error",
+     "label": "test_create_error",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 265,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 289,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_owner_can_be_a_dao_account",
+     "label": "test_owner_can_be_a_dao_account",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 376,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_expect_141",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 141,
+   "line_end": 141,
+   "signature": "String::from_utf8(\n            env::storage_read(FACTORY_OWNER_KEY)\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_owner",
+     "label": "get_owner",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 140,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_unwrap_141",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 141,
+   "line_end": 141,
+   "signature": "String::from_utf8(\n            env::storage_read(FACTORY_OWNER_KEY)\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/factory_manager.rs::FactoryManager::store_contract",
+     "label": "store_contract",
+     "file": "sputnikdao-factory2/src/factory_manager.rs",
+     "line_start": 22,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_owner",
+     "label": "get_owner",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 140,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::store",
+     "label": "store",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 172,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_expect_151",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 151,
+   "line_end": 151,
+   "signature": "env::storage_read(DEFAULT_CODE_HASH_KEY)\n            .and_then(|data| Base58Cryp",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_default_code_hash",
+     "label": "get_default_code_hash",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 150,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::create",
+     "label": "create",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 72,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_default_version",
+     "label": "get_default_version",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 156,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_create_error",
+     "label": "test_create_error",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 265,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 289,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::tests::test_owner_can_be_a_dao_account",
+     "label": "test_owner_can_be_a_dao_account",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 376,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 6,
+    "shown": 6,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_expect_157",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 157,
+   "line_end": 157,
+   "signature": "env::storage_read(CODE_METADATA_KEY).expect(\"INTERNAL_FAIL\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_default_version",
+     "label": "get_default_version",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 156,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_expect_210",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 210,
+   "line_end": 210,
+   "signature": "BorshDeserialize::try_from_slice(&storage_metadata).expect(\"INTERNAL_FAIL\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::store_contract_metadata",
+     "label": "store_contract_metadata",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 194,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_expect_227",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 227,
+   "line_end": 227,
+   "signature": "env::storage_read(CODE_METADATA_KEY).expect(\"INTERNAL_FAIL\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::delete_contract_metadata",
+     "label": "delete_contract_metadata",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 225,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::delete_contract",
+     "label": "delete_contract",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 61,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory._sink_expect_238",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line_start": 238,
+   "line_end": 238,
+   "signature": "env::storage_read(CODE_METADATA_KEY).expect(\"INTERNAL_FAIL\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao-factory2/src/lib.rs::SputnikDAOFactory::get_contracts_metadata",
+     "label": "get_contracts_metadata",
+     "file": "sputnikdao-factory2/src/lib.rs",
+     "line_start": 237,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/bounties.rs::Contract._sink_expect_98",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/bounties.rs",
+   "line_start": 98,
+   "line_end": 98,
+   "signature": "self.bounties.get(&id).expect(\"ERR_NO_BOUNTY\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/bounties.rs::Contract::bounty_claim",
+     "label": "bounty_claim",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 97,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_claim_not_allowed",
+     "label": "test_bounty_claim_not_allowed",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 319,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/bounties.rs::Contract._sink_unwrap_99",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/bounties.rs",
+   "line_start": 99,
+   "line_end": 99,
+   "signature": "self.policy.get().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/bounties.rs::Contract::bounty_claim",
+     "label": "bounty_claim",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 97,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_claim_not_allowed",
+     "label": "test_bounty_claim_not_allowed",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 319,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/bounties.rs::Contract._sink_unwrap_or_else_153",
+   "label": "unwrap_or_else",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/bounties.rs",
+   "line_start": 153,
+   "line_end": 153,
+   "signature": "account_id.unwrap_or_else(env::predecessor_account_id)",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnik-staking/src/storage_impl.rs::Contract::StorageManagement::storage_deposit",
+     "label": "storage_deposit",
+     "file": "sputnik-staking/src/storage_impl.rs",
+     "line_start": 12,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::Contract::bounty_done",
+     "label": "bounty_done",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 152,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/policy.rs::Policy::add_member_to_role",
+     "label": "add_member_to_role",
+     "file": "sputnikdao2/src/policy.rs",
+     "line_start": 292,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/policy.rs::Policy::remove_member_from_role",
+     "label": "remove_member_from_role",
+     "file": "sputnikdao2/src/policy.rs",
+     "line_start": 307,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/upgrade.rs::internal_get_factory_info",
+     "label": "internal_get_factory_info",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 97,
+     "visibility": "pub(crate)",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnik-staking/src/lib.rs",
+     "line_start": 167,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_claim_not_allowed",
+     "label": "test_bounty_claim_not_allowed",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 319,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 20,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/bounties.rs::Contract._sink_unwrap_180",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/bounties.rs",
+   "line_start": 180,
+   "line_end": 180,
+   "signature": "self.policy.get().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/bounties.rs::Contract::bounty_giveup",
+     "label": "bounty_giveup",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 179,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/delegation.rs::Contract._sink_expect_13",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/delegation.rs",
+   "line_start": 13,
+   "line_end": 13,
+   "signature": "self.staking_id.clone().expect(\"ERR_NO_STAKING\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/delegation.rs::Contract::register_delegation",
+     "label": "register_delegation",
+     "file": "sputnikdao2/src/delegation.rs",
+     "line_start": 12,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnik-staking/src/user.rs::Contract::internal_register_user",
+     "label": "internal_register_user",
+     "file": "sputnik-staking/src/user.rs",
+     "line_start": 150,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/delegation.rs::Contract._sink_expect_29",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/delegation.rs",
+   "line_start": 29,
+   "line_end": 29,
+   "signature": "self.staking_id.clone().expect(\"ERR_NO_STAKING\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/delegation.rs::Contract::delegate",
+     "label": "delegate",
+     "file": "sputnikdao2/src/delegation.rs",
+     "line_start": 28,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/delegation.rs::Contract._sink_expect_52",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/delegation.rs",
+   "line_start": 52,
+   "line_end": 52,
+   "signature": "self.staking_id.clone().expect(\"ERR_NO_STAKING\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/delegation.rs::Contract::undelegate",
+     "label": "undelegate",
+     "file": "sputnikdao2/src/delegation.rs",
+     "line_start": 51,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/lib.rs::Contract._sink_expect_133",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/lib.rs",
+   "line_start": 133,
+   "line_end": 133,
+   "signature": "env::state_read().expect(\"ERR_CONTRACT_IS_NOT_INITIALIZED\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/lib.rs::Contract::migrate",
+     "label": "migrate",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 129,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/lib.rs::Contract._sink_expect_160",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/lib.rs",
+   "line_start": 160,
+   "line_end": 160,
+   "signature": "self.blobs.remove(&hash).expect(\"ERR_NO_BLOB\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/lib.rs::Contract::remove_blob",
+     "label": "remove_blob",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 158,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/lib.rs::Contract._sink_unwrap_167",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/lib.rs",
+   "line_start": 167,
+   "line_end": 167,
+   "signature": "env::register_len(u64::MAX - 1).unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/lib.rs::Contract::remove_blob",
+     "label": "remove_blob",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 158,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/lib.rs::_module._sink_expect_184",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/lib.rs",
+   "line_start": 184,
+   "line_end": 184,
+   "signature": "env::state_read().expect(\"ERR_CONTRACT_IS_NOT_INITIALIZED\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/lib.rs::store_blob",
+     "label": "store_blob",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 182,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/lib.rs::_module._sink_unwrap_203",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/lib.rs",
+   "line_start": 203,
+   "line_end": 203,
+   "signature": "near_sdk::serde_json::to_string(&Base58CryptoHash::from(blob_hash))\n        .unw",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/lib.rs::store_blob",
+     "label": "store_blob",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 182,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/policy.rs::Policy._sink_unwrap_278",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/policy.rs",
+   "line_start": 278,
+   "line_end": 278,
+   "signature": "parameters.proposal_bond.unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/policy.rs::Policy::update_parameters",
+     "label": "update_parameters",
+     "file": "sputnikdao2/src/policy.rs",
+     "line_start": 276,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/policy.rs::tests::test_update_parameters",
+     "label": "test_update_parameters",
+     "file": "sputnikdao2/src/policy.rs",
+     "line_start": 588,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::internal_execute_proposal",
+     "label": "internal_execute_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 352,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::act_proposal",
+     "label": "act_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 594,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_denied",
+     "label": "test_remove_proposal_denied",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 295,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 15,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/policy.rs::Policy._sink_unwrap_or_else_295",
+   "label": "unwrap_or_else",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/policy.rs",
+   "line_start": 295,
+   "line_end": 295,
+   "signature": "self.roles[i]\n                    .kind\n                    .add_member_to_group",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/bounties.rs::Contract::bounty_done",
+     "label": "bounty_done",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 152,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/policy.rs::Policy::add_member_to_role",
+     "label": "add_member_to_role",
+     "file": "sputnikdao2/src/policy.rs",
+     "line_start": 292,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_claim_not_allowed",
+     "label": "test_bounty_claim_not_allowed",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 319,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::internal_execute_proposal",
+     "label": "internal_execute_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 352,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::act_proposal",
+     "label": "act_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 594,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 15,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/policy.rs::Policy._sink_unwrap_or_else_310",
+   "label": "unwrap_or_else",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/policy.rs",
+   "line_start": 310,
+   "line_end": 310,
+   "signature": "self.roles[i]\n                    .kind\n                    .remove_member_from_",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/policy.rs::Policy::remove_member_from_role",
+     "label": "remove_member_from_role",
+     "file": "sputnikdao2/src/policy.rs",
+     "line_start": 307,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::internal_execute_proposal",
+     "label": "internal_execute_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 352,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::act_proposal",
+     "label": "act_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 594,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_denied",
+     "label": "test_remove_proposal_denied",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 295,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_allowed",
+     "label": "test_remove_proposal_allowed",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 313,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 14,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/policy.rs::Policy._sink_expect_363",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/policy.rs",
+   "line_start": 363,
+   "line_end": 363,
+   "signature": "self.internal_get_role(role).expect(\"ERR_ROLE_NOT_FOUND\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/policy.rs::Policy::is_token_weighted",
+     "label": "is_token_weighted",
+     "file": "sputnikdao2/src/policy.rs",
+     "line_start": 362,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Proposal::update_votes",
+     "label": "update_votes",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 256,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::act_proposal",
+     "label": "act_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 594,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_denied",
+     "label": "test_remove_proposal_denied",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 295,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_allowed",
+     "label": "test_remove_proposal_allowed",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 313,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 14,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/policy.rs::Policy._sink_expect_398",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/policy.rs",
+   "line_start": 398,
+   "line_end": 398,
+   "signature": "self.internal_get_role(&role).expect(\"ERR_MISSING_ROLE\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/policy.rs::Policy::proposal_status",
+     "label": "proposal_status",
+     "file": "sputnikdao2/src/policy.rs",
+     "line_start": 380,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::act_proposal",
+     "label": "act_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 594,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_denied",
+     "label": "test_remove_proposal_denied",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 295,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_allowed",
+     "label": "test_remove_proposal_allowed",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 313,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_vote_expired_proposal",
+     "label": "test_vote_expired_proposal",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 333,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 13,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/proposals.rs::Contract._sink_unwrap_538",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/proposals.rs",
+   "line_start": 538,
+   "line_end": 538,
+   "signature": "self.policy.get().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::add_proposal",
+     "label": "add_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 535,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::create_proposal",
+     "label": "create_proposal",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 222,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_add_to_missing_role",
+     "label": "test_add_to_missing_role",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 402,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_fails_adding_invalid_policy",
+     "label": "test_fails_adding_invalid_policy",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 430,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_claim_not_allowed",
+     "label": "test_bounty_claim_not_allowed",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 319,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 14,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/proposals.rs::Contract._sink_expect_603",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/proposals.rs",
+   "line_start": 603,
+   "line_end": 603,
+   "signature": "self.proposals.get(&id).expect(\"ERR_NO_PROPOSAL\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::act_proposal",
+     "label": "act_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 594,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_denied",
+     "label": "test_remove_proposal_denied",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 295,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_allowed",
+     "label": "test_remove_proposal_allowed",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 313,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_vote_expired_proposal",
+     "label": "test_vote_expired_proposal",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 333,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_vote_twice",
+     "label": "test_vote_twice",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 356,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 12,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/proposals.rs::Contract._sink_unwrap_607",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/proposals.rs",
+   "line_start": 607,
+   "line_end": 607,
+   "signature": "self.policy.get().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::act_proposal",
+     "label": "act_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 594,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_denied",
+     "label": "test_remove_proposal_denied",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 295,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_allowed",
+     "label": "test_remove_proposal_allowed",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 313,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_vote_expired_proposal",
+     "label": "test_vote_expired_proposal",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 333,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_vote_twice",
+     "label": "test_vote_twice",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 356,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 12,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/proposals.rs::Contract._sink_expect_704",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/proposals.rs",
+   "line_start": 704,
+   "line_end": 704,
+   "signature": "self\n            .proposals\n            .get(&proposal_id)\n            .expect(\"",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::on_proposal_callback",
+     "label": "on_proposal_callback",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 703,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::internal_execute_proposal",
+     "label": "internal_execute_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 352,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/proposals.rs::Contract::act_proposal",
+     "label": "act_proposal",
+     "file": "sputnikdao2/src/proposals.rs",
+     "line_start": 594,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_denied",
+     "label": "test_remove_proposal_denied",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 295,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_allowed",
+     "label": "test_remove_proposal_allowed",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 313,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 14,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/types.rs::_module._sink_unwrap_82",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/types.rs",
+   "line_start": 82,
+   "line_end": 82,
+   "signature": "old_account_id.clone().parse().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/types.rs::convert_old_to_new_token",
+     "label": "convert_old_to_new_token",
+     "file": "sputnikdao2/src/types.rs",
+     "line_start": 78,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/upgrade.rs::_module._sink_expect_88",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/upgrade.rs",
+   "line_start": 88,
+   "line_end": 88,
+   "signature": "dao_id.find('.').expect(\"INTERNAL_FAIL\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/upgrade.rs::get_default_factory_id",
+     "label": "get_default_factory_id",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 85,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/upgrade.rs::internal_get_factory_info",
+     "label": "internal_get_factory_info",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 97,
+     "visibility": "pub(crate)",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/upgrade.rs::upgrade_using_factory",
+     "label": "upgrade_using_factory",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 245,
+     "visibility": "pub(crate)",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/upgrade.rs::update",
+     "label": "update",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 131,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/upgrade.rs::_module._sink_unwrap_92",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/upgrade.rs",
+   "line_start": 92,
+   "line_end": 92,
+   "signature": "factory_id.parse().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/upgrade.rs::get_default_factory_id",
+     "label": "get_default_factory_id",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 85,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/upgrade.rs::internal_get_factory_info",
+     "label": "internal_get_factory_info",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 97,
+     "visibility": "pub(crate)",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/upgrade.rs::upgrade_using_factory",
+     "label": "upgrade_using_factory",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 245,
+     "visibility": "pub(crate)",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/upgrade.rs::update",
+     "label": "update",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 131,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/upgrade.rs::_module._sink_expect_156",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/upgrade.rs",
+   "line_start": 156,
+   "line_end": 156,
+   "signature": "env::input().expect(\"ERR_NO_INPUT\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/upgrade.rs::update",
+     "label": "update",
+     "file": "sputnikdao2/src/upgrade.rs",
+     "line_start": 131,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/views.rs::Contract._sink_unwrap_33",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/views.rs",
+   "line_start": 33,
+   "line_end": 33,
+   "signature": "self.config.get().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/views.rs::Contract::get_config",
+     "label": "get_config",
+     "file": "sputnikdao2/src/views.rs",
+     "line_start": 32,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/views.rs::Contract._sink_unwrap_38",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/views.rs",
+   "line_start": 38,
+   "line_end": 38,
+   "signature": "self.policy.get().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/views.rs::Contract::get_policy",
+     "label": "get_policy",
+     "file": "sputnikdao2/src/views.rs",
+     "line_start": 37,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_add_to_missing_role",
+     "label": "test_add_to_missing_role",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 402,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "sputnikdao2/src/views.rs::Contract._sink_expect_100",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/views.rs",
+   "line_start": 100,
+   "line_end": 100,
+   "signature": "self.proposals.get(&id).expect(\"ERR_NO_PROPOSAL\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/views.rs::Contract::get_proposal",
+     "label": "get_proposal",
+     "file": "sputnikdao2/src/views.rs",
+     "line_start": 99,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::add_bounty",
+     "label": "add_bounty",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 210,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/bounties.rs::tests::test_bounty_lifecycle",
+     "label": "test_bounty_lifecycle",
+     "file": "sputnikdao2/src/bounties.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_basics",
+     "label": "test_basics",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 236,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_denied",
+     "label": "test_remove_proposal_denied",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 295,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_remove_proposal_allowed",
+     "label": "test_remove_proposal_allowed",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 313,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_vote_expired_proposal",
+     "label": "test_vote_expired_proposal",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 333,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "sputnikdao2/src/lib.rs::tests::test_vote_twice",
+     "label": "test_vote_twice",
+     "file": "sputnikdao2/src/lib.rs",
+     "line_start": 356,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 11,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "sputnikdao2/src/views.rs::Contract._sink_expect_109",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "sputnikdao2/src/views.rs",
+   "line_start": 109,
+   "line_end": 109,
+   "signature": "self.bounties.get(&id).expect(\"ERR_NO_BOUNTY\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "sputnikdao2/src/views.rs::Contract::get_bounty",
+     "label": "get_bounty",
+     "file": "sputnikdao2/src/views.rs",
+     "line_start": 108,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  }
+ ],
+ "caller_truncated": true,
+ "caller_truncated_sinks": 14,
+ "_warnings": [
+  "Some caller lists were capped. Set max_callers_per_sink=0 for exhaustive caller reachability."
+ ]
+}

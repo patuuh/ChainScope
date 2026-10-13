@@ -1,0 +1,69 @@
+{
+ "missing_validation": [
+  {
+   "function": "constructor",
+   "file": "contracts/Craftsman.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "emergencyWithdraw",
+   "file": "contracts/Craftsman.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "contracts/CraftsmanAdmin.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "contracts/VVSInitMintable.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "contracts/VVSToken.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "contracts/VVSVault.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "contracts/Workbench.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "blockAndAggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "visibility": "public",
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 8,
+  "shown_findings": 8,
+  "categories": [
+   "missing_validation"
+  ],
+  "category_totals": {
+   "missing_validation": 8
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

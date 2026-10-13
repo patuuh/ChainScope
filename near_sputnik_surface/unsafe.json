@@ -1,0 +1,391 @@
+{
+ "panic_sinks": [
+  {
+   "function": "storage_deposit",
+   "file": "sputnik-staking/src/storage_impl.rs",
+   "panic_calls": [
+    "unwrap_or_else",
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "storage_withdraw",
+   "file": "sputnik-staking/src/storage_impl.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_deserialize_serialize",
+   "file": "sputnik-staking/src/storage_impl.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "undelegate",
+   "file": "sputnik-staking/src/user.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "internal_get_user",
+   "file": "sputnik-staking/src/user.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "store_contract",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "panic_calls": [
+    "expect",
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_code",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_contract",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "create",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "unwrap",
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_owner",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "unwrap",
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_default_code_hash",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_default_version",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "store_contract_metadata",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "delete_contract_metadata",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_contracts_metadata",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_create_error",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_basics",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_owner_can_be_a_dao_account",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "internal_execute_bounty_payout",
+   "file": "sputnikdao2/src/bounties.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bounty_claim",
+   "file": "sputnikdao2/src/bounties.rs",
+   "panic_calls": [
+    "expect",
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "internal_remove_claim",
+   "file": "sputnikdao2/src/bounties.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "internal_get_claims",
+   "file": "sputnikdao2/src/bounties.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bounty_done",
+   "file": "sputnikdao2/src/bounties.rs",
+   "panic_calls": [
+    "unwrap_or_else"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bounty_giveup",
+   "file": "sputnikdao2/src/bounties.rs",
+   "panic_calls": [
+    "unwrap"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "register_delegation",
+   "file": "sputnikdao2/src/delegation.rs",
+   "panic_calls": [
+    "expect"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "missing_validation": [
+  {
+   "function": "new",
+   "file": "sputnik-staking/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "ft_balance_of",
+   "file": "sputnik-staking/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_user",
+   "file": "sputnik-staking/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "delegate",
+   "file": "sputnik-staking/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "undelegate",
+   "file": "sputnik-staking/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "sputnik-staking/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "sputnik-staking/src/user.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "deposit",
+   "file": "sputnik-staking/src/user.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "internal_get_user",
+   "file": "sputnik-staking/src/user.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "internal_get_user_opt",
+   "file": "sputnik-staking/src/user.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "save_user",
+   "file": "sputnik-staking/src/user.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "internal_register_user",
+   "file": "sputnik-staking/src/user.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "internal_deposit",
+   "file": "sputnik-staking/src/user.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "internal_undelegate",
+   "file": "sputnik-staking/src/user.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "delete_contract",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_code",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "update_contract",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "create",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "on_create",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_daos",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_code",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "bounty_giveup",
+   "file": "sputnikdao2/src/bounties.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "get_user_weight",
+   "file": "sputnikdao2/src/delegation.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "sputnikdao2/src/lib.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  },
+  {
+   "function": "match_user",
+   "file": "sputnikdao2/src/policy.rs",
+   "visibility": "pub",
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 103,
+  "shown_findings": 50,
+  "categories": [
+   "panic_sinks",
+   "missing_validation"
+  ],
+  "category_totals": {
+   "panic_sinks": 58,
+   "missing_validation": 45
+  },
+  "truncated_categories": {
+   "panic_sinks": {
+    "shown": 25,
+    "total": 58,
+    "hidden": 33
+   },
+   "missing_validation": {
+    "shown": 25,
+    "total": 45,
+    "hidden": 20
+   }
+  },
+  "truncated": true,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

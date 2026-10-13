@@ -1,0 +1,202 @@
+{
+ "oracle_manipulation": [
+  {
+   "function": "mintAndBridge",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 97,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "dai.balanceOf",
+     "line": 122
+    },
+    {
+     "type": "spot_price_read",
+     "call": "usdc.balanceOf",
+     "line": 131
+    },
+    {
+     "type": "spot_price_read",
+     "call": "usdt.balanceOf",
+     "line": 135
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdrawBaseToken",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 98,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "_amount > baseToken.balanceOf",
+     "line": 103
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "frontrunning": [
+  {
+   "function": "constructor",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 41,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "dai.approve",
+     "line": 63
+    },
+    {
+     "type": "approve_race",
+     "target": "ITetherToken(_usdt).approve",
+     "line": 64
+    },
+    {
+     "type": "approve_race",
+     "target": "usdc.approve",
+     "line": 65
+    },
+    {
+     "type": "approve_race",
+     "target": "ybUSD.approve",
+     "line": 67
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pause",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 71,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "dai.approve",
+     "line": 72
+    },
+    {
+     "type": "approve_race",
+     "target": "ITetherToken(address(usdt)).approve",
+     "line": 73
+    },
+    {
+     "type": "approve_race",
+     "target": "usdc.approve",
+     "line": 74
+    },
+    {
+     "type": "approve_race",
+     "target": "ybUSD.approve",
+     "line": 75
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unpause",
+   "file": "0x17dacad8/YBUSDBridge.sol",
+   "line": 80,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "dai.approve",
+     "line": 81
+    },
+    {
+     "type": "approve_race",
+     "target": "ITetherToken(address(usdt)).approve",
+     "line": 82
+    },
+    {
+     "type": "approve_race",
+     "target": "usdc.approve",
+     "line": 83
+    },
+    {
+     "type": "approve_race",
+     "target": "ybUSD.approve",
+     "line": 84
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approveBaseToken",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 113,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "baseToken.approve",
+     "line": 122
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_bridgeErc20",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line": 250,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "IERC20(_token).approve",
+     "line": 265
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mintAndBridge",
+   "file": "0xded4dd6e/YbEthBridge.sol",
+   "line": 49,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "ybEth.approve",
+     "line": 69
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "mintAndBridge",
+   "file": "0xe69a5357/ZkCroMintAndBridge.sol",
+   "line": 88,
+   "risks": [
+    {
+     "type": "approve_race",
+     "target": "cro.approve",
+     "line": 104
+    },
+    {
+     "type": "approve_race",
+     "target": "zkCro.approve",
+     "line": 113
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 9,
+  "shown_findings": 9,
+  "categories": [
+   "oracle_manipulation",
+   "frontrunning"
+  ],
+  "category_totals": {
+   "oracle_manipulation": 2,
+   "frontrunning": 7
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

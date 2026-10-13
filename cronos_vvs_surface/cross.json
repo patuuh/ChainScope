@@ -1,0 +1,203 @@
+{
+ "total": 9,
+ "shown": 9,
+ "truncated": false,
+ "by_attribute": {
+  "sink": 5,
+  "unresolved": 4
+ },
+ "by_source_context": {
+  "production": 9
+ },
+ "top_source_files": [
+  {
+   "name": "contracts/Craftsman.sol",
+   "calls": 2
+  },
+  {
+   "name": "contracts/Workbench.sol",
+   "calls": 2
+  },
+  {
+   "name": "contracts/libs/Multicall2.sol",
+   "calls": 2
+  },
+  {
+   "name": "contracts/Timelock.sol",
+   "calls": 1
+  },
+  {
+   "name": "contracts/VVSVault.sol",
+   "calls": 1
+  },
+  {
+   "name": "contracts/libs/WCRO.sol",
+   "calls": 1
+  }
+ ],
+ "top_targets": [
+  {
+   "name": "transfer",
+   "calls": 3
+  },
+  {
+   "name": "call",
+   "calls": 2
+  },
+  {
+   "name": "contracts/Craftsman.sol::Craftsman.SUPPLY_PER_BLOCK",
+   "calls": 2
+  },
+  {
+   "name": "contracts/Timelock.sol::Timelock.value",
+   "calls": 1
+  },
+  {
+   "name": "userInfo",
+   "calls": 1
+  }
+ ],
+ "counter_summary": {
+  "max_counter_items": 10,
+  "source_contexts": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_source_files": {
+   "total": 6,
+   "shown": 6,
+   "truncated": false
+  },
+  "top_targets": {
+   "total": 5,
+   "shown": 5,
+   "truncated": false
+  },
+  "truncated": false
+ },
+ "max_attribute_bytes": 2048,
+ "attribute_truncated": false,
+ "attribute_truncated_calls": 0,
+ "calls": [
+  {
+   "source_label": "constructor",
+   "source_file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "target_label": "contracts/Craftsman.sol::Craftsman.SUPPLY_PER_BLOCK",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "SUPPLY_PER_BLOCK",
+    "interface": "vvs"
+   }
+  },
+  {
+   "source_label": "distributeSupply",
+   "source_file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "target_label": "contracts/Craftsman.sol::Craftsman.SUPPLY_PER_BLOCK",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "SUPPLY_PER_BLOCK",
+    "interface": "vvs"
+   }
+  },
+  {
+   "source_label": "executeTransaction",
+   "source_file": "contracts/Timelock.sol",
+   "source_context": "production",
+   "target_label": "contracts/Timelock.sol::Timelock.value",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 8,
+    "unresolved": true,
+    "call_name": "value",
+    "interface": "target"
+   }
+  },
+  {
+   "source_label": "balanceOf",
+   "source_file": "contracts/VVSVault.sol",
+   "source_context": "production",
+   "target_label": "userInfo",
+   "target_file": "contracts/VVSVault.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "userInfo",
+    "interface": "ICraftsman(craftsman)"
+   }
+  },
+  {
+   "source_label": "safeVVSTransfer",
+   "source_file": "contracts/Workbench.sol",
+   "source_context": "production",
+   "target_label": "transfer",
+   "target_file": "contracts/Workbench.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "safeVVSTransfer",
+   "source_file": "contracts/Workbench.sol",
+   "source_context": "production",
+   "target_label": "transfer",
+   "target_file": "contracts/Workbench.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "aggregate",
+   "source_file": "contracts/libs/Multicall2.sol",
+   "source_context": "production",
+   "target_label": "call",
+   "target_file": "contracts/libs/Multicall2.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "tryAggregate",
+   "source_file": "contracts/libs/Multicall2.sol",
+   "source_context": "production",
+   "target_label": "call",
+   "target_file": "contracts/libs/Multicall2.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "contracts/libs/WCRO.sol",
+   "source_context": "production",
+   "target_label": "transfer",
+   "target_file": "contracts/libs/WCRO.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  }
+ ],
+ "tool": "cs_cross_summary",
+ "query_scope": "all_sources",
+ "from_func": null,
+ "_next_steps": [
+  "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+  "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+  "Use direct source review on the top source files before treating this as a finding."
+ ]
+}

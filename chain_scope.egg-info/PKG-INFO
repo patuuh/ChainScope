@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: chain-scope
+Version: 1.0.0
+Summary: ChainScope - EVM knowledge graph and security analysis toolkit
+Requires-Python: >=3.12
+License-File: LICENSE
+Requires-Dist: typer>=0.9.0
+Requires-Dist: mcp[cli]<2,>=1.0.0
+Requires-Dist: tree-sitter>=0.21
+Requires-Dist: tree-sitter-solidity>=1.2.0
+Requires-Dist: tree-sitter-rust>=0.24.0
+Requires-Dist: tree-sitter-cpp>=0.23.0
+Requires-Dist: tree-sitter-go>=0.23.0
+Requires-Dist: tree-sitter-java>=0.23.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: httpx
+Requires-Dist: pyotp
+Dynamic: license-file

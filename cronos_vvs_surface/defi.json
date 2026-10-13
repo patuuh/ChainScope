@@ -1,0 +1,362 @@
+{
+ "timestamp_dependence": [
+  {
+   "function": "add",
+   "file": "contracts/Craftsman.sol",
+   "line": 114,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number > startBlock"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pendingVVS",
+   "file": "contracts/Craftsman.sol",
+   "line": 178,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number > pool"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "line": 201,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number <= pool"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "enableTransferOwnership",
+   "file": "contracts/CraftsmanAdmin.sol",
+   "line": 63,
+   "risks": [
+    {
+     "type": "timestamp_arithmetic",
+     "expression": "block.timestamp + TRANSFER_OWNERSHIP_TIMELOCK"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferOwnership",
+   "file": "contracts/CraftsmanAdmin.sol",
+   "line": 72,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp > transferOwnershipTimeLock"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "depositPool",
+   "file": "contracts/IGO.sol",
+   "line": 121,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number > startBlock"
+    },
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number < endBlock"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "harvestPool",
+   "file": "contracts/IGO.sol",
+   "line": 165,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number > endBlock"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setPool",
+   "file": "contracts/IGO.sol",
+   "line": 254,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number < startBlock"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "updateCampaignId",
+   "file": "contracts/IGO.sol",
+   "line": 277,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number < endBlock"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "updateStartAndEndBlocks",
+   "file": "contracts/IGO.sol",
+   "line": 292,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number < startBlock"
+    },
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.number < _startBlock"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "distributeSupply",
+   "file": "contracts/VVSInitMintable.sol",
+   "line": 27,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp >= nextDistributionTimestamp"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "contracts/VVSVault.sol",
+   "line": 305,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp < user"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "getLastBlockHash",
+   "file": "contracts/libs/Multicall2.sol",
+   "line": 53,
+   "risks": [
+    {
+     "type": "timestamp_arithmetic",
+     "expression": "block.number - 1"
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "unchecked_erc20": [
+  {
+   "function": "withdraw",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 23,
+   "unchecked_calls": [
+    {
+     "target": "msg.sender.transfer",
+     "line": 26
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "oracle_manipulation": [
+  {
+   "function": "migrate",
+   "file": "contracts/Craftsman.sol",
+   "line": 161,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "lpToken.balanceOf",
+     "line": 165
+    },
+    {
+     "type": "spot_price_read",
+     "call": "bal == newLpToken.balanceOf",
+     "line": 168
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pendingVVS",
+   "file": "contracts/Craftsman.sol",
+   "line": 178,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "pool.lpToken.balanceOf",
+     "line": 182
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "line": 201,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "pool.lpToken.balanceOf",
+     "line": 206
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "finalWithdraw",
+   "file": "contracts/IGO.sol",
+   "line": 214,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "_lpAmount <= lpToken.balanceOf",
+     "line": 215
+    },
+    {
+     "type": "spot_price_read",
+     "call": "_offerAmount <= offeringToken.balanceOf",
+     "line": 216
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "recoverWrongTokens",
+   "file": "contracts/IGO.sol",
+   "line": 235,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "_tokenAmount <= IERC20(_tokenAddress).balanceOf",
+     "line": 238
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "inCaseTokensGetStuck",
+   "file": "contracts/VVSVault.sol",
+   "line": 245,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "IERC20(_token).balanceOf",
+     "line": 249
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "available",
+   "file": "contracts/VVSVault.sol",
+   "line": 348,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "token.balanceOf",
+     "line": 349
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "balanceOf",
+   "file": "contracts/VVSVault.sol",
+   "line": 356,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "token.balanceOf",
+     "line": 358
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "safeVVSTransfer",
+   "file": "contracts/Workbench.sol",
+   "line": 29,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "vvs.balanceOf",
+     "line": 30
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "dos_risks": [
+  {
+   "function": "aggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "line": 20,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "calls[i].target.call",
+     "line": 24
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "tryAggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "line": 56,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "calls[i].target.call",
+     "line": 59
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 25,
+  "shown_findings": 25,
+  "categories": [
+   "timestamp_dependence",
+   "unchecked_erc20",
+   "oracle_manipulation",
+   "dos_risks"
+  ],
+  "category_totals": {
+   "timestamp_dependence": 13,
+   "unchecked_erc20": 1,
+   "oracle_manipulation": 9,
+   "dos_risks": 2
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

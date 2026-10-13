@@ -13,5 +13,5 @@ else
     PYTHON="$(command -v python3)"
 fi
 
-export PYTHONPATH="$SCRIPT_DIR"
+export PYTHONPATH="$SCRIPT_DIR:$SCRIPT_DIR/cli"
 exec "$PYTHON" "$SCRIPT_DIR/mcp_server.py" "$@"

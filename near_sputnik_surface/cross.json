@@ -1,0 +1,431 @@
+{
+ "total": 542,
+ "shown": 25,
+ "truncated": true,
+ "by_attribute": {
+  "unresolved": 498,
+  "sink": 44
+ },
+ "by_source_context": {
+  "production": 542
+ },
+ "top_source_files": [
+  {
+   "name": "sputnikdao-factory2/src/lib.rs",
+   "calls": 87
+  },
+  {
+   "name": "sputnikdao2/src/proposals.rs",
+   "calls": 72
+  },
+  {
+   "name": "sputnikdao2/src/policy.rs",
+   "calls": 59
+  },
+  {
+   "name": "sputnikdao2/src/lib.rs",
+   "calls": 54
+  },
+  {
+   "name": "sputnikdao2/src/upgrade.rs",
+   "calls": 49
+  },
+  {
+   "name": "sputnikdao2/src/bounties.rs",
+   "calls": 43
+  },
+  {
+   "name": "sputnikdao2/src/views.rs",
+   "calls": 39
+  },
+  {
+   "name": "sputnik-staking/src/user.rs",
+   "calls": 32
+  },
+  {
+   "name": "sputnikdao-factory2/src/factory_manager.rs",
+   "calls": 31
+  },
+  {
+   "name": "sputnik-staking/src/storage_impl.rs",
+   "calls": 30
+  }
+ ],
+ "top_targets": [
+  {
+   "name": "expect",
+   "calls": 27
+  },
+  {
+   "name": "unwrap",
+   "calls": 14
+  },
+  {
+   "name": "sputnikdao-factory2/src/lib.rs::_unresolved::into",
+   "calls": 12
+  },
+  {
+   "name": "sputnikdao-factory2/src/lib.rs::_unresolved::to_vec",
+   "calls": 10
+  },
+  {
+   "name": "sputnikdao2/src/lib.rs::_unresolved::Default",
+   "calls": 9
+  },
+  {
+   "name": "sputnikdao2/src/views.rs::_unresolved::get",
+   "calls": 9
+  },
+  {
+   "name": "sputnikdao2/src/proposals.rs::_unresolved::into",
+   "calls": 8
+  },
+  {
+   "name": "sputnikdao-factory2/src/lib.rs::_unresolved::storage_write",
+   "calls": 7
+  },
+  {
+   "name": "sputnikdao2/src/policy.rs::_unresolved::clone",
+   "calls": 7
+  },
+  {
+   "name": "sputnikdao-factory2/src/lib.rs::_unresolved::storage_read",
+   "calls": 6
+  }
+ ],
+ "counter_summary": {
+  "max_counter_items": 10,
+  "source_contexts": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_source_files": {
+   "total": 14,
+   "shown": 10,
+   "truncated": true
+  },
+  "top_targets": {
+   "total": 278,
+   "shown": 10,
+   "truncated": true
+  },
+  "truncated": true
+ },
+ "max_attribute_bytes": 2048,
+ "attribute_truncated": false,
+ "attribute_truncated_calls": 0,
+ "calls": [
+  {
+   "source_label": "test_basics",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "test_basics",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::as_yoctonear",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "as_yoctonear"
+   }
+  },
+  {
+   "source_label": "test_basics",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::from_near",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "from_near"
+   }
+  },
+  {
+   "source_label": "delegate",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::predecessor_account_id",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "predecessor_account_id"
+   }
+  },
+  {
+   "source_label": "delegate",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::with_static_gas",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "with_static_gas"
+   }
+  },
+  {
+   "source_label": "delegate",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::ext",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "ext"
+   }
+  },
+  {
+   "source_label": "delegate",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "undelegate",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::predecessor_account_id",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "predecessor_account_id"
+   }
+  },
+  {
+   "source_label": "undelegate",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::with_static_gas",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "with_static_gas"
+   }
+  },
+  {
+   "source_label": "undelegate",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::ext",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "ext"
+   }
+  },
+  {
+   "source_label": "undelegate",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::predecessor_account_id",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "predecessor_account_id"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::then",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "then"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::ft_transfer",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "ft_transfer"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::with_attached_deposit",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "with_attached_deposit"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::from_yoctonear",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "from_yoctonear"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::with_static_gas",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "with_static_gas"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::ext",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "ext"
+   }
+  },
+  {
+   "source_label": "withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::current_account_id",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "current_account_id"
+   }
+  },
+  {
+   "source_label": "exchange_callback_post_withdraw",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::is_promise_success",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "is_promise_success"
+   }
+  },
+  {
+   "source_label": "ft_on_transfer",
+   "source_file": "sputnik-staking/src/lib.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/lib.rs::_unresolved::Value",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "Value"
+   }
+  },
+  {
+   "source_label": "test_deserialize_serialize",
+   "source_file": "sputnik-staking/src/storage_impl.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/storage_impl.rs::_unresolved::from_near",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "from_near"
+   }
+  },
+  {
+   "source_label": "test_deserialize_serialize",
+   "source_file": "sputnik-staking/src/storage_impl.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/storage_impl.rs::_unresolved::serialize",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "serialize"
+   }
+  },
+  {
+   "source_label": "test_deserialize_serialize",
+   "source_file": "sputnik-staking/src/storage_impl.rs",
+   "source_context": "production",
+   "target_label": "sputnik-staking/src/storage_impl.rs::_unresolved::as_slice",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "as_slice"
+   }
+  }
+ ],
+ "tool": "cs_cross_summary",
+ "query_scope": "all_sources",
+ "from_func": null,
+ "_next_steps": [
+  "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+  "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+  "Use direct source review on the top source files before treating this as a finding."
+ ],
+ "_warnings": [
+  "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
+ ]
+}

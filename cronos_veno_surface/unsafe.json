@@ -1,0 +1,33 @@
+{
+ "missing_validation": [
+  {
+   "function": "constructor",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "0xded4dd6e/YbEthBridge.sol",
+   "visibility": "public",
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 2,
+  "shown_findings": 2,
+  "categories": [
+   "missing_validation"
+  ],
+  "category_totals": {
+   "missing_validation": 2
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

@@ -1,0 +1,267 @@
+{
+ "query_scope": "all_sources",
+ "stats": {
+  "nodes": 18,
+  "edges": 18,
+  "functions": 8,
+  "state_vars": 5,
+  "files": 1,
+  "transitions": 0,
+  "entry_points": 7,
+  "guarded_entry_points": 0,
+  "unguarded_entry_points": 7,
+  "sinks": 1,
+  "node_types": {
+   "function": 8,
+   "state_var": 5,
+   "event": 4,
+   "contract": 1
+  },
+  "edge_relations": {
+   "reads_state": 5,
+   "writes_state": 5,
+   "calls": 4,
+   "emits_event": 4
+  }
+ },
+ "build_info": {
+  "repo_path": "/home/charad7/Developments/Personal/Hacks/Immunefi/ChainScope/.chainsource/hacken-cronos-smart-contracts",
+  "detected_chain": "solidity",
+  "all_chains": [
+   "solidity"
+  ],
+  "lang_override": "solidity",
+  "include_research": false,
+  "built_at": "2026-09-23T21:42:13.440553+00:00",
+  "files_considered": 1,
+  "files_indexed": 1,
+  "extractor_runs": 1,
+  "extractor_failures": 0,
+  "failed_files": 0,
+  "failure_examples": [],
+  "timed_out": false,
+  "max_files": null,
+  "nodes": 18,
+  "edges": 19,
+  "transitions": 0,
+  "confidence": {
+   "score": 100.0,
+   "tier": "high",
+   "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse"
+  }
+ },
+ "detections": {
+  "unchecked_arithmetic": 3,
+  "unchecked_erc20": 1
+ },
+ "source_context_summary": {
+  "production": 8
+ },
+ "source_context_summary_info": {
+  "total": 1,
+  "shown": 1,
+  "truncated": false
+ },
+ "attack_surface": [
+  {
+   "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO.withdraw(uint)",
+   "label": "withdraw",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "signature": "function withdraw(uint wad) public",
+   "reachable_count": 4,
+   "state_writes": 3
+  },
+  {
+   "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO.transfer(address,uint)",
+   "label": "transfer",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "signature": "function transfer(address dst, uint wad) public",
+   "reachable_count": 2,
+   "state_writes": 2
+  },
+  {
+   "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO.transferFrom(address,address,uint)",
+   "label": "transferFrom",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "signature": "function transferFrom(address src, address dst, uint wad) public",
+   "reachable_count": 1,
+   "state_writes": 2
+  },
+  {
+   "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO.receive",
+   "label": "receive",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "signature": "receive()",
+   "reachable_count": 2,
+   "state_writes": 1
+  },
+  {
+   "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO.deposit",
+   "label": "deposit",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "signature": "function deposit() public",
+   "reachable_count": 1,
+   "state_writes": 1
+  },
+  {
+   "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO.approve(address,uint)",
+   "label": "approve",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "signature": "function approve(address guy, uint wad) public",
+   "reachable_count": 1,
+   "state_writes": 1
+  },
+  {
+   "id": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol::WCRO.totalSupply",
+   "label": "totalSupply",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "signature": "function totalSupply() public",
+   "reachable_count": 1,
+   "state_writes": 0
+  }
+ ],
+ "critical_hotspots": [
+  {
+   "function": "withdraw",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 41,
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "unchecked_erc20(1)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "deposit",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 37,
+   "score": 7,
+   "reasons": [
+    "entry+writes(1)",
+    "unchecked_arith",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approve",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 52,
+   "score": 5,
+   "reasons": [
+    "entry+writes(1)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferFrom",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "line": 62,
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "hotspot_summary": {
+  "total_scored": 4,
+  "critical_8plus": 1,
+  "high_5to7": 3
+ },
+ "taint_paths": [
+  {
+   "entry": "withdraw",
+   "file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 1,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  }
+ ],
+ "taint_summary": {
+  "total": 1,
+  "high_risk": 1
+ },
+ "sink_summary": {
+  "by_type": {
+   "fund_transfer": 1
+  },
+  "reachable_functions": {
+   "fund_transfer": 2
+  }
+ },
+ "dead_code": {
+  "dead_internal_total": 0,
+  "direct_entry_points_total": 2
+ },
+ "defi_summary": {
+  "unchecked_erc20": 1
+ },
+ "_summary": {
+  "top": 25,
+  "query_scope": "all_sources",
+  "include_metadata": false,
+  "include_dead_code_details": false,
+  "max_metadata_bytes": 4096,
+  "max_source_contexts": 20,
+  "sections": {
+   "attack_surface": {
+    "total": 7,
+    "shown": 7,
+    "truncated": false
+   },
+   "critical_hotspots": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   },
+   "reentrancy": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "taint_paths": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   },
+   "access_control_gaps": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "silent_state_changes": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "dead_code.dead_internal": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "dead_code.direct_entry_points": {
+    "total": 2,
+    "shown": 0,
+    "truncated": true
+   }
+  },
+  "truncated_sections": [
+   "dead_code.direct_entry_points"
+  ],
+  "truncated": true,
+  "_hint": "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+ }
+}

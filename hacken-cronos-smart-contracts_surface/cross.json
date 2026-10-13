@@ -1,0 +1,66 @@
+{
+ "total": 1,
+ "shown": 1,
+ "truncated": false,
+ "by_attribute": {
+  "sink": 1
+ },
+ "by_source_context": {
+  "production": 1
+ },
+ "top_source_files": [
+  {
+   "name": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "calls": 1
+  }
+ ],
+ "top_targets": [
+  {
+   "name": "transfer",
+   "calls": 1
+  }
+ ],
+ "counter_summary": {
+  "max_counter_items": 10,
+  "source_contexts": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_source_files": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_targets": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "truncated": false
+ },
+ "max_attribute_bytes": 2048,
+ "attribute_truncated": false,
+ "attribute_truncated_calls": 0,
+ "calls": [
+  {
+   "source_label": "withdraw",
+   "source_file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "source_context": "production",
+   "target_label": "transfer",
+   "target_file": "25/0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23/WCRO.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  }
+ ],
+ "tool": "cs_cross_summary",
+ "query_scope": "all_sources",
+ "from_func": null,
+ "_next_steps": [
+  "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+  "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+  "Use direct source review on the top source files before treating this as a finding."
+ ]
+}

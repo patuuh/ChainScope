@@ -1,0 +1,417 @@
+{
+ "timestamp_dependence": [
+  {
+   "function": "calcUnrealisedDebt",
+   "file": "src/LendingPool.sol",
+   "line": 766,
+   "risks": [
+    {
+     "type": "timestamp_arithmetic",
+     "expression": "block.timestamp - lastSyncedBlockTimestamp"
+    },
+    {
+     "type": "timestamp_arithmetic",
+     "expression": "block.timestamp - lastSyncedTimestamp"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_calculateBidPrice",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 438,
+   "risks": [
+    {
+     "type": "timestamp_arithmetic",
+     "expression": "block.timestamp - auctionInformation_"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_settleAuction",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 508,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp > auctionInformation_"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_calculateBidPrice",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 500,
+   "risks": [
+    {
+     "type": "timestamp_arithmetic",
+     "expression": "block.timestamp - auctionInformation_"
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_settleAuction",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 577,
+   "risks": [
+    {
+     "type": "timestamp_comparison",
+     "expression": "block.timestamp > auctionInformation_"
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "oracle_manipulation": [
+  {
+   "function": "skim",
+   "file": "src/LendingPool.sol",
+   "line": 711,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "asset.balanceOf",
+     "line": 718
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "maxWithdraw",
+   "file": "src/Tranche.sol",
+   "line": 435,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "asset.balanceOf",
+     "line": 438
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "maxRedeem",
+   "file": "src/Tranche.sol",
+   "line": 447,
+   "risks": [
+    {
+     "type": "spot_price_read",
+     "call": "asset.balanceOf",
+     "line": 452
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSequencerUpTime",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 143,
+   "risks": [
+    {
+     "type": "oracle_read",
+     "call": "latestRoundData",
+     "line": 144
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "precision_loss": [
+  {
+   "function": "pow",
+   "file": "src/libraries/LogExpMath.sol",
+   "line": 95,
+   "risks": [
+    {
+     "type": "division_before_multiplication",
+     "expression": "(ln_36_x / ONE_18) * y_int256",
+     "line": 128
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "exp",
+   "file": "src/libraries/LogExpMath.sol",
+   "line": 149,
+   "risks": [
+    {
+     "type": "division_before_multiplication",
+     "expression": "((product * seriesSum) / ONE_20) * firstAN",
+     "line": 283
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "dos_risks": [
+  {
+   "function": "_syncInterestsToLiquidityProviders",
+   "file": "src/LendingPool.sol",
+   "line": 794,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "assets.mulDivDown",
+     "line": 807
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processDefault",
+   "file": "src/LendingPool.sol",
+   "line": 1120,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "ITranche(tranche).lock",
+     "line": 1148
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 259,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "assetValues[i].assetValue.mulDivUp",
+     "line": 278
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_calculateTotalShare",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 403,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "bidAmounts[i].mulDivUp",
+     "line": 414
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 312,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "assetValues[i].assetValue.mulDivUp",
+     "line": 331
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_calculateTotalShare",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 465,
+   "risks": [
+    {
+     "type": "external_call_in_loop",
+     "call": "bidAmounts[i].mulDivUp",
+     "line": 476
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "unsafe_downcasts": [
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 232
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setInterestWeightTranche",
+   "file": "src/LendingPool.sol",
+   "line": 245,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 253
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "totalAssets",
+   "file": "src/LendingPool.sol",
+   "line": 635,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 639
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "totalLiquidity",
+   "file": "src/LendingPool.sol",
+   "line": 650,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 654
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "liquidityOf",
+   "file": "src/LendingPool.sol",
+   "line": 685,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 689
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_syncInterests",
+   "file": "src/LendingPool.sol",
+   "line": 736,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 739
+    },
+    {
+     "type": "uint32",
+     "line": 742
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pause",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "line": 113,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 115
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAuctionCurveParameters",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 164,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 178
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 259,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 278
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAuctionCurveParameters",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 216,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 230
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 312,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 331
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bid",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 381,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 392
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "endAuction",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 540,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 550
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 30,
+  "shown_findings": 30,
+  "categories": [
+   "timestamp_dependence",
+   "oracle_manipulation",
+   "precision_loss",
+   "dos_risks",
+   "unsafe_downcasts"
+  ],
+  "category_totals": {
+   "timestamp_dependence": 5,
+   "oracle_manipulation": 4,
+   "precision_loss": 2,
+   "dos_risks": 6,
+   "unsafe_downcasts": 13
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

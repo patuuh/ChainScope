@@ -1,0 +1,312 @@
+{
+ "hotspots": [
+  {
+   "function": "delegate",
+   "file": "sputnik-staking/src/lib.rs",
+   "line": 90,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "undelegate",
+   "file": "sputnik-staking/src/lib.rs",
+   "line": 99,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "sputnik-staking/src/lib.rs",
+   "line": 109,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(9)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "sputnik-staking/src/user.rs",
+   "line": 35,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "internal_get_user_opt",
+   "file": "sputnik-staking/src/user.rs",
+   "line": 137,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "save_user",
+   "file": "sputnik-staking/src/user.rs",
+   "line": 145,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "internal_register_user",
+   "file": "sputnik-staking/src/user.rs",
+   "line": 150,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(8)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "delete_contract",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line": 39,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_code",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line": 44,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_contract",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line": 53,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(6)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "create",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line": 72,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "on_create",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line": 91,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_daos",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line": 133,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(6)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_code",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line": 190,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bounty_giveup",
+   "file": "sputnikdao2/src/bounties.rs",
+   "line": 179,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(7)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_user_weight",
+   "file": "sputnikdao2/src/delegation.rs",
+   "line": 4,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "sputnikdao2/src/lib.rs",
+   "line": 98,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "match_user",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 26,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "to_weight",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 98,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "add_or_update_role",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 246,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(5)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "remove_role",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 261,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_default_vote_policy",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 271,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_parameters",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 276,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "add_member_to_role",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 292,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "remove_member_from_role",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 307,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_scored": 138,
+  "critical_8plus": 0,
+  "high_5to7": 36,
+  "medium_3to4": 102,
+  "top_shown": 25,
+  "query_scope": "all_sources"
+ }
+}

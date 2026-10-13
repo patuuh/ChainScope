@@ -28,7 +28,7 @@ from mcp.server.fastmcp import FastMCP
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 logger = logging.getLogger("chainscope")
 
-mcp = FastMCP("chainscope")
+mcp = FastMCP("chainscope", host=os.environ.get("HOST", "0.0.0.0"), port=int(os.environ.get("PORT", 8000)))
 
 # Default DB path — can be overridden per-call
 DEFAULT_DB = os.environ.get("CHAINSCOPE_DB", os.environ.get("CHAINSCOPE_DB", "graph.db"))
@@ -235,16 +235,29 @@ def _find_state_vars_bounded(
 ) -> tuple[list[dict], int, bool]:
     """Find matching state variables while retaining only rows needed by callers."""
     columns = "id, label, file, signature, metadata"
+    escaped = var.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     queries = (
         (
             f"SELECT {columns} FROM nodes "
             "WHERE type = 'state_var' AND label = ? ORDER BY file, id",
             (var,),
         ),
+        # Struct field / namespaced-storage field: label ends with ".<var>"
         (
             f"SELECT {columns} FROM nodes "
-            "WHERE type = 'state_var' AND label LIKE ? ORDER BY file, id",
-            (f"%{var}%",),
+            "WHERE type = 'state_var' AND label LIKE ? ESCAPE '\\' ORDER BY file, id",
+            (f"%.{escaped}",),
+        ),
+        # Struct field declared under a different label but with a matching field name
+        (
+            f"SELECT {columns} FROM nodes "
+            "WHERE type = 'state_var' AND metadata LIKE ? ESCAPE '\\' ORDER BY file, id",
+            (f'%"field":"{escaped}"%',),
+        ),
+        (
+            f"SELECT {columns} FROM nodes "
+            "WHERE type = 'state_var' AND label LIKE ? ESCAPE '\\' ORDER BY file, id",
+            (f"%{escaped}%",),
         ),
     )
     for sql, params in queries:
@@ -2392,7 +2405,15 @@ def _metadata_has_any_key(raw, keys: tuple[str, ...]) -> bool:
 
 def _has_access_control(meta: dict, guard_count: int) -> bool:
     """Treat modifiers, graph guard edges, and inferred inline role checks as access control."""
-    return bool(guard_count or meta.get("modifiers") or meta.get("role_guards") or meta.get("access_controls"))
+    return bool(
+        guard_count
+        or meta.get("modifiers")
+        or meta.get("role_guards")
+        or meta.get("sender_guards")
+        or meta.get("call_guards")
+        or meta.get("signature_guards")
+        or meta.get("access_controls")
+    )
 
 
 _HOTSPOT_SCORE_METADATA_KEYS = (
@@ -2428,6 +2449,9 @@ _HOTSPOT_SCORE_METADATA_KEYS = (
     "pure",
     "reentrancy_risk",
     "role_guards",
+    "sender_guards",
+    "call_guards",
+    "signature_guards",
     "signature_risk",
     "slippage_risk",
     "sql_injection_risk",
@@ -3598,7 +3622,6 @@ def cs_defi(
             "flash_loan_risk",
             "slippage_risk",
             "erc_callback_risk",
-            "anchor_risks",
             "cpi_reentrancy_risk",
             "transfer_sinks",
             "cross_contract_calls",
@@ -4482,6 +4505,38 @@ def cs_sinks(
         conn.close()
 
 
+_SINK_TYPE_ALIASES = {
+    "transfer": "fund_transfer",
+    "send": "fund_transfer",
+    "fund_transfer": "fund_transfer",
+    "fund-transfer": "fund_transfer",
+    "call": "low_level_call",
+    "low_level_call": "low_level_call",
+    "low-level-call": "low_level_call",
+    "delegatecall": "delegate",
+    "delegate": "delegate",
+    "selfdestruct": "self_destruct",
+    "self_destruct": "self_destruct",
+}
+
+
+def _find_sink_nodes_by_type(conn, sink_type: str, exclude_research: bool, limit: int):
+    """Return sink nodes whose metadata sink_type matches (e.g. 'fund_transfer')."""
+    columns = "id, label, file, signature, metadata, visibility"
+    rows: list[dict] = []
+    total = 0
+    for row in conn.execute(
+        f"SELECT {columns} FROM nodes WHERE type = 'function' AND metadata LIKE ?",
+        (f'%"sink_type": "{sink_type}"%',),
+    ):
+        if exclude_research and _is_research_metadata_raw(row["metadata"]):
+            continue
+        if limit == 0 or len(rows) < limit:
+            rows.append(dict(row))
+        total += 1
+    return rows, total
+
+
 @mcp.tool()
 def cs_paths(
     from_label: str,
@@ -4497,6 +4552,7 @@ def cs_paths(
     show_state: bool = False,
     exclude_research: bool = False,
     timeout_seconds: int = 0,
+    to_sink_type: str = "",
 ) -> str:
     """Find call paths between two functions in the knowledge graph.
 
@@ -4517,6 +4573,8 @@ def cs_paths(
         show_state: Annotate each hop with state variable reads/writes
         exclude_research: Exclude nodes originating from research-mode files
         timeout_seconds: Optional SQLite query budget before returning an error (0 disables)
+        to_sink_type: Also treat every sink node of this type (e.g. "fund_transfer",
+            "low_level_call", "delegate") as a target endpoint.
     """
     if max_paths < 0:
         max_paths = 0
@@ -4567,6 +4625,21 @@ def cs_paths(
             exclude_research,
             endpoint_retain_limit,
         )
+
+        # Sink-type endpoints: let `--to transfer` (and `--to-sink fund_transfer`)
+        # also match low-level `call`/`send` sinks by their semantic sink type,
+        # so external-call fund flows are reachable as path targets.
+        sink_type = to_sink_type or _SINK_TYPE_ALIASES.get(to_label.strip().lower(), "")
+        if sink_type:
+            sink_rows, sink_total = _find_sink_nodes_by_type(
+                conn, sink_type, exclude_research, endpoint_retain_limit
+            )
+            existing_ids = {n["id"] for n in to_nodes}
+            for row in sink_rows:
+                if row["id"] not in existing_ids:
+                    to_nodes.append(row)
+                    existing_ids.add(row["id"])
+            to_matches_total += sink_total
 
         for node in from_nodes + to_nodes:
             node_by_id[node["id"]] = node
@@ -6158,6 +6231,229 @@ def cs_lookup(
         )
     finally:
         conn.close()
+
+
+# ============================================================================
+# Shinobi offensive-security surface (Phases 1-6)
+# ============================================================================
+
+def _shinobi_payload(data):
+    import json as _json
+    return _json.dumps(data, default=str)
+
+
+@mcp.tool()
+def google_programs(min_bounty: float = 0.0) -> str:
+    """List Google VRP programs.
+    
+    Args:
+        min_bounty: Minimum max bounty filter.
+    """
+    from cli.cs_google import _load, _row
+    import json
+    try:
+        programs = _load(refresh=False)
+        rows = [_row(p) for p in programs if float(p["max_bounty"] or 0) >= min_bounty]
+        return json.dumps(rows, default=str)
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+@mcp.tool()
+def intigriti_programs(min_bounty: float = 0.0) -> str:
+    """List Intigriti bug bounty programs.
+    
+    Args:
+        min_bounty: Minimum max bounty filter.
+    """
+    from cli.cs_intigriti import _load, _row
+    import json
+    try:
+        programs = _load(refresh=False)
+        rows = [_row(p) for p in programs if str(p.get("status", "")) in ("3", "4", "3.0") or p.get("status") in (3, 4)]
+        rows = [r for r in rows if r["max_bounty"] >= min_bounty]
+        return json.dumps(rows, default=str)
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+@mcp.tool()
+def hacken_programs(min_bounty: float = 0.0) -> str:
+    """List HackenProof bug bounty programs.
+    
+    Args:
+        min_bounty: Minimum max bounty filter.
+    """
+    from cli.cs_hacken import _load, _row
+    import json
+    try:
+        programs = _load(refresh=False)
+        rows = [_row(p) for p in programs if str(p.get("status", {}).get("name", "")).lower() == "active"]
+        rows = [r for r in rows if r["max_bounty"] >= min_bounty]
+        return json.dumps(rows, default=str)
+    except Exception as exc:
+        return json.dumps({"error": str(exc)})
+
+@mcp.tool()
+def shinobi_scopes() -> str:
+    """List the programs tracked by Shinobi (scope + guardrail DB).
+
+    Returns slug, platform, name, max bounty, live flag and in-scope asset count
+    for every program in the Shinobi store.
+    """
+    from shinobi.store import Store
+    try:
+        rows = Store().list_programs()
+    except Exception as exc:  # noqa: BLE001
+        return _shinobi_payload({"error": str(exc)})
+    return _shinobi_payload([
+        {"slug": r.get("slug"), "platform": r.get("platform"),
+         "name": r.get("name"), "max_bounty": r.get("max_bounty"),
+         "live": (r.get("live") if "live" in r else (r.get("paused") is not True)),
+         "assets": len(r.get("in_scope") or [])}
+        for r in rows
+    ])
+
+
+@mcp.tool()
+def shinobi_find(slug: str, status: str = "triage") -> str:
+    """Return Shinobi findings for a program (default: triage candidates).
+
+    Args:
+        slug: program slug in the Shinobi store
+        status: finding status filter - triage | confirmed | all
+    """
+    from shinobi.store import Store
+    rows = Store().list_findings(slug)
+    if status != "all":
+        rows = [r for r in rows if r.get("status") == status]
+    return _shinobi_payload([
+        {"id": r.get("id"), "vuln_class": r.get("vuln_class"),
+         "severity": r.get("severity"), "title": r.get("title"),
+         "evidence": r.get("evidence")}
+        for r in rows
+    ])
+
+
+@mcp.tool()
+def shinobi_crawl(slug: str, depth: int = 2, max_pages: int = 60) -> str:
+    """Run the Shinobi Playwright crawler over a program's in-scope hosts.
+
+    Args:
+        slug: program slug (must already be fetched into the store)
+        depth: crawl depth (0=start page only)
+        max_pages: safety cap on pages visited
+
+    Returns pages crawled, JS bundles, requests, and the tech fingerprint; also
+    persists mapped surfaces into the Shinobi DB.
+    """
+    from shinobi import scope as scope_mod
+    from shinobi.probe import Crawler
+    from shinobi.store import Store
+    store = Store()
+    rec = store.get_program(slug)
+    if not rec:
+        return _shinobi_payload({"error": f"unknown program {slug}"})
+    scope_obj = scope_mod.scope_from_program_record(rec)
+    crawler = Crawler(scope_obj, store, depth=depth, headless=True, max_pages=max_pages)
+    try:
+        result = crawler.run()
+    except Exception as exc:  # noqa: BLE001
+        return _shinobi_payload({"error": str(exc)})
+    return _shinobi_payload({
+        "pages": len(result.pages), "bundles": len(result.bundles),
+        "requests": len(result.requests), "tech": result.tech,
+        "surfaces": len(store.list_surfaces(slug)),
+    })
+
+
+@mcp.tool()
+def shinobi_probe(slug: str, roles: str = "anonymous", max_tests: int = 400) -> str:
+    """Run the Shinobi testing engine over the program's mapped surfaces.
+
+    Args:
+        slug: program slug
+        roles: comma-separated roles to test with (anonymous, user, admin, ...)
+        max_tests: request budget for this pass
+
+    Returns signalling outcomes + count of candidates stored as triage findings.
+    """
+    from shinobi import engine as eng
+    from shinobi import scope as scope_mod
+    from shinobi.store import Store
+    store = Store()
+    rec = store.get_program(slug)
+    if not rec:
+        return _shinobi_payload({"error": f"unknown program {slug}"})
+    scope_obj = scope_mod.scope_from_program_record(rec)
+    roles = [r.strip() for r in roles.split(",") if r.strip()] or ["anonymous"]
+    match_roles = list(dict.fromkeys(roles))
+    engine = eng.Engine(scope_obj, store, roles=match_roles)
+    try:
+        outcomes = engine.run(max_tests=max_tests)
+    except Exception as exc:  # noqa: BLE001
+        return _shinobi_payload({"error": str(exc)})
+    signal = [o for o in outcomes if o.verdict.label != "benign"]
+    return _shinobi_payload({
+        "tested": len(outcomes),
+        "signalling": len(signal),
+        "roles": match_roles,
+        "highlights": [
+            {"class": o.payload_class, "verdict": o.verdict.label,
+             "method": o.method, "endpoint": o.endpoint,
+             "param": o.param, "reason": o.verdict.reason}
+            for o in signal[:20]
+        ],
+    })
+
+
+@mcp.tool()
+def shinobi_verify(slug: str, finding_id: str = "") -> str:
+    """Kill-test a Shinobi triage candidate (or list all with kill-test state).
+
+    Args:
+        slug: program slug
+        finding_id: finding id prefix; empty -> run the checklist on every candidate
+
+    Returns per-finding checklist verdicts + submittable/needs_work/not_submittable.
+    """
+    from shinobi import verify as verify_mod
+    from shinobi.store import Store
+    store = Store()
+    rec = store.get_program(slug)
+    if not rec:
+        return _shinobi_payload({"error": f"unknown program {slug}"})
+    rows = [r for r in store.list_findings(slug) if r.get("status") == "triage"]
+    match = [r for r in rows if not finding_id or r["id"].startswith(finding_id)]
+    if not match:
+        return _shinobi_payload({"error": f"no triage candidates for {slug} ({finding_id})"})
+    out = []
+    for r in match:
+        kt = verify_mod.kill_test(rec, r)
+        out.append({"id": r["id"], "title": r["title"], "verdict": kt.verdict,
+                    "checks": {c[0]: (c[1], c[2]) for c in kt.checks}})
+    return _shinobi_payload(out)
+
+
+@mcp.tool()
+def shinobi_report(slug: str, finding_id: str) -> str:
+    """Render a submission-ready markdown report for a confirmed finding.
+
+    Args:
+        slug: program slug
+        finding_id: finding id prefix of a CONFIRMED finding
+
+    Returns the full markdown body (Immunefi-style).
+    """
+    from shinobi import report as report_mod
+    from shinobi.store import Store
+    store = Store()
+    rec = store.get_program(slug)
+    if not rec:
+        return _shinobi_payload({"error": f"unknown program {slug}"})
+    row = next((r for r in store.list_findings(slug)
+                if r.get("id", "").startswith(finding_id)), None)
+    if not row:
+        return _shinobi_payload({"error": f"no finding {finding_id} for {slug}"})
+    return report_mod.render_report(rec, [row])
 
 
 if __name__ == "__main__":

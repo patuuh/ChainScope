@@ -685,6 +685,25 @@ class Indexer:
         timed_out = False
         indexed_file_count = 0
 
+        # Repo-wide struct pre-pass (Solidity): structs are frequently declared
+        # in a different file than the code that accesses their fields (e.g. a
+        # namespaced-storage struct declared in an interface). Register them all
+        # up front so `$.field` / `_getXStorage().field` resolves regardless of
+        # file processing order.
+        solidity_extractor = extractors.get("solidity")
+        if solidity_extractor is not None and hasattr(solidity_extractor, "prescan_file"):
+            solidity_extractor.reset_struct_registry()
+            for fpath in files:
+                if Path(fpath).suffix != ".sol":
+                    continue
+                try:
+                    solidity_extractor.prescan_file(
+                        Path(fpath).read_bytes(),
+                        os.path.relpath(fpath, self.repo_path),
+                    )
+                except Exception:
+                    continue
+
         for fpath in files:
             if deadline is not None and time.monotonic() >= deadline:
                 timed_out = True

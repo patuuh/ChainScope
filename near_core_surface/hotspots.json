@@ -1,0 +1,307 @@
+{
+ "hotspots": [
+  {
+   "function": "get_locked_vested_amount",
+   "file": "lockup/src/getters.rs",
+   "line": 117,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_unvested_amount",
+   "file": "lockup/src/getters.rs",
+   "line": 123,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "set_staking_pool_status",
+   "file": "lockup/src/internal.rs",
+   "line": 16,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "create",
+   "file": "multisig-factory/src/lib.rs",
+   "line": 29,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(6)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_request",
+   "file": "multisig/src/lib.rs",
+   "line": 327,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_num_requests_pk",
+   "file": "multisig/src/lib.rs",
+   "line": 331,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_confirmations",
+   "file": "multisig/src/lib.rs",
+   "line": 339,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(5)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_request",
+   "file": "multisig2/src/lib.rs",
+   "line": 448,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_num_requests_per_member",
+   "file": "multisig2/src/lib.rs",
+   "line": 456,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_confirmations",
+   "file": "multisig2/src/lib.rs",
+   "line": 464,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "staking-pool/src/lib.rs",
+   "line": 513,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_context",
+   "file": "staking-pool/src/lib.rs",
+   "line": 553,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skip_epochs",
+   "file": "staking-pool/src/lib.rs",
+   "line": 580,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "multiply",
+   "file": "staking-pool/src/lib.rs",
+   "line": 141,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "staking-pool/src/lib.rs",
+   "line": 254,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "stake",
+   "file": "staking-pool/src/lib.rs",
+   "line": 279,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unstake",
+   "file": "staking-pool/src/lib.rs",
+   "line": 306,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_account_total_balance",
+   "file": "staking-pool/src/lib.rs",
+   "line": 333,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_account",
+   "file": "staking-pool/src/lib.rs",
+   "line": 369,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_accounts",
+   "file": "staking-pool/src/lib.rs",
+   "line": 387,
+   "visibility": "pub",
+   "score": 5,
+   "reasons": [
+    "ext_calls(6)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "new_vesting_schedule",
+   "file": "lockup-factory/src/lib.rs",
+   "line": 209,
+   "visibility": "private",
+   "score": 3,
+   "reasons": [
+    "ext_calls(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_create_lockup_success",
+   "file": "lockup-factory/src/lib.rs",
+   "line": 245,
+   "visibility": "private",
+   "score": 3,
+   "reasons": [
+    "ext_calls(4)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_create_lockup_with_vesting_success",
+   "file": "lockup-factory/src/lib.rs",
+   "line": 278,
+   "visibility": "private",
+   "score": 3,
+   "reasons": [
+    "ext_calls(7)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_create_lockup_not_enough_deposit",
+   "file": "lockup-factory/src/lib.rs",
+   "line": 330,
+   "visibility": "private",
+   "score": 3,
+   "reasons": [
+    "ext_calls(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "test_create_lockup_rollback",
+   "file": "lockup-factory/src/lib.rs",
+   "line": 353,
+   "visibility": "private",
+   "score": 3,
+   "reasons": [
+    "ext_calls(3)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_scored": 219,
+  "critical_8plus": 0,
+  "high_5to7": 20,
+  "medium_3to4": 199,
+  "top_shown": 25,
+  "query_scope": "all_sources"
+ }
+}

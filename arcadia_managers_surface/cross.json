@@ -1,0 +1,475 @@
+{
+ "total": 191,
+ "shown": 25,
+ "truncated": true,
+ "by_attribute": {
+  "unresolved": 183,
+  "sink": 8
+ },
+ "by_source_context": {
+  "production": 191
+ },
+ "top_source_files": [
+  {
+   "name": "src/cl-managers/base/UniswapV4.sol",
+   "calls": 55
+  },
+  {
+   "name": "src/cl-managers/base/Slipstream.sol",
+   "calls": 22
+  },
+  {
+   "name": "src/cl-managers/base/UniswapV3.sol",
+   "calls": 19
+  },
+  {
+   "name": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "calls": 17
+  },
+  {
+   "name": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "calls": 12
+  },
+  {
+   "name": "src/cow-swapper/CowSwapper.sol",
+   "calls": 12
+  },
+  {
+   "name": "src/cl-managers/compounders/Compounder.sol",
+   "calls": 11
+  },
+  {
+   "name": "src/merkl-operator/MerklOperator.sol",
+   "calls": 10
+  },
+  {
+   "name": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "calls": 8
+  },
+  {
+   "name": "src/cow-swapper/periphery/DefaultOrderHook.sol",
+   "calls": 7
+  }
+ ],
+ "top_targets": [
+  {
+   "name": "src/cl-managers/base/UniswapV4.sol::UniswapV4.wrap",
+   "calls": 8
+  },
+  {
+   "name": "call",
+   "calls": 6
+  },
+  {
+   "name": "src/cl-managers/base/UniswapV4.sol::UniswapV4.balanceOf",
+   "calls": 6
+  },
+  {
+   "name": "src/cl-managers/base/UniswapV4.sol::UniswapV4.balanceOfSelf",
+   "calls": 5
+  },
+  {
+   "name": "src/cl-managers/base/UniswapV4.sol::UniswapV4.modifyLiquidities",
+   "calls": 5
+  },
+  {
+   "name": "src/cl-managers/libraries/CLMath.sol::CLMath.mulDivDown",
+   "calls": 4
+  },
+  {
+   "name": "src/cl-managers/base/UniswapV4.sol::UniswapV4.toId",
+   "calls": 3
+  },
+  {
+   "name": "src/cl-managers/libraries/RebalanceOptimizationMath.sol::RebalanceOptimizationMath.getAmount0Delta",
+   "calls": 3
+  },
+  {
+   "name": "src/cl-managers/libraries/RebalanceOptimizationMath.sol::RebalanceOptimizationMath.getAmount1Delta",
+   "calls": 3
+  },
+  {
+   "name": "src/cl-managers/libraries/RebalanceOptimizationMath.sol::RebalanceOptimizationMath.mulDivUp",
+   "calls": 3
+  }
+ ],
+ "counter_summary": {
+  "max_counter_items": 10,
+  "source_contexts": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_source_files": {
+   "total": 16,
+   "shown": 10,
+   "truncated": true
+  },
+  "top_targets": {
+   "total": 120,
+   "shown": 10,
+   "truncated": true
+  },
+  "truncated": true
+ },
+ "max_attribute_bytes": 2048,
+ "attribute_truncated": false,
+ "attribute_truncated_calls": 0,
+ "calls": [
+  {
+   "source_label": "execute",
+   "source_file": "src/cl-managers/RouterTrampoline.sol",
+   "source_context": "production",
+   "target_label": "call",
+   "target_file": "src/cl-managers/RouterTrampoline.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "execute",
+   "source_file": "src/cl-managers/RouterTrampoline.sol",
+   "source_context": "production",
+   "target_label": "src/cl-managers/RouterTrampoline.sol::RouterTrampoline.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "ERC20(tokenOut)"
+   }
+  },
+  {
+   "source_label": "constructor",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.vaultRelayer",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "vaultRelayer",
+    "interface": "COW_SETTLEMENT"
+   }
+  },
+  {
+   "source_label": "onSetAssetManager",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.isAccount",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "isAccount",
+    "interface": "!ARCADIA_FACTORY"
+   }
+  },
+  {
+   "source_label": "setAccountInfo",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.isAccount",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "isAccount",
+    "interface": "!ARCADIA_FACTORY"
+   }
+  },
+  {
+   "source_label": "setAccountInfo",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.owner",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "owner",
+    "interface": "IAccount(account_)"
+   }
+  },
+  {
+   "source_label": "setAccountInfo",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.ACCOUNT_VERSION",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "ACCOUNT_VERSION",
+    "interface": "IAccount(account_)"
+   }
+  },
+  {
+   "source_label": "flashLoanAndCallBack",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.owner",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "owner",
+    "interface": "IAccount(account_)"
+   }
+  },
+  {
+   "source_label": "flashLoanAndCallBack",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.flashAction",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 12,
+    "unresolved": true,
+    "call_name": "flashAction",
+    "interface": "IAccount(account_)"
+   }
+  },
+  {
+   "source_label": "executeAction",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.borrowerCallBack",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 4,
+    "unresolved": true,
+    "call_name": "borrowerCallBack",
+    "interface": "FLASH_LOAN_ROUTER"
+   }
+  },
+  {
+   "source_label": "executeAction",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 7,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "IERC20(tokenOut_)"
+   }
+  },
+  {
+   "source_label": "executeAction",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.mulDivDown",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 8,
+    "unresolved": true,
+    "call_name": "mulDivDown",
+    "interface": "amount"
+   }
+  },
+  {
+   "source_label": "beforeSwap",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "IERC20(tokenIn)"
+   }
+  },
+  {
+   "source_label": "isValidSignature",
+   "source_file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "target_label": "src/cow-swapper/CowSwapper.sol::CowSwapper.recoverCalldata",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 2,
+    "unresolved": true,
+    "call_name": "recoverCalldata",
+    "interface": "ECDSA"
+   }
+  },
+  {
+   "source_label": "onSetMerklOperator",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.isAccount",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "isAccount",
+    "interface": "!ARCADIA_FACTORY"
+   }
+  },
+  {
+   "source_label": "setAccountInfo",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.isAccount",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "isAccount",
+    "interface": "!ARCADIA_FACTORY"
+   }
+  },
+  {
+   "source_label": "setAccountInfo",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.owner",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 1,
+    "unresolved": true,
+    "call_name": "owner",
+    "interface": "IAccount(account)"
+   }
+  },
+  {
+   "source_label": "setAccountInfo",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.ACCOUNT_VERSION",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 3,
+    "unresolved": true,
+    "call_name": "ACCOUNT_VERSION",
+    "interface": "IAccount(account)"
+   }
+  },
+  {
+   "source_label": "claim",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.owner",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "owner",
+    "interface": "IAccount(account)"
+   }
+  },
+  {
+   "source_label": "claim",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.claimRecipient",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 7,
+    "unresolved": true,
+    "call_name": "claimRecipient",
+    "interface": "MERKL_DISTRIBUTOR"
+   }
+  },
+  {
+   "source_label": "claim",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 12,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "ERC20(token)"
+   }
+  },
+  {
+   "source_label": "claim",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.mulDivDown",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 12,
+    "unresolved": true,
+    "call_name": "mulDivDown",
+    "interface": "reward"
+   }
+  },
+  {
+   "source_label": "skim",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "call",
+   "target_file": "src/merkl-operator/MerklOperator.sol",
+   "target_source_context": "production",
+   "attributes": {
+    "sink": true
+   }
+  },
+  {
+   "source_label": "skim",
+   "source_file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperator.sol::MerklOperator.balanceOf",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "balanceOf",
+    "interface": "ERC20(token)"
+   }
+  },
+  {
+   "source_label": "onSetMerklOperator",
+   "source_file": "src/merkl-operator/MerklOperatorBase.sol",
+   "source_context": "production",
+   "target_label": "src/merkl-operator/MerklOperatorBase.sol::MerklOperatorBase.isAccount",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "order": 0,
+    "unresolved": true,
+    "call_name": "isAccount",
+    "interface": "!ARCADIA_FACTORY"
+   }
+  }
+ ],
+ "tool": "cs_cross_summary",
+ "query_scope": "all_sources",
+ "from_func": null,
+ "_next_steps": [
+  "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+  "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+  "Use direct source review on the top source files before treating this as a finding."
+ ],
+ "_warnings": [
+  "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
+ ]
+}

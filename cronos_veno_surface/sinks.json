@@ -1,0 +1,47 @@
+{
+ "tool": "cs_sinks",
+ "query_scope": "all_sources",
+ "sink_type": "all",
+ "external_only": false,
+ "total": 1,
+ "shown": 1,
+ "truncated": false,
+ "max_results": 50,
+ "max_callers_per_sink": 8,
+ "include_metadata": false,
+ "include_caller_details": false,
+ "max_metadata_bytes": 4096,
+ "by_type": {
+  "fund_transfer": 1
+ },
+ "sinks": [
+  {
+   "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware._sink_call_84",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "0x3766eb5f/BridgeMiddleware.sol",
+   "line_start": 85,
+   "line_end": 85,
+   "signature": "payable(treasury).call{value: _amount}",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "0x3766eb5f/BridgeMiddleware.sol::BridgeMiddleware.withdrawEth(uint256)",
+     "label": "withdrawEth",
+     "file": "0x3766eb5f/BridgeMiddleware.sol",
+     "line_start": 78,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  }
+ ]
+}

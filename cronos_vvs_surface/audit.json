@@ -1,0 +1,1102 @@
+{
+ "query_scope": "all_sources",
+ "stats": {
+  "nodes": 248,
+  "edges": 585,
+  "functions": 109,
+  "state_vars": 81,
+  "files": 11,
+  "transitions": 0,
+  "entry_points": 94,
+  "guarded_entry_points": 38,
+  "unguarded_entry_points": 56,
+  "sinks": 5,
+  "node_types": {
+   "function": 109,
+   "state_var": 81,
+   "event": 34,
+   "contract": 10,
+   "struct": 7,
+   "interface": 4,
+   "modifier": 3
+  },
+  "edge_relations": {
+   "reads_state": 216,
+   "calls": 189,
+   "writes_state": 89,
+   "guards": 44,
+   "emits_event": 35,
+   "inherits": 12
+  }
+ },
+ "build_info": {
+  "repo_path": "/tmp/opencode/vvs-farm",
+  "detected_chain": "solidity",
+  "all_chains": [
+   "solidity",
+   "typescript"
+  ],
+  "lang_override": "",
+  "include_research": false,
+  "built_at": "2026-09-23T20:22:55.142367+00:00",
+  "files_considered": 14,
+  "files_indexed": 11,
+  "extractor_runs": 14,
+  "extractor_failures": 0,
+  "failed_files": 0,
+  "failure_examples": [],
+  "timed_out": false,
+  "max_files": null,
+  "nodes": 248,
+  "edges": 726,
+  "transitions": 0,
+  "confidence": {
+   "score": 85.0,
+   "tier": "medium",
+   "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse"
+  }
+ },
+ "detections": {
+  "privileged_operations": 14,
+  "timestamp_dependence": 13,
+  "oracle_risk": 9,
+  "no_input_validation": 8,
+  "reentrancy_risk": 5,
+  "unguarded_privileged_operation": 5,
+  "unchecked_arithmetic": 5,
+  "cross_reentrancy": 4,
+  "has_assembly": 2,
+  "dos_risk": 2,
+  "unchecked_erc20": 1
+ },
+ "source_context_summary": {
+  "production": 109
+ },
+ "source_context_summary_info": {
+  "total": 1,
+  "shown": 1,
+  "truncated": false
+ },
+ "attack_surface": [
+  {
+   "id": "contracts/VVSVault.sol::VVSVault.deposit(uint256)",
+   "label": "deposit",
+   "file": "contracts/VVSVault.sol",
+   "signature": "function deposit(uint256 _amount) external",
+   "reachable_count": 29,
+   "state_writes": 12
+  },
+  {
+   "id": "contracts/VVSVault.sol::VVSVault.harvest",
+   "label": "harvest",
+   "file": "contracts/VVSVault.sol",
+   "signature": "function harvest() external",
+   "reachable_count": 33,
+   "state_writes": 10
+  },
+  {
+   "id": "contracts/VVSVault.sol::VVSVault.withdrawAll",
+   "label": "withdrawAll",
+   "file": "contracts/VVSVault.sol",
+   "signature": "function withdrawAll() external",
+   "reachable_count": 28,
+   "state_writes": 9
+  },
+  {
+   "id": "contracts/VVSVault.sol::VVSVault.withdraw(uint256)",
+   "label": "withdraw",
+   "file": "contracts/VVSVault.sol",
+   "signature": "function withdraw(uint256 _shares) public",
+   "reachable_count": 27,
+   "state_writes": 9
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.set(uint256,uint256,bool)",
+   "label": "set",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public",
+   "reachable_count": 17,
+   "state_writes": 7
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.deposit(uint256,uint256)",
+   "label": "deposit",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function deposit(uint256 _pid, uint256 _amount) public",
+   "reachable_count": 23,
+   "state_writes": 7
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.enterStaking(uint256)",
+   "label": "enterStaking",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function enterStaking(uint256 _amount) public",
+   "reachable_count": 23,
+   "state_writes": 7
+  },
+  {
+   "id": "contracts/CraftsmanAdmin.sol::CraftsmanAdmin.set(uint256,uint256,bool)",
+   "label": "set",
+   "file": "contracts/CraftsmanAdmin.sol",
+   "signature": "function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public",
+   "reachable_count": 18,
+   "state_writes": 7
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.constructor",
+   "label": "constructor",
+   "file": "contracts/Craftsman.sol",
+   "signature": "constructor(VVSToken _vvs, Workbench _bench, address _devaddr, uint256 _startBlock)",
+   "reachable_count": 4,
+   "state_writes": 6
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.updateStakingRatio(uint256)",
+   "label": "updateStakingRatio",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function updateStakingRatio(uint256 _ratio) public",
+   "reachable_count": 15,
+   "state_writes": 6
+  },
+  {
+   "id": "contracts/CraftsmanAdmin.sol::CraftsmanAdmin.updateStakingRatio(uint256)",
+   "label": "updateStakingRatio",
+   "file": "contracts/CraftsmanAdmin.sol",
+   "signature": "function updateStakingRatio(uint256 _ratio) public",
+   "reachable_count": 16,
+   "state_writes": 6
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.add(uint256,IERC20,bool)",
+   "label": "add",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function add(uint256 _allocPoint, IERC20 _lpToken, bool _withUpdate) public",
+   "reachable_count": 16,
+   "state_writes": 5
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.pendingVVS(uint256,address)",
+   "label": "pendingVVS",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function pendingVVS(uint256 _pid, address _user) external",
+   "reachable_count": 17,
+   "state_writes": 5
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.withdraw(uint256,uint256)",
+   "label": "withdraw",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function withdraw(uint256 _pid, uint256 _amount) public",
+   "reachable_count": 19,
+   "state_writes": 5
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.leaveStaking(uint256)",
+   "label": "leaveStaking",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function leaveStaking(uint256 _amount) public",
+   "reachable_count": 21,
+   "state_writes": 5
+  },
+  {
+   "id": "contracts/VVSVault.sol::VVSVault.constructor",
+   "label": "constructor",
+   "file": "contracts/VVSVault.sol",
+   "signature": "constructor(IERC20 _token, IERC20 _receiptToken, ICraftsman _craftsman, address _admin, address _treasury)",
+   "reachable_count": 3,
+   "state_writes": 5
+  },
+  {
+   "id": "contracts/VVSVault.sol::VVSVault.calculateHarvestVVSRewards",
+   "label": "calculateHarvestVVSRewards",
+   "file": "contracts/VVSVault.sol",
+   "signature": "function calculateHarvestVVSRewards() external",
+   "reachable_count": 21,
+   "state_writes": 5
+  },
+  {
+   "id": "contracts/VVSVault.sol::VVSVault.calculateTotalPendingVVSRewards",
+   "label": "calculateTotalPendingVVSRewards",
+   "file": "contracts/VVSVault.sol",
+   "signature": "function calculateTotalPendingVVSRewards() external",
+   "reachable_count": 19,
+   "state_writes": 5
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.distributeSupply(address[],uint256[])",
+   "label": "distributeSupply",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function distributeSupply(address[] _teamAddresses, uint256[] _teamAmounts) public",
+   "reachable_count": 16,
+   "state_writes": 4
+  },
+  {
+   "id": "contracts/IGO.sol::IGO.constructor",
+   "label": "constructor",
+   "file": "contracts/IGO.sol",
+   "signature": "constructor(IERC20 _lpToken, IERC20 _offeringToken, uint256 _startBlock, uint256 _endBlock, address _adminAddress)",
+   "reachable_count": 3,
+   "state_writes": 4
+  },
+  {
+   "id": "contracts/VVSInitMintable.sol::VVSInitMintable.distributeSupply(address[],uint256[])",
+   "label": "distributeSupply",
+   "file": "contracts/VVSInitMintable.sol",
+   "signature": "function distributeSupply(address[] _teamAddresses, uint256[] _teamAmounts) public",
+   "reachable_count": 7,
+   "state_writes": 4
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.massUpdatePools",
+   "label": "massUpdatePools",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function massUpdatePools() public",
+   "reachable_count": 13,
+   "state_writes": 3
+  },
+  {
+   "id": "contracts/Craftsman.sol::Craftsman.updatePool(uint256)",
+   "label": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "signature": "function updatePool(uint256 _pid) public",
+   "reachable_count": 12,
+   "state_writes": 3
+  },
+  {
+   "id": "contracts/Timelock.sol::Timelock.constructor",
+   "label": "constructor",
+   "file": "contracts/Timelock.sol",
+   "signature": "constructor(address admin_, uint delay_)",
+   "reachable_count": 1,
+   "state_writes": 3
+  },
+  {
+   "id": "contracts/VVSInitMintable.sol::VVSInitMintable.constructor",
+   "label": "constructor",
+   "file": "contracts/VVSInitMintable.sol",
+   "signature": "constructor(uint256 _supplyPerYear)",
+   "reachable_count": 4,
+   "state_writes": 3
+  }
+ ],
+ "critical_hotspots": [
+  {
+   "function": "migrate",
+   "file": "contracts/Craftsman.sol",
+   "line": 161,
+   "score": 18,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy",
+    "oracle(2)",
+    "privileged(1)",
+    "unguarded_privileged",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "line": 201,
+   "score": 17,
+   "reasons": [
+    "entry+writes(2)",
+    "reentrancy",
+    "cross_reentrancy",
+    "oracle(1)",
+    "timestamp",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "emergencyWithdraw",
+   "file": "contracts/Craftsman.sol",
+   "line": 304,
+   "score": 13,
+   "reasons": [
+    "entry+writes(2)",
+    "no_validation",
+    "privileged(1)",
+    "unguarded_privileged",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "distributeSupply",
+   "file": "contracts/Craftsman.sol",
+   "line": 324,
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(1)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "contracts/VVSVault.sol",
+   "line": 305,
+   "score": 9,
+   "reasons": [
+    "entry+writes(4)",
+    "reentrancy",
+    "timestamp"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "add",
+   "file": "contracts/Craftsman.sol",
+   "line": 114,
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "cross_reentrancy",
+    "timestamp"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "enableTransferOwnership",
+   "file": "contracts/CraftsmanAdmin.sol",
+   "line": 63,
+   "score": 8,
+   "reasons": [
+    "entry+writes(2)",
+    "timestamp",
+    "privileged(2)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "executeTransaction",
+   "file": "contracts/Timelock.sol",
+   "line": 101,
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(1)",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "harvest",
+   "file": "contracts/VVSVault.sol",
+   "line": 154,
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "aggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "line": 20,
+   "score": 8,
+   "reasons": [
+    "privileged(1)",
+    "unguarded_privileged",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "tryAggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "line": 56,
+   "score": 8,
+   "reasons": [
+    "privileged(1)",
+    "unguarded_privileged",
+    "ext_call_in_loop(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 23,
+   "score": 8,
+   "reasons": [
+    "entry+writes(1)",
+    "unchecked_erc20(1)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "set",
+   "file": "contracts/Craftsman.sol",
+   "line": 130,
+   "score": 7,
+   "reasons": [
+    "entry+writes(2)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pendingVVS",
+   "file": "contracts/Craftsman.sol",
+   "line": 178,
+   "score": 7,
+   "reasons": [
+    "cross_reentrancy",
+    "oracle(1)",
+    "timestamp"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "deposit",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 19,
+   "score": 7,
+   "reasons": [
+    "entry+writes(1)",
+    "unchecked_arith",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "distributeSupply",
+   "file": "contracts/VVSInitMintable.sol",
+   "line": 27,
+   "score": 6,
+   "reasons": [
+    "entry+writes(4)",
+    "timestamp",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "deposit",
+   "file": "contracts/Craftsman.sol",
+   "line": 220,
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "enterStaking",
+   "file": "contracts/Craftsman.sol",
+   "line": 263,
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "acceptAdmin",
+   "file": "contracts/Timelock.sol",
+   "line": 60,
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setPendingAdmin",
+   "file": "contracts/Timelock.sol",
+   "line": 68,
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "privileged(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAdmin",
+   "file": "contracts/VVSVault.sol",
+   "line": 175,
+   "score": 5,
+   "reasons": [
+    "entry+writes(1)",
+    "privileged(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "balanceOf",
+   "file": "contracts/VVSVault.sol",
+   "line": 356,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "approve",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 34,
+   "score": 5,
+   "reasons": [
+    "entry+writes(1)",
+    "no_access_control"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "transferFrom",
+   "file": "contracts/libs/WCRO.sol",
+   "line": 44,
+   "score": 5,
+   "reasons": [
+    "entry+writes(2)",
+    "unchecked_arith"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "hotspot_summary": {
+  "total_scored": 24,
+  "critical_8plus": 12,
+  "high_5to7": 12
+ },
+ "reentrancy": [
+  {
+   "function": "add",
+   "file": "contracts/Craftsman.sol",
+   "line": 114,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "constructor",
+   "stale_vars": [
+    "startBlock",
+    "totalAllocPoint"
+   ]
+  },
+  {
+   "function": "set",
+   "file": "contracts/Craftsman.sol",
+   "line": 130,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "constructor",
+   "stale_vars": [
+    "totalAllocPoint"
+   ]
+  },
+  {
+   "function": "migrate",
+   "file": "contracts/Craftsman.sol",
+   "line": 161,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'migrate' at order 5 before state write 'Craftsman.PoolInfo.lpToken' at order 7",
+   "modifiers": []
+  },
+  {
+   "function": "pendingVVS",
+   "file": "contracts/Craftsman.sol",
+   "line": 178,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "constructor",
+   "stale_vars": [
+    "totalAllocPoint"
+   ]
+  },
+  {
+   "function": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "line": 201,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'mint' at order 6 before state write 'Craftsman.PoolInfo.accVVSPerShare' at order 7",
+   "modifiers": []
+  },
+  {
+   "function": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "line": 201,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "constructor",
+   "stale_vars": [
+    "totalAllocPoint"
+   ]
+  },
+  {
+   "function": "distributeSupply",
+   "file": "contracts/Craftsman.sol",
+   "line": 324,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'distributeSupply' at order 1 before state write 'Craftsman.vvsPerBlock' at order 2",
+   "modifiers": []
+  },
+  {
+   "function": "harvest",
+   "file": "contracts/VVSVault.sol",
+   "line": 154,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'leaveStaking' at order 0 before state write 'VVSVault.lastHarvestedTime' at order 7",
+   "modifiers": [
+    "notContract"
+   ]
+  },
+  {
+   "function": "withdraw",
+   "file": "contracts/VVSVault.sol",
+   "line": 305,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'leaveStaking' at order 7 before state write 'VVSVault.UserInfo.vvsAtLastUserAction' at order 10",
+   "modifiers": [
+    "notContract"
+   ]
+  }
+ ],
+ "taint_paths": [
+  {
+   "entry": "deposit",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 3,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "withdraw",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 3,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "enterStaking",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 3,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "leaveStaking",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 3,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "blockAndAggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "tryAggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "tryBlockAndAggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "aggregate",
+   "file": "contracts/libs/Multicall2.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 1,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "withdraw",
+   "file": "contracts/libs/WCRO.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": false,
+   "reachable_sinks": 1,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "deposit",
+   "file": "contracts/VVSVault.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 3,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "withdraw",
+   "file": "contracts/VVSVault.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": true,
+   "reachable_sinks": 3,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "safeVVSTransfer",
+   "file": "contracts/Workbench.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "guarded": true,
+   "reachable_sinks": 3,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  }
+ ],
+ "taint_summary": {
+  "total": 12,
+  "high_risk": 9
+ },
+ "sink_summary": {
+  "by_type": {
+   "fund_transfer": 3,
+   "low_level_call": 2
+  },
+  "reachable_functions": {
+   "fund_transfer": 15,
+   "low_level_call": 6
+  }
+ },
+ "access_control_gaps": [
+  {
+   "function": "migrate",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "state_writes": [
+    "lpToken"
+   ]
+  },
+  {
+   "function": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "state_writes": [
+    "accVVSPerShare",
+    "lastRewardBlock"
+   ]
+  },
+  {
+   "function": "enterStaking",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "state_writes": [
+    "amount",
+    "rewardDebt"
+   ]
+  },
+  {
+   "function": "emergencyWithdraw",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "visibility": "public",
+   "state_writes": [
+    "amount",
+    "rewardDebt"
+   ]
+  }
+ ],
+ "access_gaps_total": 4,
+ "silent_state_changes": [
+  {
+   "function": "set",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "updatePool",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "transferFrom",
+   "file": "contracts/libs/WCRO.sol",
+   "source_context": "production",
+   "state_writes": 2
+  },
+  {
+   "function": "add",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "dev",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "distributeSupply",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "migrate",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setMigrator",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "updateMultiplier",
+   "file": "contracts/Craftsman.sol",
+   "source_context": "production",
+   "state_writes": 1
+  }
+ ],
+ "silent_total": 9,
+ "dead_code": {
+  "dead_internal_total": 0,
+  "direct_entry_points_total": 29
+ },
+ "defi_summary": {
+  "timestamp_dependence": 13,
+  "unchecked_erc20": 1,
+  "oracle_risk": 9,
+  "dos_risk": 2,
+  "unguarded_privileged_operation": 5
+ },
+ "_summary": {
+  "top": 25,
+  "query_scope": "all_sources",
+  "include_metadata": false,
+  "include_dead_code_details": false,
+  "max_metadata_bytes": 4096,
+  "max_source_contexts": 20,
+  "sections": {
+   "attack_surface": {
+    "total": 94,
+    "shown": 25,
+    "truncated": true
+   },
+   "critical_hotspots": {
+    "total": 24,
+    "shown": 24,
+    "truncated": false
+   },
+   "reentrancy": {
+    "total": 9,
+    "shown": 9,
+    "truncated": false
+   },
+   "taint_paths": {
+    "total": 12,
+    "shown": 12,
+    "truncated": false
+   },
+   "access_control_gaps": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   },
+   "silent_state_changes": {
+    "total": 9,
+    "shown": 9,
+    "truncated": false
+   },
+   "dead_code.dead_internal": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "dead_code.direct_entry_points": {
+    "total": 29,
+    "shown": 0,
+    "truncated": true
+   }
+  },
+  "truncated_sections": [
+   "attack_surface",
+   "dead_code.direct_entry_points"
+  ],
+  "truncated": true,
+  "_hint": "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+ }
+}

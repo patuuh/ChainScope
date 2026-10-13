@@ -1,0 +1,15 @@
+{
+ "_summary": {
+  "total_findings": 0,
+  "shown_findings": 0,
+  "categories": [],
+  "category_totals": {},
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

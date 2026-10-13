@@ -1,0 +1,2776 @@
+{
+ "tool": "cs_sinks",
+ "query_scope": "all_sources",
+ "sink_type": "all",
+ "external_only": false,
+ "total": 53,
+ "shown": 50,
+ "truncated": true,
+ "max_results": 50,
+ "max_callers_per_sink": 8,
+ "include_metadata": false,
+ "include_caller_details": false,
+ "max_metadata_bytes": 4096,
+ "by_type": {
+  "panic": 50,
+  "unsafe_ffi": 3
+ },
+ "sinks": [
+  {
+   "id": "lockup-factory/src/lib.rs::LockupFactory._sink_unwrap_142",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup-factory/src/lib.rs",
+   "line_start": 142,
+   "line_end": 142,
+   "signature": "near_sdk::serde_json::to_vec(&LockupArgs {\n                    owner_account_id,",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup-factory/src/lib.rs::LockupFactory::create",
+     "label": "create",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 108,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_get_account_staked_balance_to_unstake",
+     "label": "on_get_account_staked_balance_to_unstake",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 9,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_get_account_unstaked_balance_to_withdraw",
+     "label": "on_get_account_unstaked_balance_to_withdraw",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 95,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_staking_pool_withdraw_for_termination",
+     "label": "on_staking_pool_withdraw_for_termination",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 143,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_staking_pool_is_idle",
+     "label": "assert_staking_pool_is_idle",
+     "file": "lockup/src/internal.rs",
+     "line_start": 90,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_add_full_access_key",
+     "label": "test_add_full_access_key",
+     "file": "lockup/src/lib.rs",
+     "line_start": 380,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_add_full_access_key_when_vesting_is_not_finished",
+     "label": "test_add_full_access_key_when_vesting_is_not_finished",
+     "file": "lockup/src/lib.rs",
+     "line_start": 393,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 75,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "lockup-factory/src/types.rs::VestingScheduleWithSalt._sink_expect_193",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup-factory/src/types.rs",
+   "line_start": 193,
+   "line_end": 193,
+   "signature": "self.try_to_vec().expect(\"Failed to serialize\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup-factory/src/types.rs::VestingScheduleWithSalt::hash",
+     "label": "hash",
+     "file": "lockup-factory/src/types.rs",
+     "line_start": 192,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::set_staking_pool_status",
+     "label": "set_staking_pool_status",
+     "file": "lockup/src/internal.rs",
+     "line_start": 16,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/types.rs::VestingScheduleWithSalt::hash",
+     "label": "hash",
+     "file": "lockup/src/types.rs",
+     "line_start": 207,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::delete_request",
+     "label": "delete_request",
+     "file": "multisig/src/lib.rs",
+     "line_start": 156,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::remove_request",
+     "label": "remove_request",
+     "file": "multisig/src/lib.rs",
+     "line_start": 272,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::get_request",
+     "label": "get_request",
+     "file": "multisig/src/lib.rs",
+     "line_start": 327,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::get_confirmations",
+     "label": "get_confirmations",
+     "file": "multisig/src/lib.rs",
+     "line_start": 339,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::tests::test_create_lockup_with_vesting_success",
+     "label": "test_create_lockup_with_vesting_success",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 278,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 49,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "lockup/src/foundation.rs::LockupContract._sink_panic_66",
+   "label": "panic",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/foundation.rs",
+   "line_start": 66,
+   "line_end": 66,
+   "signature": "env::panic(b\"There is no termination in progress\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup-factory/src/lib.rs::LockupFactory::Default::default",
+     "label": "default",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 68,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_vesting",
+     "label": "assert_vesting",
+     "file": "lockup/src/internal.rs",
+     "line_start": 33,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_no_termination",
+     "label": "assert_no_termination",
+     "file": "lockup/src/internal.rs",
+     "line_start": 62,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_no_staking_or_idle",
+     "label": "assert_no_staking_or_idle",
+     "file": "lockup/src/internal.rs",
+     "line_start": 79,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_staking_pool_is_idle",
+     "label": "assert_staking_pool_is_idle",
+     "file": "lockup/src/internal.rs",
+     "line_start": 90,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_called_by_foundation",
+     "label": "assert_called_by_foundation",
+     "file": "lockup/src/internal.rs",
+     "line_start": 110,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::LockupContract::Default::default",
+     "label": "default",
+     "file": "lockup/src/lib.rs",
+     "line_start": 144,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 16,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "lockup/src/foundation.rs::LockupContract._sink_unwrap_84",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/foundation.rs",
+   "line_start": 84,
+   "line_end": 84,
+   "signature": "self\n                        .staking_information\n                        .as_re",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup-factory/src/lib.rs::LockupFactory::create",
+     "label": "create",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 108,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/foundation_callbacks.rs::LockupContract._sink_unwrap_30",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/foundation_callbacks.rs",
+   "line_start": 30,
+   "line_end": 30,
+   "signature": "self\n                    .staking_information\n                    .as_ref()\n    ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_get_account_staked_balance_to_unstake",
+     "label": "on_get_account_staked_balance_to_unstake",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 9,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/foundation_callbacks.rs::LockupContract._sink_unwrap_57",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/foundation_callbacks.rs",
+   "line_start": 57,
+   "line_end": 57,
+   "signature": "_.unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_staking_pool_unstake_for_termination",
+     "label": "on_staking_pool_unstake_for_termination",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 57,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_get_account_staked_balance_to_unstake",
+     "label": "on_get_account_staked_balance_to_unstake",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 9,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/foundation_callbacks.rs::LockupContract._sink_unwrap_116",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/foundation_callbacks.rs",
+   "line_start": 116,
+   "line_end": 116,
+   "signature": "self\n                    .staking_information\n                    .as_ref()\n    ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_get_account_unstaked_balance_to_withdraw",
+     "label": "on_get_account_unstaked_balance_to_withdraw",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 95,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/foundation_callbacks.rs::LockupContract._sink_unwrap_152",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/foundation_callbacks.rs",
+   "line_start": 152,
+   "line_end": 152,
+   "signature": "self.staking_information.as_mut().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_staking_pool_withdraw_for_termination",
+     "label": "on_staking_pool_withdraw_for_termination",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 143,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_get_account_unstaked_balance_to_withdraw",
+     "label": "on_get_account_unstaked_balance_to_withdraw",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 95,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/internal.rs::LockupContract._sink_expect_17",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/internal.rs",
+   "line_start": 17,
+   "line_end": 17,
+   "signature": "self.staking_information\n            .as_mut()\n            .expect(\"Staking pool",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup-factory/src/types.rs::VestingScheduleWithSalt::hash",
+     "label": "hash",
+     "file": "lockup-factory/src/types.rs",
+     "line_start": 192,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::set_staking_pool_status",
+     "label": "set_staking_pool_status",
+     "file": "lockup/src/internal.rs",
+     "line_start": 16,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::tests::test_create_lockup_with_vesting_success",
+     "label": "test_create_lockup_with_vesting_success",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 278,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::new_contract_with_lockup_duration",
+     "label": "new_contract_with_lockup_duration",
+     "file": "lockup/src/lib.rs",
+     "line_start": 289,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::new_contract",
+     "label": "new_contract",
+     "file": "lockup/src/lib.rs",
+     "line_start": 332,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_vesting_and_release_duration",
+     "label": "test_vesting_and_release_duration",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1268,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_no_staking_with_release_duration",
+     "label": "test_termination_no_staking_with_release_duration",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1486,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::lockup_only_setup",
+     "label": "lockup_only_setup",
+     "file": "lockup/src/lib.rs",
+     "line_start": 347,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 33,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "lockup/src/internal.rs::LockupContract._sink_panic_47",
+   "label": "panic",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/internal.rs",
+   "line_start": 47,
+   "line_end": 47,
+   "signature": "env::panic(b\"Expected vesting schedule and salt, but it was not provided\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_vesting",
+     "label": "assert_vesting",
+     "file": "lockup/src/internal.rs",
+     "line_start": 33,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/internal.rs::LockupContract._sink_panic_64",
+   "label": "panic",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/internal.rs",
+   "line_start": 64,
+   "line_end": 64,
+   "signature": "env::panic(b\"All operations are blocked until vesting termination is completed\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_no_termination",
+     "label": "assert_no_termination",
+     "file": "lockup/src/internal.rs",
+     "line_start": 62,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/internal.rs::LockupContract._sink_panic_84",
+   "label": "panic",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/internal.rs",
+   "line_start": 84,
+   "line_end": 84,
+   "signature": "env::panic(b\"Contract is currently busy with another operation\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_no_staking_or_idle",
+     "label": "assert_no_staking_or_idle",
+     "file": "lockup/src/internal.rs",
+     "line_start": 79,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/internal.rs::LockupContract._sink_unwrap_95",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/internal.rs",
+   "line_start": 95,
+   "line_end": 95,
+   "signature": "self.staking_information.as_ref().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_staking_pool_is_idle",
+     "label": "assert_staking_pool_is_idle",
+     "file": "lockup/src/internal.rs",
+     "line_start": 90,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/internal.rs::LockupContract._sink_panic_98",
+   "label": "panic",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/internal.rs",
+   "line_start": 98,
+   "line_end": 98,
+   "signature": "env::panic(b\"Contract is currently busy with another operation\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_staking_pool_is_idle",
+     "label": "assert_staking_pool_is_idle",
+     "file": "lockup/src/internal.rs",
+     "line_start": 90,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/internal.rs::LockupContract._sink_panic_118",
+   "label": "panic",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/internal.rs",
+   "line_start": 118,
+   "line_end": 118,
+   "signature": "env::panic(b\"No NEAR Foundation account is specified in the contract\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/internal.rs::LockupContract::assert_called_by_foundation",
+     "label": "assert_called_by_foundation",
+     "file": "lockup/src/internal.rs",
+     "line_start": 110,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/lib.rs::LockupContract._sink_unwrap_181",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/lib.rs",
+   "line_start": 181,
+   "line_end": 181,
+   "signature": "_.unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/lib.rs::LockupContract::new",
+     "label": "new",
+     "file": "lockup/src/lib.rs",
+     "line_start": 181,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::LockupFactory::create",
+     "label": "create",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 108,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::LockupFactory::on_lockup_create",
+     "label": "on_lockup_create",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 171,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::tests::test_get_factory_vars",
+     "label": "test_get_factory_vars",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 218,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::tests::test_create_lockup_success",
+     "label": "test_create_lockup_success",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 245,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::tests::test_create_lockup_with_vesting_success",
+     "label": "test_create_lockup_with_vesting_success",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 278,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::tests::test_create_lockup_not_enough_deposit",
+     "label": "test_create_lockup_not_enough_deposit",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 330,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup-factory/src/lib.rs::tests::test_create_lockup_rollback",
+     "label": "test_create_lockup_rollback",
+     "file": "lockup-factory/src/lib.rs",
+     "line_start": 353,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 9,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_49",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 49,
+   "line_end": 49,
+   "signature": "_.unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::unselect_staking_pool",
+     "label": "unselect_staking_pool",
+     "file": "lockup/src/owner.rs",
+     "line_start": 49,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_unselecting_non_selected",
+     "label": "test_staking_pool_unselecting_non_selected",
+     "file": "lockup/src/lib.rs",
+     "line_start": 868,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_unselecting_with_deposit",
+     "label": "test_staking_pool_unselecting_with_deposit",
+     "file": "lockup/src/lib.rs",
+     "line_start": 881,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_106",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 106,
+   "line_end": 106,
+   "signature": "self\n                .staking_information\n                .as_ref()\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::deposit_to_staking_pool",
+     "label": "deposit_to_staking_pool",
+     "file": "lockup/src/owner.rs",
+     "line_start": 81,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_is_not_selected",
+     "label": "test_staking_pool_is_not_selected",
+     "file": "lockup/src/lib.rs",
+     "line_start": 646,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_refresh_balance",
+     "label": "test_staking_pool_refresh_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 739,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_unselecting_with_deposit",
+     "label": "test_staking_pool_unselecting_with_deposit",
+     "file": "lockup/src/lib.rs",
+     "line_start": 881,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_owner_balance",
+     "label": "test_staking_pool_owner_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 917,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 7,
+    "shown": 7,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_152",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 152,
+   "line_end": 152,
+   "signature": "self\n                .staking_information\n                .as_ref()\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::deposit_and_stake",
+     "label": "deposit_and_stake",
+     "file": "lockup/src/owner.rs",
+     "line_start": 127,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::tests::test_stake_all_unstake_all",
+     "label": "test_stake_all_unstake_all",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 761,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_196",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 196,
+   "line_end": 196,
+   "signature": "self\n                .staking_information\n                .as_ref()\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::refresh_staking_pool_balance",
+     "label": "refresh_staking_pool_balance",
+     "file": "lockup/src/owner.rs",
+     "line_start": 176,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_refresh_balance",
+     "label": "test_staking_pool_refresh_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 739,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_238",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 238,
+   "line_end": 238,
+   "signature": "self\n                .staking_information\n                .as_ref()\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::withdraw_from_staking_pool",
+     "label": "withdraw_from_staking_pool",
+     "file": "lockup/src/owner.rs",
+     "line_start": 216,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_owner_balance",
+     "label": "test_staking_pool_owner_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 917,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_279",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 279,
+   "line_end": 279,
+   "signature": "self\n                .staking_information\n                .as_ref()\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::withdraw_all_from_staking_pool",
+     "label": "withdraw_all_from_staking_pool",
+     "file": "lockup/src/owner.rs",
+     "line_start": 259,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_323",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 323,
+   "line_end": 323,
+   "signature": "self\n                .staking_information\n                .as_ref()\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::stake",
+     "label": "stake",
+     "file": "lockup/src/owner.rs",
+     "line_start": 301,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_refresh_balance",
+     "label": "test_staking_pool_refresh_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 739,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/internal.rs::StakingContract::internal_restake",
+     "label": "internal_restake",
+     "file": "staking-pool/src/internal.rs",
+     "line_start": 9,
+     "visibility": "pub(crate)",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::StakingContract::on_stake_action",
+     "label": "on_stake_action",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 399,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::StakingContract::pause_staking",
+     "label": "pause_staking",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 464,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::tests::test_stake_with_fee",
+     "label": "test_stake_with_fee",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 640,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 14,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_366",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 366,
+   "line_end": 366,
+   "signature": "self\n                .staking_information\n                .as_ref()\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::unstake",
+     "label": "unstake",
+     "file": "lockup/src/owner.rs",
+     "line_start": 344,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_get_account_staked_balance_to_unstake",
+     "label": "on_get_account_staked_balance_to_unstake",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 9,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::tests::test_stake_unstake",
+     "label": "test_stake_unstake",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 706,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 6,
+    "shown": 6,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner.rs::LockupContract._sink_unwrap_406",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner.rs",
+   "line_start": 406,
+   "line_end": 406,
+   "signature": "self\n                .staking_information\n                .as_ref()\n            ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner.rs::LockupContract::unstake_all",
+     "label": "unstake_all",
+     "file": "lockup/src/owner.rs",
+     "line_start": 387,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::tests::test_stake_all_unstake_all",
+     "label": "test_stake_all_unstake_all",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 761,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner_callbacks.rs::LockupContract._sink_unwrap_36",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner_callbacks.rs",
+   "line_start": 36,
+   "line_end": 36,
+   "signature": "self.staking_information.as_mut().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_staking_pool_deposit",
+     "label": "on_staking_pool_deposit",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 29,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_refresh_balance",
+     "label": "test_staking_pool_refresh_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 739,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_unselecting_with_deposit",
+     "label": "test_staking_pool_unselecting_with_deposit",
+     "file": "lockup/src/lib.rs",
+     "line_start": 881,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_owner_balance",
+     "label": "test_staking_pool_owner_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 917,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::deposit_to_staking_pool",
+     "label": "deposit_to_staking_pool",
+     "file": "lockup/src/owner.rs",
+     "line_start": 81,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_is_not_selected",
+     "label": "test_staking_pool_is_not_selected",
+     "file": "lockup/src/lib.rs",
+     "line_start": 646,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 8,
+    "shown": 8,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner_callbacks.rs::LockupContract._sink_unwrap_74",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner_callbacks.rs",
+   "line_start": 74,
+   "line_end": 74,
+   "signature": "self.staking_information.as_mut().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_staking_pool_deposit_and_stake",
+     "label": "on_staking_pool_deposit_and_stake",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 67,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::deposit_and_stake",
+     "label": "deposit_and_stake",
+     "file": "lockup/src/owner.rs",
+     "line_start": 127,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::tests::test_stake_all_unstake_all",
+     "label": "test_stake_all_unstake_all",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 761,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner_callbacks.rs::LockupContract._sink_unwrap_113",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner_callbacks.rs",
+   "line_start": 113,
+   "line_end": 113,
+   "signature": "self.staking_information.as_mut().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_staking_pool_withdraw",
+     "label": "on_staking_pool_withdraw",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 105,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_owner_balance",
+     "label": "test_staking_pool_owner_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 917,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::withdraw_from_staking_pool",
+     "label": "withdraw_from_staking_pool",
+     "file": "lockup/src/owner.rs",
+     "line_start": 216,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_get_account_unstaked_balance_to_withdraw_by_owner",
+     "label": "on_get_account_unstaked_balance_to_withdraw_by_owner",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 298,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::withdraw_all_from_staking_pool",
+     "label": "withdraw_all_from_staking_pool",
+     "file": "lockup/src/owner.rs",
+     "line_start": 259,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 6,
+    "shown": 6,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner_callbacks.rs::LockupContract._sink_unwrap_149",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner_callbacks.rs",
+   "line_start": 149,
+   "line_end": 149,
+   "signature": "_.unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_staking_pool_stake",
+     "label": "on_staking_pool_stake",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 149,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_refresh_balance",
+     "label": "test_staking_pool_refresh_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 739,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::stake",
+     "label": "stake",
+     "file": "lockup/src/owner.rs",
+     "line_start": 301,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/internal.rs::StakingContract::internal_restake",
+     "label": "internal_restake",
+     "file": "staking-pool/src/internal.rs",
+     "line_start": 9,
+     "visibility": "pub(crate)",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::StakingContract::on_stake_action",
+     "label": "on_stake_action",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 399,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::StakingContract::pause_staking",
+     "label": "pause_staking",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 464,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 15,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "lockup/src/owner_callbacks.rs::LockupContract._sink_unwrap_185",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner_callbacks.rs",
+   "line_start": 185,
+   "line_end": 185,
+   "signature": "_.unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_staking_pool_unstake",
+     "label": "on_staking_pool_unstake",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 185,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_success",
+     "label": "test_staking_pool_success",
+     "file": "lockup/src/lib.rs",
+     "line_start": 658,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::unstake",
+     "label": "unstake",
+     "file": "lockup/src/owner.rs",
+     "line_start": 344,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation_callbacks.rs::LockupContract::on_get_account_staked_balance_to_unstake",
+     "label": "on_get_account_staked_balance_to_unstake",
+     "file": "lockup/src/foundation_callbacks.rs",
+     "line_start": 9,
+     "visibility": "pub",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::tests::test_stake_unstake",
+     "label": "test_stake_unstake",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 706,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/foundation.rs::LockupContract::termination_prepare_to_withdraw",
+     "label": "termination_prepare_to_withdraw",
+     "file": "lockup/src/foundation.rs",
+     "line_start": 58,
+     "visibility": "pub",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_termination_with_staking",
+     "label": "test_termination_with_staking",
+     "file": "lockup/src/lib.rs",
+     "line_start": 1729,
+     "visibility": "private",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 7,
+    "shown": 7,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner_callbacks.rs::LockupContract._sink_unwrap_221",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner_callbacks.rs",
+   "line_start": 221,
+   "line_end": 221,
+   "signature": "_.unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_staking_pool_unstake_all",
+     "label": "on_staking_pool_unstake_all",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 221,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::unstake_all",
+     "label": "unstake_all",
+     "file": "lockup/src/owner.rs",
+     "line_start": 387,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::tests::test_stake_all_unstake_all",
+     "label": "test_stake_all_unstake_all",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 761,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner_callbacks.rs::LockupContract._sink_unwrap_293",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner_callbacks.rs",
+   "line_start": 293,
+   "line_end": 293,
+   "signature": "self.staking_information.as_mut().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_get_account_total_balance",
+     "label": "on_get_account_total_balance",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 281,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/lib.rs::tests::test_staking_pool_refresh_balance",
+     "label": "test_staking_pool_refresh_balance",
+     "file": "lockup/src/lib.rs",
+     "line_start": 739,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::refresh_staking_pool_balance",
+     "label": "refresh_staking_pool_balance",
+     "file": "lockup/src/owner.rs",
+     "line_start": 176,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/owner_callbacks.rs::LockupContract._sink_unwrap_319",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/owner_callbacks.rs",
+   "line_start": 319,
+   "line_end": 319,
+   "signature": "self\n                    .staking_information\n                    .as_ref()\n    ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/owner_callbacks.rs::LockupContract::on_get_account_unstaked_balance_to_withdraw_by_owner",
+     "label": "on_get_account_unstaked_balance_to_withdraw_by_owner",
+     "file": "lockup/src/owner_callbacks.rs",
+     "line_start": 298,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "lockup/src/owner.rs::LockupContract::withdraw_all_from_staking_pool",
+     "label": "withdraw_all_from_staking_pool",
+     "file": "lockup/src/owner.rs",
+     "line_start": 259,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "lockup/src/types.rs::VestingScheduleWithSalt._sink_expect_208",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "lockup/src/types.rs",
+   "line_start": 208,
+   "line_end": 208,
+   "signature": "self.try_to_vec().expect(\"Failed to serialize\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "lockup/src/types.rs::VestingScheduleWithSalt::hash",
+     "label": "hash",
+     "file": "lockup/src/types.rs",
+     "line_start": 207,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "multisig/src/lib.rs::MultiSigContract._sink_expect_158",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig/src/lib.rs",
+   "line_start": 158,
+   "line_end": 158,
+   "signature": "self.requests.get(&request_id).expect(\"No such request\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::delete_request",
+     "label": "delete_request",
+     "file": "multisig/src/lib.rs",
+     "line_start": 156,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::test_panics_delete_request",
+     "label": "test_panics_delete_request",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 788,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::test_delete_request_future",
+     "label": "test_delete_request_future",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 805,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::test_delete_request_panic_wrong_key",
+     "label": "test_delete_request_panic_wrong_key",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 830,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "multisig/src/lib.rs::MultiSigContract._sink_unwrap_250",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig/src/lib.rs",
+   "line_start": 250,
+   "line_end": 250,
+   "signature": "self.confirmations.get(&request_id).unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::confirm",
+     "label": "confirm",
+     "file": "multisig/src/lib.rs",
+     "line_start": 248,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::add_request_and_confirm",
+     "label": "add_request_and_confirm",
+     "file": "multisig/src/lib.rs",
+     "line_start": 149,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::test_multi_3_of_n",
+     "label": "test_multi_3_of_n",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 574,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::test_multi_add_request_and_confirm",
+     "label": "test_multi_add_request_and_confirm",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 615,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::test_change_num_confirmations",
+     "label": "test_change_num_confirmations",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 747,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::test_panics_on_second_confirm",
+     "label": "test_panics_on_second_confirm",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 766,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::test_delete_request_future",
+     "label": "test_delete_request_future",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 805,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::tests::add_key_delete_key_storage_cleared",
+     "label": "add_key_delete_key_storage_cleared",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 656,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 9,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "multisig/src/lib.rs::MultiSigContract._sink_expect_328",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig/src/lib.rs",
+   "line_start": 328,
+   "line_end": 328,
+   "signature": "self.requests.get(&request_id).expect(\"No such request\")",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::get_request",
+     "label": "get_request",
+     "file": "multisig/src/lib.rs",
+     "line_start": 327,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "multisig/src/lib.rs::MultiSigContract._sink_expect_340",
+   "label": "expect",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig/src/lib.rs",
+   "line_start": 340,
+   "line_end": 340,
+   "signature": "self.confirmations\n            .get(&request_id)\n            .expect(\"No such re",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig/src/lib.rs::MultiSigContract::get_confirmations",
+     "label": "get_confirmations",
+     "file": "multisig/src/lib.rs",
+     "line_start": 339,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "multisig2/src/lib.rs::MultiSigContract._sink_unwrap_or_else_171",
+   "label": "unwrap_or_else",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig2/src/lib.rs",
+   "line_start": 171,
+   "line_end": 171,
+   "signature": "self.current_member().unwrap_or_else(|| {\n            env::panic_str(\n          ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig2/src/lib.rs::MultisigMember::ToString::to_string",
+     "label": "to_string",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 103,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::add_request",
+     "label": "add_request",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 170,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::delete_request",
+     "label": "delete_request",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 210,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::confirm",
+     "label": "confirm",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 294,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::current_member",
+     "label": "current_member",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 322,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::remove_request",
+     "label": "remove_request",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 382,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::get_request",
+     "label": "get_request",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 448,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::get_confirmations",
+     "label": "get_confirmations",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 464,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 79,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "multisig2/src/lib.rs::MultiSigContract._sink_unwrap_or_else_212",
+   "label": "unwrap_or_else",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig2/src/lib.rs",
+   "line_start": 212,
+   "line_end": 212,
+   "signature": "self\n            .requests\n            .get(&request_id)\n            .unwrap_or_",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::delete_request",
+     "label": "delete_request",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 210,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_panics_delete_request",
+     "label": "test_panics_delete_request",
+     "file": "multisig/src/lib.rs",
+     "line_start": 696,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_delete_request_future",
+     "label": "test_delete_request_future",
+     "file": "multisig/src/lib.rs",
+     "line_start": 712,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_delete_request_panic_wrong_key",
+     "label": "test_delete_request_panic_wrong_key",
+     "file": "multisig/src/lib.rs",
+     "line_start": 730,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "multisig2/src/lib.rs::MultiSigContract._sink_unwrap_or_else_296",
+   "label": "unwrap_or_else",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig2/src/lib.rs",
+   "line_start": 296,
+   "line_end": 296,
+   "signature": "self\n            .current_member()\n            .unwrap_or_else(|| env::panic_str",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::confirm",
+     "label": "confirm",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 294,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_multi_3_of_n",
+     "label": "test_multi_3_of_n",
+     "file": "multisig/src/lib.rs",
+     "line_start": 492,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_multi_add_request_and_confirm",
+     "label": "test_multi_add_request_and_confirm",
+     "file": "multisig/src/lib.rs",
+     "line_start": 534,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_change_num_confirmations",
+     "label": "test_change_num_confirmations",
+     "file": "multisig/src/lib.rs",
+     "line_start": 661,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_panics_on_second_confirm",
+     "label": "test_panics_on_second_confirm",
+     "file": "multisig/src/lib.rs",
+     "line_start": 677,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::add_request_and_confirm",
+     "label": "add_request_and_confirm",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 203,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::add_key_delete_key_storage_cleared",
+     "label": "add_key_delete_key_storage_cleared",
+     "file": "multisig/src/lib.rs",
+     "line_start": 576,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_panics_add_key_different_account",
+     "label": "test_panics_add_key_different_account",
+     "file": "multisig/src/lib.rs",
+     "line_start": 635,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 8,
+    "shown": 8,
+    "truncated": false
+   }
+  },
+  {
+   "id": "multisig2/src/lib.rs::MultiSigContract._sink_unwrap_299",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig2/src/lib.rs",
+   "line_start": 299,
+   "line_end": 299,
+   "signature": "self.confirmations.get(&request_id).unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::confirm",
+     "label": "confirm",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 294,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_multi_3_of_n",
+     "label": "test_multi_3_of_n",
+     "file": "multisig/src/lib.rs",
+     "line_start": 492,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_multi_add_request_and_confirm",
+     "label": "test_multi_add_request_and_confirm",
+     "file": "multisig/src/lib.rs",
+     "line_start": 534,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_change_num_confirmations",
+     "label": "test_change_num_confirmations",
+     "file": "multisig/src/lib.rs",
+     "line_start": 661,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_panics_on_second_confirm",
+     "label": "test_panics_on_second_confirm",
+     "file": "multisig/src/lib.rs",
+     "line_start": 677,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::add_request_and_confirm",
+     "label": "add_request_and_confirm",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 203,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::add_key_delete_key_storage_cleared",
+     "label": "add_key_delete_key_storage_cleared",
+     "file": "multisig/src/lib.rs",
+     "line_start": 576,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "multisig/src/lib.rs::tests::test_panics_add_key_different_account",
+     "label": "test_panics_add_key_different_account",
+     "file": "multisig/src/lib.rs",
+     "line_start": 635,
+     "visibility": "private",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 8,
+    "shown": 8,
+    "truncated": false
+   }
+  },
+  {
+   "id": "multisig2/src/lib.rs::MultiSigContract._sink_unwrap_or_else_449",
+   "label": "unwrap_or_else",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig2/src/lib.rs",
+   "line_start": 449,
+   "line_end": 449,
+   "signature": "self\n            .requests\n            .get(&request_id)\n            .unwrap_or_",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::get_request",
+     "label": "get_request",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 448,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "multisig2/src/lib.rs::MultiSigContract._sink_unwrap_or_else_465",
+   "label": "unwrap_or_else",
+   "node_type": "function",
+   "visibility": "",
+   "file": "multisig2/src/lib.rs",
+   "line_start": 465,
+   "line_end": 465,
+   "signature": "self.confirmations\n            .get(&request_id)\n            .unwrap_or_else(|| ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "multisig2/src/lib.rs::MultiSigContract::get_confirmations",
+     "label": "get_confirmations",
+     "file": "multisig2/src/lib.rs",
+     "line_start": 464,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "staking-pool-factory/src/lib.rs::StakingPoolFactory._sink_unwrap_178",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "staking-pool-factory/src/lib.rs",
+   "line_start": 178,
+   "line_end": 178,
+   "signature": "near_sdk::serde_json::to_vec(&StakingPoolArgs {\n                    owner_id,\n  ",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "staking-pool-factory/src/lib.rs::StakingPoolFactory::create_staking_pool",
+     "label": "create_staking_pool",
+     "file": "staking-pool-factory/src/lib.rs",
+     "line_start": 137,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool-factory/src/lib.rs::tests::test_create_staking_pool_success",
+     "label": "test_create_staking_pool_success",
+     "file": "staking-pool-factory/src/lib.rs",
+     "line_start": 252,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool-factory/src/lib.rs::tests::test_create_staking_pool_not_enough_deposit",
+     "label": "test_create_staking_pool_not_enough_deposit",
+     "file": "staking-pool-factory/src/lib.rs",
+     "line_start": 294,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool-factory/src/lib.rs::tests::test_create_staking_pool_rollback",
+     "label": "test_create_staking_pool_rollback",
+     "file": "staking-pool-factory/src/lib.rs",
+     "line_start": 327,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "staking-pool/src/lib.rs::StakingContract._sink_unwrap_360",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "staking-pool/src/lib.rs",
+   "line_start": 360,
+   "line_end": 360,
+   "signature": "self.stake_public_key.clone().try_into().unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "staking-pool/src/lib.rs::StakingContract::get_staking_key",
+     "label": "get_staking_key",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 359,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "staking-pool/src/lib.rs::StakingContract._sink_unwrap_391",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "staking-pool/src/lib.rs",
+   "line_start": 391,
+   "line_end": 391,
+   "signature": "keys.get(index).unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "staking-pool/src/lib.rs::StakingContract::get_accounts",
+     "label": "get_accounts",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 387,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "staking-pool/src/lib.rs::tests::test_two_delegates",
+     "label": "test_two_delegates",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 800,
+     "visibility": "private",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "staking-pool/src/lib.rs::Emulator._sink_unwrap_525",
+   "label": "unwrap",
+   "node_type": "function",
+   "visibility": "",
+   "file": "staking-pool/src/lib.rs",
+   "line_start": 525,
+   "line_end": 525,
+   "signature": "Base58PublicKey::try_from(stake_public_key).unwrap()",
+   "sink_type": "panic",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "staking-pool/src/lib.rs::tests::Emulator::new",
+     "label": "new",
+     "file": "staking-pool/src/lib.rs",
+     "line_start": 513,
+     "visibility": "pub",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "state-manipulation/src/lib.rs::_module._sink_as_ptr_46",
+   "label": "as_ptr",
+   "node_type": "function",
+   "visibility": "",
+   "file": "state-manipulation/src/lib.rs",
+   "line_start": 46,
+   "line_end": 46,
+   "signature": "unsafe { as_ptr() }",
+   "sink_type": "unsafe_ffi",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "state-manipulation/src/lib.rs::storage_write",
+     "label": "storage_write",
+     "file": "state-manipulation/src/lib.rs",
+     "line_start": 45,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "state-manipulation/src/lib.rs::storage_remove",
+     "label": "storage_remove",
+     "file": "state-manipulation/src/lib.rs",
+     "line_start": 59,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "state-manipulation/src/lib.rs::input",
+     "label": "input",
+     "file": "state-manipulation/src/lib.rs",
+     "line_start": 63,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "state-manipulation/src/lib.rs::replace",
+     "label": "replace",
+     "file": "state-manipulation/src/lib.rs",
+     "line_start": 77,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "state-manipulation/src/lib.rs::clean",
+     "label": "clean",
+     "file": "state-manipulation/src/lib.rs",
+     "line_start": 96,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 5,
+    "shown": 5,
+    "truncated": false
+   }
+  },
+  {
+   "id": "state-manipulation/src/lib.rs::_module._sink_as_ptr_60",
+   "label": "as_ptr",
+   "node_type": "function",
+   "visibility": "",
+   "file": "state-manipulation/src/lib.rs",
+   "line_start": 60,
+   "line_end": 60,
+   "signature": "unsafe { as_ptr() }",
+   "sink_type": "unsafe_ffi",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "state-manipulation/src/lib.rs::storage_remove",
+     "label": "storage_remove",
+     "file": "state-manipulation/src/lib.rs",
+     "line_start": 59,
+     "visibility": "private",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "state-manipulation/src/lib.rs::clean",
+     "label": "clean",
+     "file": "state-manipulation/src/lib.rs",
+     "line_start": 96,
+     "visibility": "pub",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  }
+ ],
+ "_warning": "cs_sinks output capped for MCP. Set max_results=0 for exhaustive sink expansion.",
+ "caller_truncated": true,
+ "caller_truncated_sinks": 9,
+ "_warnings": [
+  "Some caller lists were capped. Set max_callers_per_sink=0 for exhaustive caller reachability."
+ ]
+}

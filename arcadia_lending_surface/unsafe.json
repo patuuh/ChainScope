@@ -1,0 +1,325 @@
+{
+ "missing_validation": [
+  {
+   "function": "constructor",
+   "file": "src/DebtToken.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/LendingPool.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "liquidityOfAndSync",
+   "file": "src/LendingPool.sol",
+   "visibility": "external",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/Tranche.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "mint",
+   "file": "src/Tranche.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "convertToSharesAndSync",
+   "file": "src/Tranche.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "convertToAssetsAndSync",
+   "file": "src/Tranche.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/periphery/tranche-wrapper/TrancheWrapper.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "deposit",
+   "file": "src/periphery/tranche-wrapper/TrancheWrapper.sol",
+   "visibility": "public",
+   "source_context": "production"
+  },
+  {
+   "function": "mint",
+   "file": "src/periphery/tranche-wrapper/TrancheWrapper.sol",
+   "visibility": "public",
+   "source_context": "production"
+  }
+ ],
+ "unsafe_downcasts": [
+  {
+   "function": "addTranche",
+   "file": "src/LendingPool.sol",
+   "line": 222,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 232
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setInterestWeightTranche",
+   "file": "src/LendingPool.sol",
+   "line": 245,
+   "casts": [
+    {
+     "type": "uint8",
+     "line": 253
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "totalAssets",
+   "file": "src/LendingPool.sol",
+   "line": 635,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 639
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "totalLiquidity",
+   "file": "src/LendingPool.sol",
+   "line": 650,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 654
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "liquidityOf",
+   "file": "src/LendingPool.sol",
+   "line": 685,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 689
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_syncInterests",
+   "file": "src/LendingPool.sol",
+   "line": 736,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 739
+    },
+    {
+     "type": "uint32",
+     "line": 742
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "pause",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "line": 113,
+   "casts": [
+    {
+     "type": "uint96",
+     "line": 115
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAuctionCurveParameters",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 164,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 178
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 259,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 278
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAuctionCurveParameters",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 216,
+   "casts": [
+    {
+     "type": "uint64",
+     "line": 230
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getAssetShares",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 312,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 331
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bid",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 381,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 392
+    }
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "endAuction",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 540,
+   "casts": [
+    {
+     "type": "uint32",
+     "line": 550
+    }
+   ],
+   "source_context": "production"
+  }
+ ],
+ "dead_params": [
+  {
+   "function": "constructor",
+   "file": "src/DebtToken.sol",
+   "line": 37,
+   "visibility": "public",
+   "unused_params": [
+    "asset_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/LendingPool.sol",
+   "line": 197,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "riskManager_",
+    "asset_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/Tranche.sol",
+   "line": 96,
+   "visibility": "public",
+   "unused_params": [
+    "owner_",
+    "prefix_",
+    "prefixSymbol_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/guardians/LendingPoolGuardian.sol",
+   "line": 98,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/liquidators/LiquidatorL1.sol",
+   "line": 106,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "constructor",
+   "file": "src/liquidators/LiquidatorL2.sol",
+   "line": 111,
+   "visibility": "public",
+   "unused_params": [
+    "owner_"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "_summary": {
+  "total_findings": 31,
+  "shown_findings": 31,
+  "categories": [
+   "missing_validation",
+   "unsafe_downcasts",
+   "dead_params"
+  ],
+  "category_totals": {
+   "missing_validation": 12,
+   "unsafe_downcasts": 13,
+   "dead_params": 6
+  },
+  "truncated_categories": {},
+  "truncated": false,
+  "max_per_category": 25,
+  "max_detail_items": 10,
+  "detail_truncated": false,
+  "detail_truncated_items": 0,
+  "query_scope": "all_sources"
+ }
+}

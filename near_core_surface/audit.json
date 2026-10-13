@@ -1,0 +1,371 @@
+{
+ "query_scope": "all_sources",
+ "stats": {
+  "nodes": 778,
+  "edges": 2169,
+  "functions": 374,
+  "state_vars": 118,
+  "files": 25,
+  "transitions": 0,
+  "entry_points": 0,
+  "guarded_entry_points": 0,
+  "unguarded_entry_points": 0,
+  "sinks": 53,
+  "node_types": {
+   "function": 374,
+   "use": 135,
+   "state_var": 118,
+   "enum_variant": 57,
+   "module": 35,
+   "struct": 34,
+   "enum": 15,
+   "trait": 10
+  },
+  "edge_relations": {
+   "calls": 1864,
+   "contains": 175,
+   "reads_state": 90,
+   "writes_state": 28,
+   "inherits": 12
+  }
+ },
+ "build_info": {
+  "repo_path": "/tmp/opencode/near-core-contracts",
+  "detected_chain": "rust",
+  "all_chains": [
+   "rust"
+  ],
+  "lang_override": "rust",
+  "include_research": false,
+  "built_at": "2026-09-23T20:01:11.375175+00:00",
+  "files_considered": 25,
+  "files_indexed": 25,
+  "extractor_runs": 25,
+  "extractor_failures": 0,
+  "failed_files": 0,
+  "failure_examples": [],
+  "timed_out": false,
+  "max_files": null,
+  "nodes": 778,
+  "edges": 3389,
+  "transitions": 0,
+  "confidence": {
+   "score": 100.0,
+   "tier": "high",
+   "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse"
+  }
+ },
+ "detections": {
+  "panic_paths": 99,
+  "no_input_validation": 36,
+  "unsafe_blocks": 4
+ },
+ "source_context_summary": {
+  "production": 374
+ },
+ "source_context_summary_info": {
+  "total": 1,
+  "shown": 1,
+  "truncated": false
+ },
+ "critical_hotspots": [
+  {
+   "function": "get_locked_vested_amount",
+   "file": "lockup/src/getters.rs",
+   "line": 117,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_unvested_amount",
+   "file": "lockup/src/getters.rs",
+   "line": 123,
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "set_staking_pool_status",
+   "file": "lockup/src/internal.rs",
+   "line": 16,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "create",
+   "file": "multisig-factory/src/lib.rs",
+   "line": 29,
+   "score": 5,
+   "reasons": [
+    "ext_calls(6)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_request",
+   "file": "multisig/src/lib.rs",
+   "line": 327,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_num_requests_pk",
+   "file": "multisig/src/lib.rs",
+   "line": 331,
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_confirmations",
+   "file": "multisig/src/lib.rs",
+   "line": 339,
+   "score": 5,
+   "reasons": [
+    "ext_calls(5)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_request",
+   "file": "multisig2/src/lib.rs",
+   "line": 448,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_num_requests_per_member",
+   "file": "multisig2/src/lib.rs",
+   "line": 456,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_confirmations",
+   "file": "multisig2/src/lib.rs",
+   "line": 464,
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "staking-pool/src/lib.rs",
+   "line": 513,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_context",
+   "file": "staking-pool/src/lib.rs",
+   "line": 553,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skip_epochs",
+   "file": "staking-pool/src/lib.rs",
+   "line": 580,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "multiply",
+   "file": "staking-pool/src/lib.rs",
+   "line": 141,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "staking-pool/src/lib.rs",
+   "line": 254,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "stake",
+   "file": "staking-pool/src/lib.rs",
+   "line": 279,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "unstake",
+   "file": "staking-pool/src/lib.rs",
+   "line": 306,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_account_total_balance",
+   "file": "staking-pool/src/lib.rs",
+   "line": 333,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_account",
+   "file": "staking-pool/src/lib.rs",
+   "line": 369,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_accounts",
+   "file": "staking-pool/src/lib.rs",
+   "line": 387,
+   "score": 5,
+   "reasons": [
+    "ext_calls(6)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "hotspot_summary": {
+  "total_scored": 20,
+  "critical_8plus": 0,
+  "high_5to7": 20
+ },
+ "sink_summary": {
+  "by_type": {
+   "panic": 50,
+   "unsafe_ffi": 3
+  },
+  "reachable_functions": {
+   "panic": 213,
+   "unsafe_ffi": 8
+  }
+ },
+ "dead_code": {
+  "dead_internal_total": 102,
+  "direct_entry_points_total": 0
+ },
+ "unsafe_summary": {
+  "unsafe_blocks": 4,
+  "panic_paths": 99
+ },
+ "_summary": {
+  "top": 25,
+  "query_scope": "all_sources",
+  "include_metadata": false,
+  "include_dead_code_details": false,
+  "max_metadata_bytes": 4096,
+  "max_source_contexts": 20,
+  "sections": {
+   "attack_surface": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "critical_hotspots": {
+    "total": 20,
+    "shown": 20,
+    "truncated": false
+   },
+   "reentrancy": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "taint_paths": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "access_control_gaps": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "silent_state_changes": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "dead_code.dead_internal": {
+    "total": 102,
+    "shown": 0,
+    "truncated": true
+   },
+   "dead_code.direct_entry_points": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   }
+  },
+  "truncated_sections": [
+   "dead_code.dead_internal"
+  ],
+  "truncated": true,
+  "_hint": "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+ }
+}

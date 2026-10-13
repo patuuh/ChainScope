@@ -1,0 +1,393 @@
+{
+ "tool": "cs_sinks",
+ "query_scope": "all_sources",
+ "sink_type": "all",
+ "external_only": false,
+ "total": 8,
+ "shown": 8,
+ "truncated": false,
+ "max_results": 50,
+ "max_callers_per_sink": 8,
+ "include_metadata": false,
+ "include_caller_details": false,
+ "max_metadata_bytes": 4096,
+ "by_type": {
+  "fund_transfer": 7,
+  "low_level_call": 1
+ },
+ "sinks": [
+  {
+   "id": "src/cl-managers/RouterTrampoline.sol::RouterTrampoline._sink_call_43",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/cl-managers/RouterTrampoline.sol",
+   "line_start": 44,
+   "line_end": 44,
+   "signature": "router.call",
+   "sink_type": "low_level_call",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/cl-managers/RouterTrampoline.sol::RouterTrampoline.execute(address,bytes,address,address,uint256)",
+     "label": "execute",
+     "file": "src/cl-managers/RouterTrampoline.sol",
+     "line_start": 34,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/compounders/Compounder.sol::Compounder.skim(address)",
+     "label": "skim",
+     "file": "src/cl-managers/compounders/Compounder.sol",
+     "line_start": 579,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/rebalancers/Rebalancer.sol::Rebalancer.skim(address)",
+     "label": "skim",
+     "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+     "line_start": 663,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/yield-claimers/YieldClaimer.sol::YieldClaimer.skim(address)",
+     "label": "skim",
+     "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+     "line_start": 325,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/merkl-operator/MerklOperator.sol::MerklOperator.skim(address)",
+     "label": "skim",
+     "file": "src/merkl-operator/MerklOperator.sol",
+     "line_start": 257,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/merkl-operator/MerklOperatorBase.sol::MerklOperatorBase.skim(address)",
+     "label": "skim",
+     "file": "src/merkl-operator/MerklOperatorBase.sol",
+     "line_start": 170,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/compounders/Compounder.sol::Compounder._swapViaRouter(uint256[],PositionState,bool,bytes)",
+     "label": "_swapViaRouter",
+     "file": "src/cl-managers/compounders/Compounder.sol",
+     "line_start": 500,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/compounders/CompounderUniswapV4.sol::CompounderUniswapV4._swapViaRouter(uint256[],PositionState,bool,bytes)",
+     "label": "_swapViaRouter",
+     "file": "src/cl-managers/compounders/CompounderUniswapV4.sol",
+     "line_start": 75,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 14,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "src/cl-managers/base/UniswapV4.sol::UniswapV4._sink_transfer_436",
+   "label": "transfer",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line_start": 437,
+   "line_end": 437,
+   "signature": "currency0.transfer",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/cl-managers/base/UniswapV4.sol::UniswapV4._processSwapDelta(BalanceDelta,Currency,Currency)",
+     "label": "_processSwapDelta",
+     "file": "src/cl-managers/base/UniswapV4.sol",
+     "line_start": 427,
+     "visibility": "internal",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/base/UniswapV4.sol::UniswapV4.unlockCallback(bytes)",
+     "label": "unlockCallback",
+     "file": "src/cl-managers/base/UniswapV4.sol",
+     "line_start": 405,
+     "visibility": "external",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "src/cl-managers/base/UniswapV4.sol::UniswapV4._sink_transfer_444",
+   "label": "transfer",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line_start": 445,
+   "line_end": 445,
+   "signature": "currency1.transfer",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/cl-managers/base/UniswapV4.sol::UniswapV4._processSwapDelta(BalanceDelta,Currency,Currency)",
+     "label": "_processSwapDelta",
+     "file": "src/cl-managers/base/UniswapV4.sol",
+     "line_start": 427,
+     "visibility": "internal",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/base/UniswapV4.sol::UniswapV4.unlockCallback(bytes)",
+     "label": "unlockCallback",
+     "file": "src/cl-managers/base/UniswapV4.sol",
+     "line_start": 405,
+     "visibility": "external",
+     "distance": 2,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+   }
+  },
+  {
+   "id": "src/cl-managers/compounders/Compounder.sol::Compounder._sink_call_582",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line_start": 583,
+   "line_end": 583,
+   "signature": "payable(msg.sender).call{ value: address(this).balance }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/cl-managers/RouterTrampoline.sol::RouterTrampoline.execute(address,bytes,address,address,uint256)",
+     "label": "execute",
+     "file": "src/cl-managers/RouterTrampoline.sol",
+     "line_start": 34,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/compounders/Compounder.sol::Compounder.skim(address)",
+     "label": "skim",
+     "file": "src/cl-managers/compounders/Compounder.sol",
+     "line_start": 579,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/compounders/Compounder.sol::Compounder._swapViaRouter(uint256[],PositionState,bool,bytes)",
+     "label": "_swapViaRouter",
+     "file": "src/cl-managers/compounders/Compounder.sol",
+     "line_start": 500,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/compounders/CompounderUniswapV4.sol::CompounderUniswapV4._swapViaRouter(uint256[],PositionState,bool,bytes)",
+     "label": "_swapViaRouter",
+     "file": "src/cl-managers/compounders/CompounderUniswapV4.sol",
+     "line_start": 75,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/rebalancers/Rebalancer.sol::Rebalancer._swapViaRouter(uint256[],PositionState,bool,bytes)",
+     "label": "_swapViaRouter",
+     "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+     "line_start": 574,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/rebalancers/RebalancerUniswapV4.sol::RebalancerUniswapV4._swapViaRouter(uint256[],PositionState,bool,bytes)",
+     "label": "_swapViaRouter",
+     "file": "src/cl-managers/rebalancers/RebalancerUniswapV4.sol",
+     "line_start": 76,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/compounders/Compounder.sol::Compounder._swap(uint256[],uint256[],InitiatorParams,PositionState,RebalanceParams,Cache)",
+     "label": "_swap",
+     "file": "src/cl-managers/compounders/Compounder.sol",
+     "line_start": 454,
+     "visibility": "internal",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "src/cl-managers/rebalancers/Rebalancer.sol::Rebalancer._swap(uint256[],uint256[],InitiatorParams,PositionState,RebalanceParams,Cache)",
+     "label": "_swap",
+     "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+     "line_start": 526,
+     "visibility": "internal",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 10,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "src/cl-managers/rebalancers/Rebalancer.sol::Rebalancer._sink_call_666",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line_start": 667,
+   "line_end": 667,
+   "signature": "payable(msg.sender).call{ value: address(this).balance }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/cl-managers/rebalancers/Rebalancer.sol::Rebalancer.skim(address)",
+     "label": "skim",
+     "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+     "line_start": 663,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "src/cl-managers/yield-claimers/YieldClaimer.sol::YieldClaimer._sink_call_328",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line_start": 329,
+   "line_end": 329,
+   "signature": "payable(msg.sender).call{ value: address(this).balance }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/cl-managers/yield-claimers/YieldClaimer.sol::YieldClaimer.skim(address)",
+     "label": "skim",
+     "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+     "line_start": 325,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "src/merkl-operator/MerklOperator.sol::MerklOperator._sink_call_259",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line_start": 260,
+   "line_end": 260,
+   "signature": "payable(msg.sender).call{ value: address(this).balance }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/merkl-operator/MerklOperator.sol::MerklOperator.skim(address)",
+     "label": "skim",
+     "file": "src/merkl-operator/MerklOperator.sol",
+     "line_start": 257,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  },
+  {
+   "id": "src/merkl-operator/MerklOperatorBase.sol::MerklOperatorBase._sink_call_172",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "src/merkl-operator/MerklOperatorBase.sol",
+   "line_start": 173,
+   "line_end": 173,
+   "signature": "payable(msg.sender).call{ value: address(this).balance }",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "src/merkl-operator/MerklOperatorBase.sol::MerklOperatorBase.skim(address)",
+     "label": "skim",
+     "file": "src/merkl-operator/MerklOperatorBase.sol",
+     "line_start": 170,
+     "visibility": "external",
+     "distance": 1,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   }
+  }
+ ],
+ "caller_truncated": true,
+ "caller_truncated_sinks": 2,
+ "_warnings": [
+  "Some caller lists were capped. Set max_callers_per_sink=0 for exhaustive caller reachability."
+ ]
+}

@@ -1,0 +1,1197 @@
+{
+ "query_scope": "all_sources",
+ "stats": {
+  "nodes": 421,
+  "edges": 840,
+  "functions": 188,
+  "state_vars": 151,
+  "files": 50,
+  "transitions": 0,
+  "entry_points": 81,
+  "guarded_entry_points": 19,
+  "unguarded_entry_points": 62,
+  "sinks": 8,
+  "node_types": {
+   "function": 188,
+   "state_var": 151,
+   "interface": 17,
+   "event": 16,
+   "struct": 15,
+   "contract": 14,
+   "abstract": 10,
+   "library": 8,
+   "modifier": 2
+  },
+  "edge_relations": {
+   "calls": 497,
+   "reads_state": 189,
+   "writes_state": 64,
+   "inherits": 41,
+   "guards": 29,
+   "emits_event": 20
+  }
+ },
+ "build_info": {
+  "repo_path": "/tmp/opencode/arcadia-asset-managers",
+  "detected_chain": "solidity",
+  "all_chains": [
+   "solidity"
+  ],
+  "lang_override": "",
+  "include_research": false,
+  "built_at": "2026-09-23T19:41:08.884450+00:00",
+  "files_considered": 50,
+  "files_indexed": 50,
+  "extractor_runs": 50,
+  "extractor_failures": 0,
+  "failed_files": 0,
+  "failure_examples": [],
+  "timed_out": false,
+  "max_files": null,
+  "nodes": 421,
+  "edges": 1050,
+  "transitions": 0,
+  "confidence": {
+   "score": 100.0,
+   "tier": "high",
+   "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse"
+  }
+ },
+ "detections": {
+  "no_input_validation": 21,
+  "cross_reentrancy": 20,
+  "dead_params": 17,
+  "unsafe_downcast": 16,
+  "slippage_risk": 16,
+  "oracle_risk": 15,
+  "unchecked_arithmetic": 14,
+  "reentrancy_risk": 7,
+  "privileged_operations": 4,
+  "dos_risk": 4,
+  "has_assembly": 3,
+  "unguarded_privileged_operation": 1,
+  "erc_callback_risk": 1,
+  "frontrun_risk": 1
+ },
+ "source_context_summary": {
+  "production": 188
+ },
+ "source_context_summary_info": {
+  "total": 1,
+  "shown": 1,
+  "truncated": false
+ },
+ "attack_surface": [
+  {
+   "id": "src/cl-managers/base/Slipstream.sol::Slipstream.constructor",
+   "label": "constructor",
+   "file": "src/cl-managers/base/Slipstream.sol",
+   "signature": "constructor(address positionManager, address cLFactory, address poolImplementation, address rewardToken, address stakedSlipstreamAm, address stakedSlipstreamWrapper)",
+   "reachable_count": 2,
+   "state_writes": 6
+  },
+  {
+   "id": "src/cow-swapper/CowSwapper.sol::CowSwapper.constructor",
+   "label": "constructor",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "signature": "constructor(address owner_, address arcadiaFactory, address flashLoanRouter, address hooksTrampoline)",
+   "reachable_count": 5,
+   "state_writes": 5
+  },
+  {
+   "id": "src/cow-swapper/CowSwapper.sol::CowSwapper.flashLoanAndCallBack(address,address,uint256,bytes)",
+   "label": "flashLoanAndCallBack",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "signature": "function flashLoanAndCallBack(address account_, address tokenIn_, uint256 amountIn_, bytes callBackData) external",
+   "reachable_count": 7,
+   "state_writes": 5
+  },
+  {
+   "id": "src/cow-swapper/CowSwapper.sol::CowSwapper.onSetAssetManager(address,bool,bytes)",
+   "label": "onSetAssetManager",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "signature": "function onSetAssetManager(address accountOwner_, bool, bytes data) external",
+   "reachable_count": 9,
+   "state_writes": 4
+  },
+  {
+   "id": "src/cow-swapper/CowSwapper.sol::CowSwapper.setAccountInfo(address,address,uint256,address,bytes,bytes)",
+   "label": "setAccountInfo",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "signature": "function setAccountInfo(address account_, address initiator_, uint256 maxSwapFee, address orderHook, bytes hookData, bytes metaData_) external",
+   "reachable_count": 11,
+   "state_writes": 4
+  },
+  {
+   "id": "src/cow-swapper/CowSwapper.sol::CowSwapper.beforeSwap(bytes)",
+   "label": "beforeSwap",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "signature": "function beforeSwap(bytes initiatorData) external",
+   "reachable_count": 20,
+   "state_writes": 4
+  },
+  {
+   "id": "src/cl-managers/base/UniswapV4.sol::UniswapV4.constructor",
+   "label": "constructor",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "signature": "constructor(address positionManager, address permit2, address poolManager, address wrappedNative)",
+   "reachable_count": 4,
+   "state_writes": 4
+  },
+  {
+   "id": "src/merkl-operator/MerklOperator.sol::MerklOperator.onSetMerklOperator(address,bool,bytes)",
+   "label": "onSetMerklOperator",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "signature": "function onSetMerklOperator(address accountOwner, bool, bytes data) external",
+   "reachable_count": 5,
+   "state_writes": 3
+  },
+  {
+   "id": "src/merkl-operator/MerklOperator.sol::MerklOperator.setAccountInfo(address,address,address,uint256,bytes)",
+   "label": "setAccountInfo",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "signature": "function setAccountInfo(address account, address initiator, address rewardRecipient, uint256 maxClaimFee, bytes metaData_) external",
+   "reachable_count": 7,
+   "state_writes": 3
+  },
+  {
+   "id": "src/cl-managers/compounders/Compounder.sol::Compounder.onSetAssetManager(address,bool,bytes)",
+   "label": "onSetAssetManager",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "signature": "function onSetAssetManager(address accountOwner, bool, bytes data) external",
+   "reachable_count": 6,
+   "state_writes": 3
+  },
+  {
+   "id": "src/cl-managers/compounders/Compounder.sol::Compounder.setAccountInfo(address,address,uint256,uint256,uint256,uint256,bytes)",
+   "label": "setAccountInfo",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "signature": "function setAccountInfo(address account_, address initiator, uint256 maxClaimFee, uint256 maxSwapFee, uint256 maxTolerance, uint256 minLiquidityRatio, bytes metaData_) external",
+   "reachable_count": 8,
+   "state_writes": 3
+  },
+  {
+   "id": "src/cl-managers/rebalancers/Rebalancer.sol::Rebalancer.onSetAssetManager(address,bool,bytes)",
+   "label": "onSetAssetManager",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "signature": "function onSetAssetManager(address accountOwner, bool, bytes data) external",
+   "reachable_count": 8,
+   "state_writes": 3
+  },
+  {
+   "id": "src/cl-managers/rebalancers/Rebalancer.sol::Rebalancer.setAccountInfo(address,address,uint256,uint256,uint256,uint256,address,bytes,bytes)",
+   "label": "setAccountInfo",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "signature": "function setAccountInfo(address account_, address initiator, uint256 maxClaimFee, uint256 maxSwapFee, uint256 maxTolerance, uint256 minLiquidityRatio, address strategyHook, bytes strategyData, bytes metaData_) external",
+   "reachable_count": 10,
+   "state_writes": 3
+  },
+  {
+   "id": "src/cl-managers/yield-claimers/YieldClaimer.sol::YieldClaimer.onSetAssetManager(address,bool,bytes)",
+   "label": "onSetAssetManager",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "signature": "function onSetAssetManager(address accountOwner, bool, bytes data) external",
+   "reachable_count": 5,
+   "state_writes": 3
+  },
+  {
+   "id": "src/cl-managers/yield-claimers/YieldClaimer.sol::YieldClaimer.setAccountInfo(address,address,address,uint256,bytes)",
+   "label": "setAccountInfo",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "signature": "function setAccountInfo(address account_, address initiator, address feeRecipient, uint256 maxClaimFee, bytes metaData_) external",
+   "reachable_count": 7,
+   "state_writes": 3
+  },
+  {
+   "id": "src/cow-swapper/periphery/DefaultOrderHook.sol::DefaultOrderHook.constructor",
+   "label": "constructor",
+   "file": "src/cow-swapper/periphery/DefaultOrderHook.sol",
+   "signature": "constructor(address cowSwapper)",
+   "reachable_count": 6,
+   "state_writes": 3
+  },
+  {
+   "id": "src/merkl-operator/MerklOperator.sol::MerklOperator.constructor",
+   "label": "constructor",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "signature": "constructor(address owner_, address factory, address merklDistributor)",
+   "reachable_count": 3,
+   "state_writes": 2
+  },
+  {
+   "id": "src/merkl-operator/MerklOperatorBase.sol::MerklOperatorBase.constructor",
+   "label": "constructor",
+   "file": "src/merkl-operator/MerklOperatorBase.sol",
+   "signature": "constructor(address owner_, address factory, address merklDistributor)",
+   "reachable_count": 3,
+   "state_writes": 2
+  },
+  {
+   "id": "src/merkl-operator/MerklOperatorBase.sol::MerklOperatorBase.onSetMerklOperator(address,bool,bytes)",
+   "label": "onSetMerklOperator",
+   "file": "src/merkl-operator/MerklOperatorBase.sol",
+   "signature": "function onSetMerklOperator(address accountOwner, bool, bytes data) external",
+   "reachable_count": 4,
+   "state_writes": 2
+  },
+  {
+   "id": "src/merkl-operator/MerklOperatorBase.sol::MerklOperatorBase.setAccountInfo(address,address,bytes)",
+   "label": "setAccountInfo",
+   "file": "src/merkl-operator/MerklOperatorBase.sol",
+   "signature": "function setAccountInfo(address account, address initiator, bytes metaData_) external",
+   "reachable_count": 6,
+   "state_writes": 2
+  },
+  {
+   "id": "src/cl-managers/base/UniswapV3.sol::UniswapV3.constructor",
+   "label": "constructor",
+   "file": "src/cl-managers/base/UniswapV3.sol",
+   "signature": "constructor(address positionManager, address uniswapV3Factory)",
+   "reachable_count": 2,
+   "state_writes": 2
+  },
+  {
+   "id": "src/cl-managers/compounders/Compounder.sol::Compounder.constructor",
+   "label": "constructor",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "signature": "constructor(address owner_, address arcadiaFactory, address routerTrampoline)",
+   "reachable_count": 3,
+   "state_writes": 2
+  },
+  {
+   "id": "src/cl-managers/rebalancers/Rebalancer.sol::Rebalancer.constructor",
+   "label": "constructor",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "signature": "constructor(address owner_, address arcadiaFactory, address routerTrampoline)",
+   "reachable_count": 3,
+   "state_writes": 2
+  },
+  {
+   "id": "src/cow-swapper/CowSwapper.sol::CowSwapper.executeAction(bytes)",
+   "label": "executeAction",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "signature": "function executeAction(bytes callBackData) external",
+   "reachable_count": 9,
+   "state_writes": 1
+  },
+  {
+   "id": "src/guardian/Guardian.sol::Guardian.changeGuardian(address)",
+   "label": "changeGuardian",
+   "file": "src/guardian/Guardian.sol",
+   "signature": "function changeGuardian(address guardian_) external",
+   "reachable_count": 1,
+   "state_writes": 1
+  }
+ ],
+ "critical_hotspots": [
+  {
+   "function": "beforeSwap",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 415,
+   "score": 20,
+   "reasons": [
+    "entry+writes(4)",
+    "ext_calls(1)",
+    "reentrancy",
+    "cross_reentrancy",
+    "oracle(1)",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "executeAction",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 356,
+   "score": 12,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(3)",
+    "cross_reentrancy",
+    "oracle(3)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "execute",
+   "file": "src/cl-managers/RouterTrampoline.sol",
+   "line": 34,
+   "score": 11,
+   "reasons": [
+    "ext_calls(1)",
+    "oracle(2)",
+    "privileged(1)",
+    "unguarded_privileged"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "flashLoanAndCallBack",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 285,
+   "score": 11,
+   "reasons": [
+    "entry+writes(5)",
+    "ext_calls(2)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "compound",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 262,
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "rebalance",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 307,
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claim",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 184,
+   "score": 11,
+   "reasons": [
+    "entry+writes(1)",
+    "ext_calls(2)",
+    "reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 223,
+   "score": 10,
+   "reasons": [
+    "ext_calls(1)",
+    "reentrancy",
+    "unsafe_downcast(5)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 260,
+   "score": 10,
+   "reasons": [
+    "ext_calls(1)",
+    "reentrancy",
+    "unsafe_downcast(5)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 579,
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 663,
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 325,
+   "score": 9,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy",
+    "oracle(1)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_processSwapDelta",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 427,
+   "score": 8,
+   "reasons": [
+    "ext_calls(6)",
+    "unsafe_downcast(5)",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSwapParams",
+   "file": "src/cl-managers/libraries/CLMath.sol",
+   "line": 80,
+   "score": 8,
+   "reasons": [
+    "ext_calls(1)",
+    "unchecked_arith",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_getSwapParamsExact",
+   "file": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "line": 210,
+   "score": 8,
+   "reasons": [
+    "ext_calls(3)",
+    "unchecked_arith",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_approximateOptimalSwapAmounts",
+   "file": "src/cl-managers/libraries/RebalanceOptimizationMath.sol",
+   "line": 247,
+   "score": 8,
+   "reasons": [
+    "ext_calls(3)",
+    "unchecked_arith",
+    "slippage(no_slippage_param,no_deadline_param)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "onSetAssetManager",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 200,
+   "score": 7,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "setAccountInfo",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 218,
+   "score": 7,
+   "reasons": [
+    "ext_calls(3)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "isValidSignature",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 500,
+   "score": 7,
+   "reasons": [
+    "ext_calls(1)",
+    "cross_reentrancy"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "claim",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "line": 187,
+   "score": 7,
+   "reasons": [
+    "ext_calls(4)",
+    "oracle(2)",
+    "ext_call_in_loop(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_claim",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 204,
+   "score": 7,
+   "reasons": [
+    "ext_calls(5)",
+    "oracle(1)",
+    "unsafe_downcast(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_burn",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 294,
+   "score": 7,
+   "reasons": [
+    "ext_calls(4)",
+    "oracle(1)",
+    "unsafe_downcast(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_decreaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 329,
+   "score": 7,
+   "reasons": [
+    "ext_calls(4)",
+    "oracle(1)",
+    "unsafe_downcast(2)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_mint",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 472,
+   "score": 7,
+   "reasons": [
+    "ext_calls(6)",
+    "oracle(1)",
+    "unsafe_downcast(4)"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "_increaseLiquidity",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "line": 552,
+   "score": 7,
+   "reasons": [
+    "ext_calls(5)",
+    "oracle(1)",
+    "unsafe_downcast(4)"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "hotspot_summary": {
+  "total_scored": 54,
+  "critical_8plus": 16,
+  "high_5to7": 38
+ },
+ "reentrancy": [
+  {
+   "function": "approveToken",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 162,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "flashLoanAndCallBack",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "approveTokens",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 172,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "flashLoanAndCallBack",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "onSetAssetManager",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 200,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "flashLoanAndCallBack",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "setAccountInfo",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 218,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "flashLoanAndCallBack",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "flashLoanAndCallBack",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 285,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call '_encodeAction' at order 11 before state write 'CowSwapper.account' at order 13",
+   "modifiers": []
+  },
+  {
+   "function": "executeAction",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 356,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "flashLoanAndCallBack",
+   "stale_vars": [
+    "initiator",
+    "account",
+    "tokenIn",
+    "amountIn"
+   ]
+  },
+  {
+   "function": "executeAction",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 356,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "beforeSwap",
+   "stale_vars": [
+    "swapFee",
+    "tokenOut"
+   ]
+  },
+  {
+   "function": "beforeSwap",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 415,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'getInitiatorParams' at order 5 before state write 'CowSwapper.swapFee' at order 7",
+   "modifiers": []
+  },
+  {
+   "function": "beforeSwap",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 415,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "flashLoanAndCallBack",
+   "stale_vars": [
+    "account",
+    "tokenIn",
+    "amountIn"
+   ]
+  },
+  {
+   "function": "isValidSignature",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 500,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "flashLoanAndCallBack",
+   "stale_vars": [
+    "accountOwner",
+    "account",
+    "initiator"
+   ]
+  },
+  {
+   "function": "isValidSignature",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "line": 500,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "beforeSwap",
+   "stale_vars": [
+    "messageHash",
+    "orderHash"
+   ]
+  },
+  {
+   "function": "onSetAssetManager",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 160,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "compound",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "setAccountInfo",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 189,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "compound",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 223,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'sqrt' at order 2 before state write 'Compounder.metaData' at order 3",
+   "modifiers": []
+  },
+  {
+   "function": "compound",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 262,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call '_encodeAction' at order 7 before state write 'Compounder.account' at order 9",
+   "modifiers": []
+  },
+  {
+   "function": "executeAction",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 305,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "compound",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "line": 579,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "compound",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "onSetAssetManager",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 171,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "rebalance",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "setAccountInfo",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 213,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "rebalance",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "_setAccountInfo",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 260,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call 'sqrt' at order 2 before state write 'Rebalancer.metaData' at order 3",
+   "modifiers": []
+  },
+  {
+   "function": "rebalance",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 307,
+   "source_context": "production",
+   "type": "single_function",
+   "details": "external call '_encodeAction' at order 7 before state write 'Rebalancer.account' at order 9",
+   "modifiers": []
+  },
+  {
+   "function": "executeAction",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 350,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "rebalance",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "skim",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "line": 663,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "rebalance",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "onSetAssetManager",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 112,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "claim",
+   "stale_vars": [
+    "account"
+   ]
+  },
+  {
+   "function": "setAccountInfo",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "line": 129,
+   "source_context": "production",
+   "type": "cross_function",
+   "via": "claim",
+   "stale_vars": [
+    "account"
+   ]
+  }
+ ],
+ "taint_paths": [
+  {
+   "entry": "unlockCallback",
+   "file": "src/cl-managers/base/UniswapV4.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": false,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    },
+    {
+     "sink": "transfer",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "executeAction",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": false,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "executeAction",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": false,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "HIGH"
+  },
+  {
+   "entry": "execute",
+   "file": "src/cl-managers/RouterTrampoline.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "skim",
+   "file": "src/merkl-operator/MerklOperator.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "skim",
+   "file": "src/merkl-operator/MerklOperatorBase.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "skim",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "skim",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  },
+  {
+   "entry": "skim",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "guarded": true,
+   "reachable_sinks": 2,
+   "sinks": [
+    {
+     "sink": "call",
+     "type": "low_level_call"
+    },
+    {
+     "sink": "call",
+     "type": "fund_transfer"
+    }
+   ],
+   "risk": "MEDIUM"
+  }
+ ],
+ "taint_summary": {
+  "total": 9,
+  "high_risk": 3
+ },
+ "sink_summary": {
+  "by_type": {
+   "low_level_call": 1,
+   "fund_transfer": 7
+  },
+  "reachable_functions": {
+   "low_level_call": 15,
+   "fund_transfer": 23
+  }
+ },
+ "access_control_gaps": [
+  {
+   "function": "setHook",
+   "file": "src/cow-swapper/periphery/DefaultOrderHook.sol",
+   "source_context": "production",
+   "visibility": "external",
+   "state_writes": [
+    "accountInfo"
+   ]
+  }
+ ],
+ "access_gaps_total": 1,
+ "silent_state_changes": [
+  {
+   "function": "flashLoanAndCallBack",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "state_writes": 5
+  },
+  {
+   "function": "beforeSwap",
+   "file": "src/cow-swapper/CowSwapper.sol",
+   "source_context": "production",
+   "state_writes": 4
+  },
+  {
+   "function": "compound",
+   "file": "src/cl-managers/compounders/Compounder.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "rebalance",
+   "file": "src/cl-managers/rebalancers/Rebalancer.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "claim",
+   "file": "src/cl-managers/yield-claimers/YieldClaimer.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setHook",
+   "file": "src/cow-swapper/periphery/DefaultOrderHook.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "changeGuardian",
+   "file": "src/guardian/Guardian.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "pause",
+   "file": "src/guardian/Guardian.sol",
+   "source_context": "production",
+   "state_writes": 1
+  },
+  {
+   "function": "setPauseFlag",
+   "file": "src/guardian/Guardian.sol",
+   "source_context": "production",
+   "state_writes": 1
+  }
+ ],
+ "silent_total": 9,
+ "dead_code": {
+  "dead_internal_total": 50,
+  "direct_entry_points_total": 8
+ },
+ "defi_summary": {
+  "oracle_risk": 15,
+  "dos_risk": 4,
+  "frontrun_risk": 1,
+  "unsafe_downcast": 16,
+  "slippage_risk": 16,
+  "erc_callback_risk": 1,
+  "unguarded_privileged_operation": 1
+ },
+ "_summary": {
+  "top": 25,
+  "query_scope": "all_sources",
+  "include_metadata": false,
+  "include_dead_code_details": false,
+  "max_metadata_bytes": 4096,
+  "max_source_contexts": 20,
+  "sections": {
+   "attack_surface": {
+    "total": 81,
+    "shown": 25,
+    "truncated": true
+   },
+   "critical_hotspots": {
+    "total": 54,
+    "shown": 25,
+    "truncated": true
+   },
+   "reentrancy": {
+    "total": 29,
+    "shown": 25,
+    "truncated": true
+   },
+   "taint_paths": {
+    "total": 9,
+    "shown": 9,
+    "truncated": false
+   },
+   "access_control_gaps": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+   },
+   "silent_state_changes": {
+    "total": 9,
+    "shown": 9,
+    "truncated": false
+   },
+   "dead_code.dead_internal": {
+    "total": 50,
+    "shown": 0,
+    "truncated": true
+   },
+   "dead_code.direct_entry_points": {
+    "total": 8,
+    "shown": 0,
+    "truncated": true
+   }
+  },
+  "truncated_sections": [
+   "attack_surface",
+   "critical_hotspots",
+   "reentrancy",
+   "dead_code.dead_internal",
+   "dead_code.direct_entry_points"
+  ],
+  "truncated": true,
+  "_hint": "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+ }
+}

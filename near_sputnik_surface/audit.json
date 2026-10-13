@@ -1,0 +1,423 @@
+{
+ "query_scope": "all_sources",
+ "stats": {
+  "nodes": 534,
+  "edges": 1136,
+  "functions": 213,
+  "state_vars": 105,
+  "files": 15,
+  "transitions": 0,
+  "entry_points": 0,
+  "guarded_entry_points": 0,
+  "unguarded_entry_points": 0,
+  "sinks": 44,
+  "node_types": {
+   "function": 213,
+   "state_var": 105,
+   "use": 98,
+   "enum_variant": 58,
+   "struct": 24,
+   "module": 18,
+   "enum": 14,
+   "trait": 4
+  },
+  "edge_relations": {
+   "calls": 926,
+   "contains": 163,
+   "reads_state": 33,
+   "inherits": 8,
+   "writes_state": 6
+  }
+ },
+ "build_info": {
+  "repo_path": "/tmp/opencode/sputnik-dao",
+  "detected_chain": "rust",
+  "all_chains": [
+   "rust"
+  ],
+  "lang_override": "rust",
+  "include_research": false,
+  "built_at": "2026-09-23T20:01:10.435047+00:00",
+  "files_considered": 15,
+  "files_indexed": 15,
+  "extractor_runs": 15,
+  "extractor_failures": 0,
+  "failed_files": 0,
+  "failure_examples": [],
+  "timed_out": false,
+  "max_files": null,
+  "nodes": 535,
+  "edges": 1641,
+  "transitions": 0,
+  "confidence": {
+   "score": 100.0,
+   "tier": "high",
+   "method": "70% indexed-file coverage + 30% extractor success, dampened when graph signal is sparse"
+  }
+ },
+ "detections": {
+  "panic_paths": 58,
+  "no_input_validation": 45
+ },
+ "source_context_summary": {
+  "production": 213
+ },
+ "source_context_summary_info": {
+  "total": 1,
+  "shown": 1,
+  "truncated": false
+ },
+ "critical_hotspots": [
+  {
+   "function": "delegate",
+   "file": "sputnik-staking/src/lib.rs",
+   "line": 90,
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "undelegate",
+   "file": "sputnik-staking/src/lib.rs",
+   "line": 99,
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "withdraw",
+   "file": "sputnik-staking/src/lib.rs",
+   "line": 109,
+   "score": 5,
+   "reasons": [
+    "ext_calls(9)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "sputnik-staking/src/user.rs",
+   "line": 35,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "internal_get_user_opt",
+   "file": "sputnik-staking/src/user.rs",
+   "line": 137,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "save_user",
+   "file": "sputnik-staking/src/user.rs",
+   "line": 145,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "internal_register_user",
+   "file": "sputnik-staking/src/user.rs",
+   "line": 150,
+   "score": 5,
+   "reasons": [
+    "ext_calls(8)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "delete_contract",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line": 39,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_code",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line": 44,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_contract",
+   "file": "sputnikdao-factory2/src/factory_manager.rs",
+   "line": 53,
+   "score": 5,
+   "reasons": [
+    "ext_calls(6)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "create",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line": 72,
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "on_create",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line": 91,
+   "score": 5,
+   "reasons": [
+    "ext_calls(4)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_daos",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line": 133,
+   "score": 5,
+   "reasons": [
+    "ext_calls(6)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_code",
+   "file": "sputnikdao-factory2/src/lib.rs",
+   "line": 190,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "bounty_giveup",
+   "file": "sputnikdao2/src/bounties.rs",
+   "line": 179,
+   "score": 5,
+   "reasons": [
+    "ext_calls(7)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "get_user_weight",
+   "file": "sputnikdao2/src/delegation.rs",
+   "line": 4,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "new",
+   "file": "sputnikdao2/src/lib.rs",
+   "line": 98,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "match_user",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 26,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "to_weight",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 98,
+   "score": 5,
+   "reasons": [
+    "ext_calls(1)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "add_or_update_role",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 246,
+   "score": 5,
+   "reasons": [
+    "ext_calls(5)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "remove_role",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 261,
+   "score": 5,
+   "reasons": [
+    "ext_calls(3)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_default_vote_policy",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 271,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "update_parameters",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 276,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "add_member_to_role",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 292,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  },
+  {
+   "function": "remove_member_from_role",
+   "file": "sputnikdao2/src/policy.rs",
+   "line": 307,
+   "score": 5,
+   "reasons": [
+    "ext_calls(2)",
+    "no_validation"
+   ],
+   "source_context": "production"
+  }
+ ],
+ "hotspot_summary": {
+  "total_scored": 36,
+  "critical_8plus": 0,
+  "high_5to7": 36
+ },
+ "sink_summary": {
+  "by_type": {
+   "panic": 44
+  },
+  "reachable_functions": {
+   "panic": 133
+  }
+ },
+ "dead_code": {
+  "dead_internal_total": 34,
+  "direct_entry_points_total": 0
+ },
+ "unsafe_summary": {
+  "panic_paths": 58
+ },
+ "_summary": {
+  "top": 25,
+  "query_scope": "all_sources",
+  "include_metadata": false,
+  "include_dead_code_details": false,
+  "max_metadata_bytes": 4096,
+  "max_source_contexts": 20,
+  "sections": {
+   "attack_surface": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "critical_hotspots": {
+    "total": 36,
+    "shown": 25,
+    "truncated": true
+   },
+   "reentrancy": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "taint_paths": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "access_control_gaps": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "silent_state_changes": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   },
+   "dead_code.dead_internal": {
+    "total": 34,
+    "shown": 0,
+    "truncated": true
+   },
+   "dead_code.direct_entry_points": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+   }
+  },
+  "truncated_sections": [
+   "critical_hotspots",
+   "dead_code.dead_internal"
+  ],
+  "truncated": true,
+  "_hint": "cs_audit is a top-N overview. Use cs_hotspots, cs_defi, cs_unsafe, cs_paths, cs_trace, cs_cross_summary, or cs_state to drill into truncated sections."
+ }
+}

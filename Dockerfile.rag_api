@@ -1,0 +1,29 @@
+# Dockerfile for the FastAPI RAG service
+# Build the rag_api service and its dependencies
+FROM python:3.11-slim
+
+# Set a non‑root user (optional but good practice)
+ARG UID=1000
+ARG GID=1000
+RUN addgroup --gid $GID appgroup && \
+    adduser --uid $UID --gid $GID --disabled-password --gecos "" appuser
+
+WORKDIR /app
+
+# Copy only the needed Python files (avoid pulling the whole repo if large)
+COPY rag_api.py ./
+COPY build_rag_index.py ./
+COPY query_rag.py ./
+
+# Install runtime dependencies – pinned to lightweight versions
+RUN pip install --no-cache-dir \
+    fastapi uvicorn[standard] faiss-cpu sentence-transformers requests tiktoken
+
+# Switch to non‑root user
+USER appuser
+
+# Expose the port the API will listen on (8001 by default)
+EXPOSE 8001
+
+# Default command – can be overridden via docker‑compose env vars
+CMD ["uvicorn", "rag_api:app", "--host", "0.0.0.0", "--port", "8001"]

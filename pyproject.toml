@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chain-scope"
+version = "1.0.0"
+description = "ChainScope - EVM knowledge graph and security analysis toolkit"
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.9.0",
+    "mcp[cli]>=1.0.0,<2",
+    "tree-sitter>=0.21",
+    "tree-sitter-solidity>=1.2.0",
+    "tree-sitter-rust>=0.24.0",
+    "tree-sitter-cpp>=0.23.0",
+    "tree-sitter-go>=0.23.0",
+    "tree-sitter-java>=0.23.0",
+    "pyyaml>=6.0",
+    "httpx",
+    "pyotp",
+]
+
+[project.scripts]
+chain-scope = "cli.main:app"
+cs = "cli.main:app"
+
+[tool.setuptools.packages.find]
+include = ["core*", "shinobi*", "cli*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

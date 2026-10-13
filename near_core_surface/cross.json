@@ -1,0 +1,431 @@
+{
+ "total": 618,
+ "shown": 25,
+ "truncated": true,
+ "by_attribute": {
+  "unresolved": 565,
+  "sink": 53
+ },
+ "by_source_context": {
+  "production": 618
+ },
+ "top_source_files": [
+  {
+   "name": "lockup/src/lib.rs",
+   "calls": 96
+  },
+  {
+   "name": "multisig2/src/lib.rs",
+   "calls": 79
+  },
+  {
+   "name": "lockup/src/owner.rs",
+   "calls": 54
+  },
+  {
+   "name": "multisig/src/lib.rs",
+   "calls": 53
+  },
+  {
+   "name": "staking-pool/src/lib.rs",
+   "calls": 41
+  },
+  {
+   "name": "lockup-factory/src/lib.rs",
+   "calls": 38
+  },
+  {
+   "name": "lockup/src/owner_callbacks.rs",
+   "calls": 36
+  },
+  {
+   "name": "state-manipulation/src/lib.rs",
+   "calls": 32
+  },
+  {
+   "name": "voting/src/lib.rs",
+   "calls": 30
+  },
+  {
+   "name": "lockup/src/getters.rs",
+   "calls": 29
+  }
+ ],
+ "top_targets": [
+  {
+   "name": "unwrap",
+   "calls": 33
+  },
+  {
+   "name": "lockup/src/lib.rs::_unresolved::into",
+   "calls": 24
+  },
+  {
+   "name": "lockup/src/lib.rs::_unresolved::clone",
+   "calls": 16
+  },
+  {
+   "name": "lockup/src/lib.rs::_unresolved::try_into",
+   "calls": 15
+  },
+  {
+   "name": "staking-pool/src/lib.rs::_unresolved::into",
+   "calls": 14
+  },
+  {
+   "name": "lockup/src/owner.rs::_unresolved::log",
+   "calls": 13
+  },
+  {
+   "name": "lockup/src/lib.rs::_unresolved::Successful",
+   "calls": 12
+  },
+  {
+   "name": "lockup/src/lib.rs::_unresolved::to_vec",
+   "calls": 12
+  },
+  {
+   "name": "lockup/src/owner.rs::_unresolved::as_bytes",
+   "calls": 12
+  },
+  {
+   "name": "lockup/src/owner.rs::_unresolved::then",
+   "calls": 10
+  }
+ ],
+ "counter_summary": {
+  "max_counter_items": 10,
+  "source_contexts": {
+   "total": 1,
+   "shown": 1,
+   "truncated": false
+  },
+  "top_source_files": {
+   "total": 24,
+   "shown": 10,
+   "truncated": true
+  },
+  "top_targets": {
+   "total": 232,
+   "shown": 10,
+   "truncated": true
+  },
+  "truncated": true
+ },
+ "max_attribute_bytes": 2048,
+ "attribute_truncated": false,
+ "attribute_truncated_calls": 0,
+ "calls": [
+  {
+   "source_label": "new_vesting_schedule",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::into",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "into"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::Successful",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "Successful"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::into",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "into"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::from",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "from"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_vesting_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::map",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "map"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_vesting_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::VestingHash",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "VestingHash"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_vesting_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::to_vec",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "to_vec"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_vesting_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_vesting_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::Successful",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "Successful"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_vesting_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::into",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "into"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_vesting_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::from",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "from"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_not_enough_deposit",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::into",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "into"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_not_enough_deposit",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::from",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "from"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_rollback",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_rollback",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::into",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "into"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_rollback",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::from",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "from"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_custom_whitelist_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_custom_whitelist_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::Successful",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "Successful"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_custom_whitelist_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::into",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "into"
+   }
+  },
+  {
+   "source_label": "test_create_lockup_with_custom_whitelist_success",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::from",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "from"
+   }
+  },
+  {
+   "source_label": "new",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::into",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "into"
+   }
+  },
+  {
+   "source_label": "get_foundation_account_id",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::clone",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "clone"
+   }
+  },
+  {
+   "source_label": "get_min_attached_balance",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::into",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "into"
+   }
+  },
+  {
+   "source_label": "create",
+   "source_file": "lockup-factory/src/lib.rs",
+   "source_context": "production",
+   "target_label": "lockup-factory/src/lib.rs::_unresolved::sha256",
+   "target_file": null,
+   "target_source_context": null,
+   "attributes": {
+    "unresolved": true,
+    "call_name": "sha256"
+   }
+  }
+ ],
+ "tool": "cs_cross_summary",
+ "query_scope": "all_sources",
+ "from_func": null,
+ "_next_steps": [
+  "Use cs_cross(from_func=...) to inspect a specific reachable boundary in detail.",
+  "Use cs_paths(from_label=..., to_label=...) to validate exploit-relevant paths.",
+  "Use direct source review on the top source files before treating this as a finding."
+ ],
+ "_warnings": [
+  "cs_cross_summary counters were capped. Increase max_counter_items or set max_counter_items=0 for exhaustive counters."
+ ]
+}

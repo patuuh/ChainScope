@@ -1,0 +1,399 @@
+{
+ "tool": "cs_sinks",
+ "query_scope": "all_sources",
+ "sink_type": "all",
+ "external_only": false,
+ "total": 5,
+ "shown": 5,
+ "truncated": false,
+ "max_results": 50,
+ "max_callers_per_sink": 8,
+ "include_metadata": false,
+ "include_caller_details": false,
+ "max_metadata_bytes": 4096,
+ "by_type": {
+  "fund_transfer": 3,
+  "low_level_call": 2
+ },
+ "sinks": [
+  {
+   "id": "contracts/Workbench.sol::Workbench._sink_transfer_31",
+   "label": "transfer",
+   "node_type": "function",
+   "visibility": "",
+   "file": "contracts/Workbench.sol",
+   "line_start": 32,
+   "line_end": 32,
+   "signature": "vvs.transfer",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "contracts/Workbench.sol::Workbench.safeVVSTransfer(address,uint256)",
+     "label": "safeVVSTransfer",
+     "file": "contracts/Workbench.sol",
+     "line_start": 29,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.safeVVSTransfer(address,uint256)",
+     "label": "safeVVSTransfer",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 314,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.deposit(uint256,uint256)",
+     "label": "deposit",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 220,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.withdraw(uint256,uint256)",
+     "label": "withdraw",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 242,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.enterStaking(uint256)",
+     "label": "enterStaking",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 263,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.leaveStaking(uint256)",
+     "label": "leaveStaking",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 284,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/VVSVault.sol::VVSVault.harvest",
+     "label": "harvest",
+     "file": "contracts/VVSVault.sol",
+     "line_start": 154,
+     "visibility": "external",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/VVSVault.sol::VVSVault.withdraw(uint256)",
+     "label": "withdraw",
+     "file": "contracts/VVSVault.sol",
+     "line_start": 305,
+     "visibility": "public",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 11,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "contracts/Workbench.sol::Workbench._sink_transfer_33",
+   "label": "transfer",
+   "node_type": "function",
+   "visibility": "",
+   "file": "contracts/Workbench.sol",
+   "line_start": 34,
+   "line_end": 34,
+   "signature": "vvs.transfer",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "contracts/Workbench.sol::Workbench.safeVVSTransfer(address,uint256)",
+     "label": "safeVVSTransfer",
+     "file": "contracts/Workbench.sol",
+     "line_start": 29,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.safeVVSTransfer(address,uint256)",
+     "label": "safeVVSTransfer",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 314,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.deposit(uint256,uint256)",
+     "label": "deposit",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 220,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.withdraw(uint256,uint256)",
+     "label": "withdraw",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 242,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.enterStaking(uint256)",
+     "label": "enterStaking",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 263,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.leaveStaking(uint256)",
+     "label": "leaveStaking",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 284,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/VVSVault.sol::VVSVault.harvest",
+     "label": "harvest",
+     "file": "contracts/VVSVault.sol",
+     "line_start": 154,
+     "visibility": "external",
+     "distance": 4,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/VVSVault.sol::VVSVault.withdraw(uint256)",
+     "label": "withdraw",
+     "file": "contracts/VVSVault.sol",
+     "line_start": 305,
+     "visibility": "public",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 11,
+    "shown": 8,
+    "truncated": true
+   }
+  },
+  {
+   "id": "contracts/libs/Multicall2.sol::Multicall2._sink_call_23",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "contracts/libs/Multicall2.sol",
+   "line_start": 24,
+   "line_end": 24,
+   "signature": "calls[i].target.call",
+   "sink_type": "low_level_call",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "contracts/libs/Multicall2.sol::Multicall2.aggregate(Call[])",
+     "label": "aggregate",
+     "file": "contracts/libs/Multicall2.sol",
+     "line_start": 20,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/libs/Multicall2.sol::Multicall2.tryAggregate(bool,Call[])",
+     "label": "tryAggregate",
+     "file": "contracts/libs/Multicall2.sol",
+     "line_start": 56,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/libs/Multicall2.sol::Multicall2.tryBlockAndAggregate(bool,Call[])",
+     "label": "tryBlockAndAggregate",
+     "file": "contracts/libs/Multicall2.sol",
+     "line_start": 68,
+     "visibility": "public",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/libs/Multicall2.sol::Multicall2.blockAndAggregate(Call[])",
+     "label": "blockAndAggregate",
+     "file": "contracts/libs/Multicall2.sol",
+     "line_start": 29,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 4,
+    "shown": 4,
+    "truncated": false
+   }
+  },
+  {
+   "id": "contracts/libs/Multicall2.sol::Multicall2._sink_call_58",
+   "label": "call",
+   "node_type": "function",
+   "visibility": "",
+   "file": "contracts/libs/Multicall2.sol",
+   "line_start": 59,
+   "line_end": 59,
+   "signature": "calls[i].target.call",
+   "sink_type": "low_level_call",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "contracts/libs/Multicall2.sol::Multicall2.tryAggregate(bool,Call[])",
+     "label": "tryAggregate",
+     "file": "contracts/libs/Multicall2.sol",
+     "line_start": 56,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/libs/Multicall2.sol::Multicall2.tryBlockAndAggregate(bool,Call[])",
+     "label": "tryBlockAndAggregate",
+     "file": "contracts/libs/Multicall2.sol",
+     "line_start": 68,
+     "visibility": "public",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/libs/Multicall2.sol::Multicall2.blockAndAggregate(Call[])",
+     "label": "blockAndAggregate",
+     "file": "contracts/libs/Multicall2.sol",
+     "line_start": 29,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 3,
+    "shown": 3,
+    "truncated": false
+   }
+  },
+  {
+   "id": "contracts/libs/WCRO.sol::WCRO._sink_transfer_25",
+   "label": "transfer",
+   "node_type": "function",
+   "visibility": "",
+   "file": "contracts/libs/WCRO.sol",
+   "line_start": 26,
+   "line_end": 26,
+   "signature": "msg.sender.transfer",
+   "sink_type": "fund_transfer",
+   "source_context": "production",
+   "callers": [
+    {
+     "id": "contracts/Workbench.sol::Workbench.safeVVSTransfer(address,uint256)",
+     "label": "safeVVSTransfer",
+     "file": "contracts/Workbench.sol",
+     "line_start": 29,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/libs/WCRO.sol::WCRO.withdraw(uint)",
+     "label": "withdraw",
+     "file": "contracts/libs/WCRO.sol",
+     "line_start": 23,
+     "visibility": "public",
+     "distance": 1,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.safeVVSTransfer(address,uint256)",
+     "label": "safeVVSTransfer",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 314,
+     "visibility": "internal",
+     "distance": 2,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.deposit(uint256,uint256)",
+     "label": "deposit",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 220,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.withdraw(uint256,uint256)",
+     "label": "withdraw",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 242,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.enterStaking(uint256)",
+     "label": "enterStaking",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 263,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/Craftsman.sol::Craftsman.leaveStaking(uint256)",
+     "label": "leaveStaking",
+     "file": "contracts/Craftsman.sol",
+     "line_start": 284,
+     "visibility": "public",
+     "distance": 3,
+     "source_context": "production"
+    },
+    {
+     "id": "contracts/VVSVault.sol::VVSVault.harvest",
+     "label": "harvest",
+     "file": "contracts/VVSVault.sol",
+     "line_start": 154,
+     "visibility": "external",
+     "distance": 4,
+     "source_context": "production"
+    }
+   ],
+   "caller_summary": {
+    "total": 12,
+    "shown": 8,
+    "truncated": true
+   }
+  }
+ ],
+ "caller_truncated": true,
+ "caller_truncated_sinks": 3,
+ "_warnings": [
+  "Some caller lists were capped. Set max_callers_per_sink=0 for exhaustive caller reachability."
+ ]
+}

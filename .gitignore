@@ -2,6 +2,7 @@
 /core/__pycache__
 /core/web3/__pycache__
 /tests/__pycache__
+/cli/__pycache__
 /.claude
 /docs/superpowers
 Dockerfile.sandbox
@@ -10,3 +11,28 @@ AGENTS.md
 /.venv
 tests/.DS_Store
 .DS_Store
+typer_shim.py.bak
+
+# ChainScope fetch materialisation output
+.chainsource/
+# cs_target fetched source
+/target_*/
+
+# ChainScope local graph artifacts
+graph.db
+*.db
+
+# local secrets (contains Bird key - never commit)
+run_watch.sh
+
+# local secrets - never commit (RPC keys, API tokens)
+.env
+.env.*
+!.env.example
+tools/**/__pycache__/
+tools/diamond_fixture/lib/
+tools/diamond_fixture/out/
+tools/diamond_fixture/cache/
+
+# generated RE surface dumps
+*_surface/

@@ -1,0 +1,14 @@
+[Unit]
+Description=ChainScope LLM service (Foundation‑Sec‑8B‑Instruct GGUF)
+After=network.target
+
+[Service]
+Type=simple
+User=opc
+WorkingDirectory=/home/opc/ChainScope
+ExecStart=/home/opc/ChainScope/run_on_existing_vm.sh foundation-gguf
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

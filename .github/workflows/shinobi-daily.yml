@@ -1,0 +1,85 @@
+name: shinobi-daily
+
+# Shinobi engine scheduled triage (Phase 7 template).
+#
+# 1. Enable by uncommenting the schedule cron below (Actions -> run a test).
+# 2. Add repository secrets:
+#      CHAINSCOPE_KEY   - Fernet key (same as local `cs_scope keygen`)
+#      SHINOBI_SLUG     - program slug to probe (e.g. leather)
+#      SHINOBI_ROLES    - comma-separated roles (default: anonymous)
+# 3. Review the guardrails: the engine only ever talks to in-scope hosts for
+#    the configured slug (GuardedSession hard-block). Set max_tests bounded.
+#
+# The job is intentionally NOT scheduled by default; run it on-demand to start.
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "Program slug to probe"
+        required: true
+        default: "leather"
+      roles:
+        description: "Roles, comma-separated"
+        required: false
+        default: "anonymous"
+      max_tests:
+        description: "Engine request budget"
+        required: false
+        default: "300"
+  # schedule:
+  #   - cron: "0 2 * * *"        # nightly, UTC
+  #   - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CHAINSCOPE_KEY: ${{ secrets.CHAINSCOPE_KEY }}
+      SHINOBI_SLUG: ${{ inputs.slug || github.event.inputs.slug || 'leather' }}
+      SHINOBI_ROLES: ${{ inputs.roles || 'anonymous' }}
+      MAX_TESTS: ${{ inputs.max_tests || 300 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install
+        run: pip install --quiet pyotp cryptography playwright httpx typer
+
+      - name: Playwright browser
+        run: python -m playwright install --with-deps chromium
+
+      - name: Fetch program scope (kept inside the DB)
+        run: python cs_scope.py fetch "$SHINOBI_SLUG"
+
+      - name: Crawl + map surfaces
+        run: python cs_active.py crawl "$SHINOBI_SLUG" --depth 2
+
+      - name: Probe with the engine (guarded, in-scope only)
+        run: |
+          for r in $(printf '%s' "$SHINOBI_ROLES" | tr ',' ' '); do
+            python cs_prowl.py run "$SHINOBI_SLUG" --role "$r" --max-tests "$MAX_TESTS"
+          done
+
+      - name: Kill-test triage candidates
+        run: python cs_verify.py status "$SHINOBI_SLUG"
+
+      - name: Upload triage summary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shinobi-triage-${{ env.SHINOBI_SLUG }}
+          path: |
+            ~/.chainscope/shinobi.db
+            shinobi-triage.md
+          if-no-files-found: ignore
+
+      - name: Render report bundle for confirmed findings
+        run: python cs_report.py bundle "$SHINOBI_SLUG" > shinobi-triage.md || true

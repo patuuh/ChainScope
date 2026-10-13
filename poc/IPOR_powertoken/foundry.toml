@@ -1,0 +1,3 @@
+solc = "0.8.26"
+optimizer = false
+evm_version = "cancun"

@@ -1,0 +1,3 @@
+[console_scripts]
+chain-scope = cli.main:app
+cs = cli.main:app
